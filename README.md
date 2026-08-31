@@ -1,0 +1,1 @@
+# Smart Expense and Budget Management Application
