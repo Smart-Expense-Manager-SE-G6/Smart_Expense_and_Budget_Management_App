@@ -171,6 +171,19 @@ class LoginFailureGuardTests(AuthApiTestCase):
             self.attempt(f"10.2.0.{i}")
         self.assertEqual(self.attempt("192.168.1.10", PASSWORD), 429)
 
+    def test_password_change_revokes_trusted_device(self):
+        owner = Client()
+        self.post("/api/v1/auth/login/", {"email": "alice@example.com", "password": PASSWORD},
+                  client=owner, REMOTE_ADDR="192.168.1.10")
+        user = User.objects.get(email="alice@example.com")
+        user.set_password("An0ther-Passw0rd!")
+        user.save()
+        for i in range(10):
+            self.attempt(f"10.5.0.{i}")
+        response = self.post("/api/v1/auth/login/", {"email": "alice@example.com", "password": "An0ther-Passw0rd!"},
+                             client=owner, REMOTE_ADDR="192.168.1.10")
+        self.assertEqual(response.status_code, 429)
+
     def test_trusted_cookie_is_bound_to_its_email(self):
         User.objects.create_user("bob@example.com", password=PASSWORD)
         device = Client()

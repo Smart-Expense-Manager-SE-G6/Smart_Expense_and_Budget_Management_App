@@ -1,5 +1,7 @@
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.utils.crypto import constant_time_compare, salted_hmac
 from rest_framework.exceptions import Throttled
 from rest_framework.throttling import ScopedRateThrottle
 
@@ -69,17 +71,26 @@ TRUSTED_DEVICE_COOKIE = "trusted_device"
 _TRUSTED_DEVICE_SALT = "accounts.trusted-device"
 
 
+def _device_token(user):
+    # Tied to the current password hash: changing the password revokes every
+    # trusted-device cookie for the account. Survives logout on purpose.
+    return f"{user.email}:{salted_hmac(_TRUSTED_DEVICE_SALT, user.password).hexdigest()}"
+
+
 def is_trusted_device(request, email):
     value = request.get_signed_cookie(
         TRUSTED_DEVICE_COOKIE, default=None, salt=_TRUSTED_DEVICE_SALT,
         max_age=settings.TRUSTED_DEVICE_MAX_AGE_SECONDS,
     )
-    return value == email
+    if not value:
+        return False
+    user = get_user_model().objects.filter(email=email).only("email", "password").first()
+    return user is not None and constant_time_compare(value, _device_token(user))
 
 
-def mark_trusted_device(response, email):
+def mark_trusted_device(response, user):
     response.set_signed_cookie(
-        TRUSTED_DEVICE_COOKIE, email, salt=_TRUSTED_DEVICE_SALT,
+        TRUSTED_DEVICE_COOKIE, _device_token(user), salt=_TRUSTED_DEVICE_SALT,
         max_age=settings.TRUSTED_DEVICE_MAX_AGE_SECONDS,
         httponly=True, samesite="Lax", secure=not settings.DEBUG,
     )

@@ -60,7 +60,7 @@ class LoginView(APIView):
         guard.release_after_success()
         login(request, user)  # rotates the session key (prevents session fixation)
         response = Response(UserSerializer(user).data)
-        mark_trusted_device(response, email)
+        mark_trusted_device(response, user)
         return response
 
 
