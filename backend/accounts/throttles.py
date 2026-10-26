@@ -17,14 +17,14 @@ class ClientIpScopedThrottle(ScopedRateThrottle):
 
 class LoginFailureGuard:
     """
-    Limits failed logins per account without letting a third party lock the
-    real user out:
+    Limits failed logins per account:
 
     - per (email, client IP): that IP is blocked for that account once it has
       too many failures;
-    - per email across all IPs: a backstop against distributed guessing, but it
-      only blocks IPs that already have a failure on this account, so the owner
-      can always sign in from a clean network.
+    - per email across all IPs: a hard cap against distributed guessing that
+      applies to every IP. Only a trusted device (one holding the signed cookie
+      set after an earlier successful login for this email) may get past it,
+      so an attacker cannot lock the owner out of devices they already use.
 
     Each attempt is reserved atomically before the password is checked (no
     check-then-record race); a successful login gives the reservation back.
@@ -32,9 +32,10 @@ class LoginFailureGuard:
     several workers needs a shared cache backend (e.g. Redis) for this to hold.
     """
 
-    def __init__(self, email, client_ip):
+    def __init__(self, email, client_ip, trusted_device=False):
         self.pair_key = f"login-fail:{email}:{client_ip}"
         self.account_key = f"login-fail:{email}"
+        self.trusted_device = trusted_device
 
     @staticmethod
     def _incr(key):
@@ -51,9 +52,8 @@ class LoginFailureGuard:
         """Count this attempt as a failure up front; raise Throttled if over a limit."""
         pair = self._incr(self.pair_key)
         account = self._incr(self.account_key)
-        ip_has_failures = pair > 1
         if pair > settings.LOGIN_FAILURES_PER_ACCOUNT_AND_IP or (
-            ip_has_failures and account > settings.LOGIN_FAILURES_PER_ACCOUNT
+            account > settings.LOGIN_FAILURES_PER_ACCOUNT and not self.trusted_device
         ):
             raise Throttled(wait=settings.LOGIN_FAILURE_WINDOW_SECONDS)
 
@@ -63,3 +63,23 @@ class LoginFailureGuard:
             cache.decr(self.account_key)
         except ValueError:  # window already expired
             pass
+
+
+TRUSTED_DEVICE_COOKIE = "trusted_device"
+_TRUSTED_DEVICE_SALT = "accounts.trusted-device"
+
+
+def is_trusted_device(request, email):
+    value = request.get_signed_cookie(
+        TRUSTED_DEVICE_COOKIE, default=None, salt=_TRUSTED_DEVICE_SALT,
+        max_age=settings.TRUSTED_DEVICE_MAX_AGE_SECONDS,
+    )
+    return value == email
+
+
+def mark_trusted_device(response, email):
+    response.set_signed_cookie(
+        TRUSTED_DEVICE_COOKIE, email, salt=_TRUSTED_DEVICE_SALT,
+        max_age=settings.TRUSTED_DEVICE_MAX_AGE_SECONDS,
+        httponly=True, samesite="Lax", secure=not settings.DEBUG,
+    )

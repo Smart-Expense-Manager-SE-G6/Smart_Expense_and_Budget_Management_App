@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 from audit.services import audited
 
 from .serializers import LoginSerializer, RegisterSerializer, UserSerializer
-from .throttles import ClientIpScopedThrottle, LoginFailureGuard
+from .throttles import ClientIpScopedThrottle, LoginFailureGuard, is_trusted_device, mark_trusted_device
 
 
 @method_decorator(ensure_csrf_cookie, name="dispatch")
@@ -49,7 +49,9 @@ class LoginView(APIView):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         email = serializer.validated_data["email"].lower()
-        guard = LoginFailureGuard(email, ClientIpScopedThrottle().get_ident(request))
+        guard = LoginFailureGuard(
+            email, ClientIpScopedThrottle().get_ident(request), trusted_device=is_trusted_device(request, email)
+        )
         guard.reserve_attempt()
         user = authenticate(request, email=email, password=serializer.validated_data["password"])
         if user is None:
@@ -57,7 +59,9 @@ class LoginView(APIView):
             raise AuthenticationFailed("Invalid email or password.", code="invalid_credentials")
         guard.release_after_success()
         login(request, user)  # rotates the session key (prevents session fixation)
-        return Response(UserSerializer(user).data)
+        response = Response(UserSerializer(user).data)
+        mark_trusted_device(response, email)
+        return response
 
 
 class LogoutView(APIView):

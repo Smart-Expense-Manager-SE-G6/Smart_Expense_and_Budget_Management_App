@@ -151,16 +151,35 @@ class LoginFailureGuardTests(AuthApiTestCase):
         self.assertEqual(self.attempt("10.0.0.3", PASSWORD), 200)
         self.assertEqual([self.attempt("10.0.0.3") for _ in range(3)], [401, 401, 401])
 
-    def test_distributed_guessing_hits_account_wide_limit(self):
-        self.assertEqual(self.attempt("10.1.0.1"), 401)  # this IP now has a failure
-        for i in range(2, 6):
-            self.attempt(f"10.1.0.{i}")  # account-wide failures reach the cap of 5
-        self.assertEqual(self.attempt("10.1.0.1"), 429)
+    def test_distributed_guessing_hits_account_wide_limit_on_fresh_ips(self):
+        statuses = [self.attempt(f"10.1.0.{i}") for i in range(6)]
+        self.assertEqual(statuses, [401, 401, 401, 401, 401, 429])
 
-    def test_owner_on_clean_ip_gets_in_after_account_wide_cap(self):
+    def test_trusted_device_gets_in_after_account_wide_cap(self):
+        owner = Client()
+        self.post("/api/v1/auth/login/", {"email": "alice@example.com", "password": PASSWORD},
+                  client=owner, REMOTE_ADDR="192.168.1.10")
+        owner.post("/api/v1/auth/logout/")
         for i in range(10):
             self.attempt(f"10.2.0.{i}")
-        self.assertEqual(self.attempt("192.168.1.10", PASSWORD), 200)
+        response = self.post("/api/v1/auth/login/", {"email": "alice@example.com", "password": PASSWORD},
+                             client=owner, REMOTE_ADDR="192.168.1.10")
+        self.assertEqual(response.status_code, 200)
+
+    def test_new_device_waits_out_the_window_during_an_attack(self):
+        for i in range(10):
+            self.attempt(f"10.2.0.{i}")
+        self.assertEqual(self.attempt("192.168.1.10", PASSWORD), 429)
+
+    def test_trusted_cookie_is_bound_to_its_email(self):
+        User.objects.create_user("bob@example.com", password=PASSWORD)
+        device = Client()
+        self.post("/api/v1/auth/login/", {"email": "bob@example.com", "password": PASSWORD}, client=device)
+        for i in range(10):
+            self.attempt(f"10.4.0.{i}")
+        response = self.post("/api/v1/auth/login/", {"email": "alice@example.com", "password": PASSWORD},
+                             client=device, REMOTE_ADDR="10.9.9.9")
+        self.assertEqual(response.status_code, 429)
 
     def test_parallel_attempts_cannot_exceed_limit(self):
         # Reservations are counted before the password check, so the limit
