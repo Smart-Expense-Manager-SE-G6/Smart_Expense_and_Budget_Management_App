@@ -46,6 +46,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "core.request_id.RequestIdMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -126,4 +127,24 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_AUTHENTICATION_CLASSES": ["core.authentication.SessionAuthentication401"],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "EXCEPTION_HANDLER": "core.exceptions.api_exception_handler",
+}
+
+# Every log line carries the request id (NFR12).
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {"request_id": {"()": "core.request_id.RequestIdLogFilter"}},
+    "formatters": {
+        "default": {"format": "%(asctime)s %(levelname)s %(name)s request_id=%(request_id)s %(message)s"},
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "filters": ["request_id"], "formatter": "default"},
+    },
+    "root": {"handlers": ["console"], "level": env("LOG_LEVEL", "INFO")},
+    "loggers": {
+        # Django's own per-request line duplicates api.request; keep only warnings from it.
+        "django.server": {"level": "WARNING"},
+        "django.request": {"level": "ERROR"},
+    },
 }
