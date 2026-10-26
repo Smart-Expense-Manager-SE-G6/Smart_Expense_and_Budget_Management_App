@@ -13,7 +13,7 @@ class ProtectedView(APIView):
     """Uses the project-wide default auth and permission classes."""
 
     def get(self, request):
-        return Response({"user": request.user.username})
+        return Response({"user": request.user.email})
 
 
 urlpatterns = [path("protected/", ProtectedView.as_view())]
@@ -31,7 +31,7 @@ class SessionAuthenticationTests(TestCase):
     """ADR 0001: anonymous, logged-out and expired credentials all get 401."""
 
     def setUp(self):
-        self.user = get_user_model().objects.create_user("alice", password="s3cure-pass!")
+        self.user = get_user_model().objects.create_user("alice@example.com", password="s3cure-pass!")
 
     def test_anonymous_request_returns_401(self):
         self.assertEqual(self.client.get("/protected/").status_code, 401)

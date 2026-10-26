@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "core",
+    "accounts",
 ]
 
 MIDDLEWARE = [
@@ -83,6 +84,14 @@ DATABASES = {
         "PORT": env("POSTGRES_PORT", "5432"),
     }
 }
+
+AUTH_USER_MODEL = "accounts.User"
+
+# bcrypt first (NFR4); the others stay so older hashes can still be verified.
+PASSWORD_HASHERS = [
+    "django.contrib.auth.hashers.BCryptSHA256PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2PasswordHasher",
+]
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
