@@ -26,6 +26,7 @@ docker compose exec backend python manage.py test            # backend tests
 docker compose exec backend python manage.py makemigrations  # after model changes
 docker compose exec backend python manage.py createsuperuser
 docker compose down -v                                       # stop and wipe the database
+docker compose up --build -V                                 # after pulling new npm/pip dependencies
 ```
 
 ## Layout
