@@ -36,6 +36,18 @@ frontend/   React + Vite app
 docker-compose.yml, .env.example
 ```
 
+## API conventions (read before adding an endpoint)
+
+- **Auth is on by default.** Every endpoint requires a logged-in session. Public endpoints must say `permission_classes = [AllowAny]`. See `docs/adr/0001-authentication-sessions.md`.
+- **Errors:** just raise DRF exceptions (`serializer.is_valid(raise_exception=True)`, `NotFound(...)`, `PermissionDenied(...)`). They are converted to the SASD 4.4 envelope automatically:
+  ```json
+  {"error": {"code": "required", "message": "This field is required.", "field": "amount", "request_id": "3f2a..."}}
+  ```
+  Unhandled exceptions become a `500` with code `server_error`; the details only go to the log.
+- **Users:** reference the user model as `settings.AUTH_USER_MODEL` in ForeignKeys. Users sign in with email; `user.timezone` holds their IANA time zone.
+- **Logging:** use `logging.getLogger(__name__)`. Every line automatically carries `request_id`, which is also returned in the `X-Request-ID` response header.
+- **Frontend:** call relative URLs (`/api/v1/...`) and send the `X-CSRFToken` header (value of the `csrftoken` cookie) on POST, PUT, PATCH and DELETE.
+
 ## Rules
 
 - No secrets in code. Everything comes from `.env`, which is git-ignored.

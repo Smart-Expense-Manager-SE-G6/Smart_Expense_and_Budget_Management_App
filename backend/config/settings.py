@@ -42,9 +42,11 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "core",
+    "accounts",
 ]
 
 MIDDLEWARE = [
+    "core.request_id.RequestIdMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -84,6 +86,14 @@ DATABASES = {
     }
 }
 
+AUTH_USER_MODEL = "accounts.User"
+
+# bcrypt first (NFR4); the others stay so older hashes can still be verified.
+PASSWORD_HASHERS = [
+    "django.contrib.auth.hashers.BCryptSHA256PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2PasswordHasher",
+]
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -102,6 +112,39 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Authentication: server-side sessions (docs/adr/0001-authentication-sessions.md).
+# Idle timeout: the session expires after this many seconds without a request.
+SESSION_COOKIE_AGE = int(env("SESSION_IDLE_TIMEOUT_SECONDS", "1800"))
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_HTTPONLY = False  # React reads it to send the X-CSRFToken header
+
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    "DEFAULT_AUTHENTICATION_CLASSES": ["core.authentication.SessionAuthentication401"],
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "EXCEPTION_HANDLER": "core.exceptions.api_exception_handler",
+}
+
+# Every log line carries the request id (NFR12).
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {"request_id": {"()": "core.request_id.RequestIdLogFilter"}},
+    "formatters": {
+        "default": {"format": "%(asctime)s %(levelname)s %(name)s request_id=%(request_id)s %(message)s"},
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "filters": ["request_id"], "formatter": "default"},
+    },
+    "root": {"handlers": ["console"], "level": env("LOG_LEVEL", "INFO")},
+    "loggers": {
+        # Django's own per-request line duplicates api.request; keep only warnings from it.
+        "django.server": {"level": "WARNING"},
+        "django.request": {"level": "ERROR"},
+    },
 }
