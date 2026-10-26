@@ -1,0 +1,220 @@
+{
+  "info": {
+    "name": "Smart Expense & Budget Management API - Test Suite",
+    "_postman_id": "team6-smart-expense-postman-collection",
+    "description": "Comprehensive API collection and test suite covering Sprint 1 & Sprint 2 endpoints according to SASD 4.3 and STP v1.0.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "GET /api/v1/health/",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/health/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "health", ""]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Service status is ok', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql('ok');",
+                  "});",
+                  "pm.test('Response includes X-Request-ID header', function () {",
+                  "    pm.response.to.have.header('X-Request-ID');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Authentication (FR1, FR2, NFR4, NFR5)",
+      "item": [
+        {
+          "name": "POST /api/v1/auth/register/",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"testuser@example.com\",\n  \"password\": \"ValidPass123!\",\n  \"timezone\": \"Asia/Kolkata\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/register/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "register", ""]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201 Created or 400 Conflict', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 400]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/v1/auth/login/",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"testuser@example.com\",\n  \"password\": \"ValidPass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "login", ""]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Session cookie set', function () {",
+                  "    pm.expect(pm.cookies.has('sessionid')).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/v1/users/me/",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/me/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "me", ""]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('User email matches', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.email).to.eql('testuser@example.com');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/v1/auth/logout/",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/logout/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "logout", ""]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 204', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Analytics & Summary (FR13, R3)",
+      "item": [
+        {
+          "name": "GET /api/v1/analytics/summary/",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/analytics/summary/?start_date=2026-10-01&end_date=2026-10-31",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "analytics", "summary", ""],
+              "query": [
+                { "key": "start_date", "value": "2026-10-01" },
+                { "key": "end_date", "value": "2026-10-31" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/analytics/categories/",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/analytics/categories/?start_date=2026-10-01&end_date=2026-10-31",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "analytics", "categories", ""],
+              "query": [
+                { "key": "start_date", "value": "2026-10-01" },
+                { "key": "end_date", "value": "2026-10-31" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000"
+    }
+  ]
+}
