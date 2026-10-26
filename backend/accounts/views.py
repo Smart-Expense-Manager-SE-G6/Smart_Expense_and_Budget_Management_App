@@ -50,13 +50,12 @@ class LoginView(APIView):
         serializer.is_valid(raise_exception=True)
         email = serializer.validated_data["email"].lower()
         guard = LoginFailureGuard(email, ClientIpScopedThrottle().get_ident(request))
-        guard.check()
+        guard.reserve_attempt()
         user = authenticate(request, email=email, password=serializer.validated_data["password"])
         if user is None:
-            guard.record_failure()
             # Same message for unknown email and wrong password: no account enumeration.
             raise AuthenticationFailed("Invalid email or password.", code="invalid_credentials")
-        guard.record_success()
+        guard.release_after_success()
         login(request, user)  # rotates the session key (prevents session fixation)
         return Response(UserSerializer(user).data)
 

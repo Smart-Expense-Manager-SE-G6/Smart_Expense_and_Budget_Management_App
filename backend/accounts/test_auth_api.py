@@ -3,7 +3,10 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.test import Client, TestCase, override_settings
+from rest_framework.exceptions import Throttled
 from rest_framework.throttling import ScopedRateThrottle
+
+from accounts.throttles import LoginFailureGuard
 
 from audit.models import AuditLog
 
@@ -149,8 +152,24 @@ class LoginFailureGuardTests(AuthApiTestCase):
         self.assertEqual([self.attempt("10.0.0.3") for _ in range(3)], [401, 401, 401])
 
     def test_distributed_guessing_hits_account_wide_limit(self):
-        statuses = [self.attempt(f"10.1.0.{i}") for i in range(6)]
-        self.assertEqual(statuses, [401, 401, 401, 401, 401, 429])
+        self.assertEqual(self.attempt("10.1.0.1"), 401)  # this IP now has a failure
+        for i in range(2, 6):
+            self.attempt(f"10.1.0.{i}")  # account-wide failures reach the cap of 5
+        self.assertEqual(self.attempt("10.1.0.1"), 429)
+
+    def test_owner_on_clean_ip_gets_in_after_account_wide_cap(self):
+        for i in range(10):
+            self.attempt(f"10.2.0.{i}")
+        self.assertEqual(self.attempt("192.168.1.10", PASSWORD), 200)
+
+    def test_parallel_attempts_cannot_exceed_limit(self):
+        # Reservations are counted before the password check, so the limit
+        # holds even if the attempts are not awaited one by one.
+        guard = LoginFailureGuard("alice@example.com", "10.3.0.1")
+        for _ in range(3):
+            guard.reserve_attempt()
+        with self.assertRaises(Throttled):
+            guard.reserve_attempt()
 
 
 class CsrfTests(AuthApiTestCase):
