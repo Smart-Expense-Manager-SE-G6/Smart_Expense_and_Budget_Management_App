@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 from audit.services import audited
 
 from .serializers import LoginSerializer, RegisterSerializer, UserSerializer
-from .throttles import ClientIpScopedThrottle, LoginEmailThrottle
+from .throttles import ClientIpScopedThrottle, LoginFailureGuard
 
 
 @method_decorator(ensure_csrf_cookie, name="dispatch")
@@ -43,19 +43,20 @@ class RegisterView(APIView):
 class LoginView(APIView):
     permission_classes = [AllowAny]
     throttle_scope = "login"
-    throttle_classes = [ClientIpScopedThrottle, LoginEmailThrottle]
+    throttle_classes = [ClientIpScopedThrottle]
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = authenticate(
-            request,
-            email=serializer.validated_data["email"].lower(),
-            password=serializer.validated_data["password"],
-        )
+        email = serializer.validated_data["email"].lower()
+        guard = LoginFailureGuard(email, ClientIpScopedThrottle().get_ident(request))
+        guard.check()
+        user = authenticate(request, email=email, password=serializer.validated_data["password"])
         if user is None:
+            guard.record_failure()
             # Same message for unknown email and wrong password: no account enumeration.
             raise AuthenticationFailed("Invalid email or password.", code="invalid_credentials")
+        guard.record_success()
         login(request, user)  # rotates the session key (prevents session fixation)
         return Response(UserSerializer(user).data)
 

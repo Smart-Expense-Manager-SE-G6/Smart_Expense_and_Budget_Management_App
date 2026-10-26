@@ -2,10 +2,8 @@ from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from rest_framework.throttling import ScopedRateThrottle
-
-from accounts.throttles import LoginEmailThrottle
 
 from audit.models import AuditLog
 
@@ -118,14 +116,41 @@ class TCAuth02LoginLogoutTests(AuthApiTestCase):
             ]
         self.assertEqual(statuses, [401, 401, 429])
 
-    def test_one_account_is_limited_across_ips(self):
-        with patch.object(LoginEmailThrottle, "THROTTLE_RATES", {"login_email": "2/min"}):
-            statuses = [
-                self.post("/api/v1/auth/login/", {"email": "alice@example.com", "password": "nope"},
-                          REMOTE_ADDR=f"10.0.1.{i}").status_code
-                for i in range(3)
-            ]
-        self.assertEqual(statuses, [401, 401, 429])
+@override_settings(LOGIN_FAILURES_PER_ACCOUNT_AND_IP=3, LOGIN_FAILURES_PER_ACCOUNT=5)
+class LoginFailureGuardTests(AuthApiTestCase):
+    """Failed logins are limited per account without letting others lock the owner out."""
+
+    def setUp(self):
+        super().setUp()
+        User.objects.create_user("alice@example.com", password=PASSWORD)
+
+    def attempt(self, ip, password="nope"):
+        return self.post("/api/v1/auth/login/", {"email": "alice@example.com", "password": password},
+                         REMOTE_ADDR=ip).status_code
+
+    def test_repeated_failures_block_that_ip_even_with_right_password(self):
+        statuses = [self.attempt("10.0.0.1") for _ in range(3)]
+        self.assertEqual(statuses, [401, 401, 401])
+        self.assertEqual(self.attempt("10.0.0.1", PASSWORD), 429)
+
+    def test_attacker_cannot_lock_owner_out_from_another_ip(self):
+        for _ in range(4):
+            self.attempt("10.6.6.6")
+        self.assertEqual(self.attempt("192.168.1.10", PASSWORD), 200)
+
+    def test_successful_logins_do_not_count(self):
+        for _ in range(5):
+            self.assertEqual(self.attempt("10.0.0.2", PASSWORD), 200)
+
+    def test_success_resets_that_ips_failures(self):
+        self.attempt("10.0.0.3")
+        self.attempt("10.0.0.3")
+        self.assertEqual(self.attempt("10.0.0.3", PASSWORD), 200)
+        self.assertEqual([self.attempt("10.0.0.3") for _ in range(3)], [401, 401, 401])
+
+    def test_distributed_guessing_hits_account_wide_limit(self):
+        statuses = [self.attempt(f"10.1.0.{i}") for i in range(6)]
+        self.assertEqual(statuses, [401, 401, 401, 401, 401, 429])
 
 
 class CsrfTests(AuthApiTestCase):

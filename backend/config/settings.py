@@ -125,6 +125,11 @@ CSRF_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_HTTPONLY = False  # React reads it to send the X-CSRFToken header
 CSRF_FAILURE_VIEW = "core.exceptions.csrf_failure"
 
+# Failed-login limits (accounts.throttles.LoginFailureGuard).
+LOGIN_FAILURE_WINDOW_SECONDS = int(env("LOGIN_FAILURE_WINDOW_SECONDS", "300"))
+LOGIN_FAILURES_PER_ACCOUNT_AND_IP = int(env("LOGIN_FAILURES_PER_ACCOUNT_AND_IP", "5"))
+LOGIN_FAILURES_PER_ACCOUNT = int(env("LOGIN_FAILURES_PER_ACCOUNT", "50"))
+
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_AUTHENTICATION_CLASSES": ["core.authentication.SessionAuthentication401"],
@@ -133,7 +138,6 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.ScopedRateThrottle"],
     "DEFAULT_THROTTLE_RATES": {
         "login": env("LOGIN_RATE_LIMIT", "10/min"),  # per client IP
-        "login_email": env("LOGIN_EMAIL_RATE_LIMIT", "5/min"),  # per target account
         "register": env("REGISTER_RATE_LIMIT", "5/min"),  # per client IP
     },
     # Number of trusted reverse proxies in front of Django. 0 = use the socket
