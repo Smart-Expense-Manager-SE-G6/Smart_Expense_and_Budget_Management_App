@@ -46,6 +46,22 @@ docker-compose.yml, .env.example
   Unhandled exceptions become a `500` with code `server_error`; the details only go to the log.
 - **Users:** reference the user model as `settings.AUTH_USER_MODEL` in ForeignKeys. Users sign in with email; `user.timezone` holds their IANA time zone.
 - **Logging:** use `logging.getLogger(__name__)`. Every line automatically carries `request_id`, which is also returned in the `X-Request-ID` response header.
+- **Audit (FR21), required for every expense and budget write.** The change and its audit row are saved in one transaction, or neither is.
+  - ViewSets: add the mixin and you're done.
+    ```python
+    from audit.mixins import AuditedModelViewSetMixin
+
+    class ExpenseViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet): ...
+    ```
+  - Custom code, including soft delete (D4):
+    ```python
+    from audit.services import audited
+
+    with audited(request.user, expense):
+        expense.is_deleted = True
+        expense.save()
+    ```
+  - Audit rows are append-only. Passwords are never recorded.
 - **Frontend:** call relative URLs (`/api/v1/...`) and send the `X-CSRFToken` header (value of the `csrftoken` cookie) on POST, PUT, PATCH and DELETE.
 
 ## Rules
