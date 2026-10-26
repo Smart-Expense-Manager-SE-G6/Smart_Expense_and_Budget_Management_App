@@ -10,6 +10,7 @@ from rest_framework.views import APIView
 from audit.services import audited
 
 from .serializers import LoginSerializer, RegisterSerializer, UserSerializer
+from .throttles import ClientIpScopedThrottle, LoginEmailThrottle
 
 
 @method_decorator(ensure_csrf_cookie, name="dispatch")
@@ -27,6 +28,8 @@ class CsrfView(APIView):
 @method_decorator(csrf_protect, name="dispatch")
 class RegisterView(APIView):
     permission_classes = [AllowAny]
+    throttle_scope = "register"
+    throttle_classes = [ClientIpScopedThrottle]
 
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
@@ -40,6 +43,7 @@ class RegisterView(APIView):
 class LoginView(APIView):
     permission_classes = [AllowAny]
     throttle_scope = "login"
+    throttle_classes = [ClientIpScopedThrottle, LoginEmailThrottle]
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data)

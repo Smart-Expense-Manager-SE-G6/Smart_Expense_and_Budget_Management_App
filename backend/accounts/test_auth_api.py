@@ -5,6 +5,8 @@ from django.core.cache import cache
 from django.test import Client, TestCase
 from rest_framework.throttling import ScopedRateThrottle
 
+from accounts.throttles import LoginEmailThrottle
+
 from audit.models import AuditLog
 
 User = get_user_model()
@@ -56,6 +58,11 @@ class TCAuth01RegisterTests(AuthApiTestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()["error"]["field"], "timezone")
 
+    def test_registration_is_rate_limited(self):
+        with patch.object(ScopedRateThrottle, "THROTTLE_RATES", {"register": "2/min"}):
+            statuses = [self.register(email=f"user{i}@example.com").status_code for i in range(3)]
+        self.assertEqual(statuses, [201, 201, 429])
+
     def test_missing_email(self):
         response = self.post("/api/v1/auth/register/", {"password": PASSWORD})
         self.assertEqual(response.json()["error"]["field"], "email")
@@ -102,6 +109,24 @@ class TCAuth02LoginLogoutTests(AuthApiTestCase):
             statuses = [self.login(password="nope").status_code for _ in range(4)]
         self.assertEqual(statuses, [401, 401, 401, 429])
 
+    def test_forged_forwarded_for_does_not_bypass_ip_limit(self):
+        with patch.object(ScopedRateThrottle, "THROTTLE_RATES", {"login": "2/min"}):
+            statuses = [
+                self.post("/api/v1/auth/login/", {"email": f"u{i}@example.com", "password": "x"},
+                          HTTP_X_FORWARDED_FOR=f"10.0.0.{i}").status_code
+                for i in range(3)
+            ]
+        self.assertEqual(statuses, [401, 401, 429])
+
+    def test_one_account_is_limited_across_ips(self):
+        with patch.object(LoginEmailThrottle, "THROTTLE_RATES", {"login_email": "2/min"}):
+            statuses = [
+                self.post("/api/v1/auth/login/", {"email": "alice@example.com", "password": "nope"},
+                          REMOTE_ADDR=f"10.0.1.{i}").status_code
+                for i in range(3)
+            ]
+        self.assertEqual(statuses, [401, 401, 429])
+
 
 class CsrfTests(AuthApiTestCase):
     def setUp(self):
@@ -113,6 +138,7 @@ class CsrfTests(AuthApiTestCase):
         response = self.post("/api/v1/auth/login/", {"email": "alice@example.com", "password": PASSWORD},
                              client=self.csrf_client)
         self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()["error"]["code"], "csrf_failed")
 
     def test_login_with_csrf_token_from_csrf_endpoint(self):
         self.assertEqual(self.csrf_client.get("/api/v1/auth/csrf/").status_code, 204)

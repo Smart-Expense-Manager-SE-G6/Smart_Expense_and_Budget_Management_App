@@ -58,3 +58,9 @@ def handler404(request, exception=None):
 
 def handler500(request):
     return JsonResponse(error_body("server_error", "Something went wrong. Please try again."), status=500)
+
+
+def csrf_failure(request, reason=""):
+    return JsonResponse(
+        error_body("csrf_failed", "CSRF check failed. Reload the page and try again."), status=403
+    )
