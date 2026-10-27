@@ -1,4 +1,6 @@
 from decimal import Decimal
+from pathlib import Path
+from uuid import uuid4
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -6,6 +8,11 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import F, Q
 from django.db.models.functions import Lower
+
+
+def receipt_upload_path(instance, filename):
+    extension = Path(filename).suffix.lower()
+    return f"receipts/{instance.owner_id}/{uuid4().hex}{extension}"
 
 
 class Category(models.Model):
@@ -111,6 +118,11 @@ class Expense(models.Model):
     description = models.CharField(max_length=255, blank=True)
     date = models.DateField()
     payment_method = models.CharField(max_length=32, blank=True)
+    receipt = models.FileField(
+        blank=True,
+        null=True,
+        upload_to=receipt_upload_path,
+    )
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -64,6 +64,22 @@ docker-compose.yml, .env.example
   - Audit rows are append-only. Passwords are never recorded.
 - **Frontend:** call relative URLs (`/api/v1/...`) and send the `X-CSRFToken` header (value of the `csrftoken` cookie) on POST, PUT, PATCH and DELETE.
 
+### Receipts (FR5)
+
+Authenticated owners can attach, retrieve, and delete a private receipt:
+
+```text
+POST   /api/v1/expenses/<id>/receipt/
+GET    /api/v1/expenses/<id>/receipt/
+DELETE /api/v1/expenses/<id>/receipt/
+```
+
+Receipts accept JPEG, PNG, and PDF files up to 5 MiB by default. The limit can
+be changed with `RECEIPT_MAX_SIZE_BYTES`. Files are stored under the private
+`MEDIA_ROOT` and are streamed only after the expense ownership check. Receipt
+replacement is not supported; delete the existing receipt before uploading a
+new one.
+
 ## Rules
 
 - No secrets in code. Everything comes from `.env`, which is git-ignored.

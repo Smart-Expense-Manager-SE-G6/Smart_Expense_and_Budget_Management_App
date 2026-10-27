@@ -1,15 +1,19 @@
 from datetime import date
 
+from django.http import FileResponse
 from django.db.models import Q
-from rest_framework import viewsets
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
+from rest_framework.parsers import MultiPartParser
+from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 
 from audit.mixins import AuditedModelViewSetMixin
 from audit.services import audited
 
 from .models import Category, Expense
-from .serializers import ExpenseSerializer
+from .serializers import ExpenseSerializer, ReceiptUploadSerializer
 
 
 class ExpensePagination(PageNumberPagination):
@@ -87,3 +91,58 @@ class ExpenseViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
         with audited(self.request.user, instance):
             instance.is_deleted = True
             instance.save(update_fields=["is_deleted", "updated_at"])
+
+    @action(
+        detail=True,
+        methods=["get", "post", "delete"],
+        url_path="receipt",
+        parser_classes=[MultiPartParser],
+    )
+    def receipt(self, request, pk=None):
+        expense = self.get_object()
+        if request.method == "GET":
+            return self._retrieve_receipt(expense)
+        if request.method == "DELETE":
+            return self._delete_receipt(request, expense)
+
+        if expense.receipt:
+            raise ValidationError(
+                {"receipt": "This expense already has a receipt. Delete it before uploading another."}
+            )
+        serializer = ReceiptUploadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        receipt = serializer.validated_data["receipt"]
+        with audited(request.user, expense):
+            expense.receipt = receipt
+            expense.save(update_fields=["receipt", "updated_at"])
+        return Response({"detail": "Receipt uploaded."}, status=status.HTTP_201_CREATED)
+
+    def _retrieve_receipt(self, expense):
+        if not expense.receipt:
+            raise ValidationError({"receipt": "This expense has no receipt."})
+        try:
+            receipt_file = expense.receipt.storage.open(expense.receipt.name, "rb")
+        except (FileNotFoundError, OSError):
+            raise ValidationError({"receipt": "The stored receipt is unavailable."})
+        content_type = "application/octet-stream"
+        extension = expense.receipt.name.rsplit(".", 1)[-1].lower()
+        if extension in {"jpg", "jpeg"}:
+            content_type = "image/jpeg"
+        elif extension == "png":
+            content_type = "image/png"
+        elif extension == "pdf":
+            content_type = "application/pdf"
+        response = FileResponse(receipt_file, content_type=content_type)
+        response["Content-Disposition"] = (
+            f'attachment; filename="receipt-{expense.pk}.{extension}"'
+        )
+        return response
+
+    def _delete_receipt(self, request, expense):
+        if not expense.receipt:
+            raise ValidationError({"receipt": "This expense has no receipt."})
+        with audited(request.user, expense):
+            expense.receipt.delete(save=False)
+            expense.receipt = None
+            expense.save(update_fields=["receipt", "updated_at"])
+        return Response(status=status.HTTP_204_NO_CONTENT)
