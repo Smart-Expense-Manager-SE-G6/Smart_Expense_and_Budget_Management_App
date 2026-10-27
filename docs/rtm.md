@@ -23,7 +23,7 @@
 | **FR10** | Set monthly/weekly budgets overall and per category | Shashwath | Sec 3.4, 4.1 (D2) | `budgets/models.py`, `budgets/views.py` | `TC-Bud-01` | Todo (Sprint 1) |
 | **FR11** | Track budget utilization in real-time | Shashwath | Sec 3.4, 4.3 | `budgets/services.py`, `budgets/views.py` | `TC-Bud-02` | Todo (Sprint 1) |
 | **FR12** | Budget rollover or reset at period end | Shashwath | Sec 3.4, 4.1 (D2) | `budgets/services.py`, `scheduler/tasks.py` | `TC-Bud-03` | Sprint 2 |
-| **FR13** | Visual analytics (category, period, trend charts) | Shashank | Sec 3.4, 4.3 | `analytics/views.py`, `frontend/src/pages/Dashboard.jsx` | `TC-Analytics-01` | Planned (#21, #22) |
+| **FR13** | Visual analytics (category, period, trend charts) | Shashank | Sec 3.4, 4.3 | `analytics/views.py`, `frontend/src/components/Dashboard.jsx` | `TC-Analytics-01` | Done (#21, #22) |
 | **FR14** | Predictive insights (projected month-end spend) | Shashank | Sec 3.4, 4.3 | `analytics/services.py` | `TC-Analytics-02` | Sprint 2 |
 | **FR15** | Spending comparison across months/years | Shashank | Sec 3.4, 4.3 | `analytics/views.py` | `TC-Analytics-03` | Sprint 2 |
 | **FR16** | Threshold alerts at 80% and 100% (de-duplicated) | Shashwath | Sec 3.4, 4.1 (D5) | `alerts/models.py`, `alerts/services.py` | `TC-Alert-01` | Todo (Sprint 1) |
@@ -40,7 +40,7 @@
 
 | Req ID | Requirement Description | Target Metric | Design / Verification | Owner | Sprint 1 Status |
 |:---|:---|:---|:---|:---|:---|
-| **NFR1** | Dashboard & analytics load speed | <= 2–3s for 10,000 transactions | Composite DB indexes on `(user, date)`, `(user, category)`; seed script verification (`TC-Perf-01`) | Shashank | Planned (#20, #21) |
+| **NFR1** | Dashboard & analytics load speed | <= 2–3s for 10,000 transactions | Composite DB indexes on `(user, date)`, `(user, category)`; seed script verification (`TC-Perf-01`) | Shashank | Done (#20, #21) |
 | **NFR2** | Report generation completion speed | <= 5s for 1-year date range | Date-range cap (OI-3); SQL aggregations | Shashank | Sprint 2 |
 | **NFR3** | Horizontal scalability | Stateless app tier | Shared PostgreSQL session store; stateless REST API | Team 6 | Design verified |
 | **NFR4** | Sensitive data encryption | Passwords hashed; TLS | `bcrypt` hashing; TLS/HTTPS; secure file root | Shriram | Verified (ADR 0001) |
