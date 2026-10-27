@@ -9,10 +9,11 @@ from rest_framework import routers
 from audit.models import AuditLog
 
 from .models import Category, Expense
-from .views import ExpenseViewSet
+from .views import CategoryViewSet, ExpenseViewSet
 
 
 router = routers.DefaultRouter()
+router.register("categories", CategoryViewSet, basename="category")
 router.register("expenses", ExpenseViewSet, basename="expense")
 urlpatterns = [path("", include(router.urls))]
 
@@ -23,7 +24,7 @@ class ExpenseApiTests(TestCase):
         self.User = get_user_model()
         self.user = self.User.objects.create_user("alice@example.com", "s3cure-pass!")
         self.other_user = self.User.objects.create_user("bob@example.com", "s3cure-pass!")
-        self.global_category = Category.objects.create(name="Food")
+        self.global_category, _ = Category.objects.get_or_create(name="Food")
         self.custom_category = Category.objects.create(name="Travel", owner=self.user)
         self.client.force_login(self.user)
 
@@ -303,3 +304,140 @@ class ExpenseApiTests(TestCase):
         response = self.client.get("/expenses/")
 
         self.assertEqual(response.status_code, 401)
+
+
+class CategoryApiTests(TestCase):
+    def setUp(self):
+        self.User = get_user_model()
+        self.user = self.User.objects.create_user("alice@example.com", "s3cure-pass!")
+        self.other_user = self.User.objects.create_user("bob@example.com", "s3cure-pass!")
+        self.global_category, _ = Category.objects.get_or_create(name="Food")
+        self.client.force_login(self.user)
+
+    def post_category(self, **payload):
+        return self.client.post(
+            "/categories/",
+            payload,
+            content_type="application/json",
+        )
+
+    def test_list_returns_global_and_own_active_categories_only(self):
+        own = Category.objects.create(name="Personal", owner=self.user)
+        Category.objects.create(name="Private", owner=self.other_user)
+        Category.objects.create(name="Inactive", owner=self.user, is_active=False)
+
+        response = self.client.get("/categories/")
+
+        self.assertEqual(response.status_code, 200)
+        ids = {item["id"] for item in response.json()}
+        self.assertIn(self.global_category.pk, ids)
+        self.assertIn(own.pk, ids)
+        self.assertNotIn(Category.objects.get(name="Private").pk, ids)
+        self.assertNotIn(Category.objects.get(name="Inactive").pk, ids)
+
+    def test_create_assigns_owner_and_audits(self):
+        response = self.post_category(name="Subscriptions")
+
+        self.assertEqual(response.status_code, 201)
+        category = Category.objects.get(name="Subscriptions")
+        self.assertEqual(category.owner, self.user)
+        audit = AuditLog.objects.get(entity_type="expenses.category")
+        self.assertEqual(audit.action, AuditLog.Action.CREATE)
+
+    def test_rejects_empty_and_duplicate_names(self):
+        Category.objects.create(name="Travel", owner=self.user)
+        for name in ("", "   ", "travel"):
+            response = self.post_category(name=name)
+            self.assertEqual(response.status_code, 400)
+            self.assertIn("name", response.json()["error"]["field"])
+
+    def test_allows_same_name_as_global_category(self):
+        response = self.post_category(name="Food")
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(Category.objects.filter(name__iexact="food").count(), 2)
+
+    def test_creates_subcategory_under_visible_parent(self):
+        response = self.post_category(name="Coffee", parent=self.global_category.pk)
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(
+            Category.objects.get(name="Coffee").parent_id,
+            self.global_category.pk,
+        )
+
+    def test_rejects_inaccessible_parent(self):
+        private = Category.objects.create(name="Private", owner=self.other_user)
+
+        response = self.post_category(name="Child", parent=private.pk)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("parent", response.json()["error"]["field"])
+
+    def test_rejects_circular_parent_update(self):
+        first = Category.objects.create(name="First", owner=self.user)
+        second = Category.objects.create(name="Second", owner=self.user, parent=first)
+        response = self.client.patch(
+            f"/categories/{first.pk}/",
+            {"parent": second.pk},
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("parent", response.json()["error"]["field"])
+
+    def test_global_categories_cannot_be_updated_or_deleted(self):
+        update = self.client.patch(
+            f"/categories/{self.global_category.pk}/",
+            {"name": "Changed"},
+            content_type="application/json",
+        )
+        delete = self.client.delete(f"/categories/{self.global_category.pk}/")
+
+        self.assertEqual(update.status_code, 400)
+        self.assertEqual(delete.status_code, 400)
+        self.global_category.refresh_from_db()
+        self.assertEqual(self.global_category.name, "Food")
+
+    def test_other_users_category_is_not_exposed(self):
+        private = Category.objects.create(name="Private", owner=self.other_user)
+
+        self.assertEqual(self.client.get(f"/categories/{private.pk}/").status_code, 404)
+        self.assertEqual(self.client.delete(f"/categories/{private.pk}/").status_code, 404)
+
+    def test_delete_deactivates_referenced_custom_category_and_audits(self):
+        category = Category.objects.create(name="Bills", owner=self.user)
+        Expense.objects.create(
+            owner=self.user,
+            category=category,
+            amount=Decimal("10.00"),
+            date=date(2026, 10, 26),
+        )
+
+        response = self.client.delete(f"/categories/{category.pk}/")
+
+        self.assertEqual(response.status_code, 204)
+        category.refresh_from_db()
+        self.assertFalse(category.is_active)
+        self.assertEqual(
+            AuditLog.objects.filter(
+                entity_type="expenses.category",
+                action=AuditLog.Action.UPDATE,
+            ).count(),
+            1,
+        )
+
+    def test_expenses_accept_global_and_custom_categories(self):
+        custom = Category.objects.create(name="Custom", owner=self.user)
+
+        for category in (self.global_category, custom):
+            response = self.client.post(
+                "/expenses/",
+                {
+                    "category": category.pk,
+                    "amount": "10.00",
+                    "date": "2026-10-26",
+                },
+                content_type="application/json",
+            )
+            self.assertEqual(response.status_code, 201)

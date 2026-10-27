@@ -64,6 +64,22 @@ docker-compose.yml, .env.example
   - Audit rows are append-only. Passwords are never recorded.
 - **Frontend:** call relative URLs (`/api/v1/...`) and send the `X-CSRFToken` header (value of the `csrftoken` cookie) on POST, PUT, PATCH and DELETE.
 
+### Categories (FR8)
+
+Authenticated users can list global defaults and their own active categories:
+
+```text
+GET    /api/v1/categories/
+POST   /api/v1/categories/
+GET    /api/v1/categories/<id>/
+PATCH  /api/v1/categories/<id>/
+DELETE /api/v1/categories/<id>/
+```
+
+Category creation accepts an optional `parent` for subcategories. Global
+categories cannot be changed or deleted. Deleting a custom category safely
+deactivates it so existing expenses continue to reference it.
+
 ## Rules
 
 - No secrets in code. Everything comes from `.env`, which is git-ignored.

@@ -68,24 +68,25 @@ Implemented in `accounts/models.py`.
 
 ---
 
-### 3.2 `categories_category` (Django App: `categories`, Table: `categories_category`)
-Managed by **Shreya S Mattimadu** (FR8, FR9).
+### 3.2 `expenses_category` (Django App: `expenses`, Table: `expenses_category`)
+Managed by **Shreya S Mattimadu** (FR8, FR9). A nullable `owner_id`
+identifies global categories (`NULL`) versus user-owned categories. Default
+global categories are seeded by the expenses migration.
 
 | Column Name | PostgreSQL Type | Nullable | Default | Constraints / Description |
 |---|---|---|---|---|
 | `id` | `BIGSERIAL` | No | Auto | Primary Key |
-| `user_id` | `BIGINT` | Yes | `NULL` | FK -> `accounts_user.id` (ON DELETE CASCADE). `NULL` indicates system-wide default category. |
+| `owner_id` | `BIGINT` | Yes | `NULL` | FK -> `accounts_user.id` (ON DELETE CASCADE). `NULL` indicates a global default category. |
 | `name` | `VARCHAR(100)` | No | - | Category name (e.g., 'Food & Dining', 'Travel') |
-| `parent_id` | `BIGINT` | Yes | `NULL` | FK -> `categories_category.id` (ON DELETE CASCADE) for subcategories |
-| `icon` | `VARCHAR(50)` | No | `'tag'` | Icon identifier for UI display |
-| `color` | `VARCHAR(7)` | No | `'#64748B'` | Hex color code for UI charts/badges |
-| `is_system_default`| `BOOLEAN` | No | `False` | True for predefined system categories |
+| `parent_id` | `BIGINT` | Yes | `NULL` | FK -> `expenses_category.id` (ON DELETE RESTRICT) for subcategories |
+| `is_active` | `BOOLEAN` | No | `True` | Active categories are listed and accepted for expense assignment |
 | `created_at` | `TIMESTAMPTZ` | No | `CURRENT_TIMESTAMP` | Record creation timestamp |
 | `updated_at` | `TIMESTAMPTZ` | No | `CURRENT_TIMESTAMP` | Last updated timestamp |
 
 **Indexes & Constraints:**
-- `UNIQUE (user_id, parent_id, name)`: Prevents duplicate category/subcategory names for the same user.
-- Partial Index: `CREATE UNIQUE INDEX uq_system_category ON categories_category (name) WHERE user_id IS NULL;`
+- Case-insensitive global names are unique.
+- Case-insensitive custom names are unique per owner.
+- Self-parenting is prohibited; API validation prevents deeper circular hierarchies.
 
 ---
 
