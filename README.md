@@ -68,3 +68,38 @@ docker-compose.yml, .env.example
 
 - No secrets in code. Everything comes from `.env`, which is git-ignored.
 - Money is stored as `Decimal`, never float. Timestamps are UTC.
+## Sprint 1 – Backend Testing & Verification
+
+### Backend Testing Status
+
+**Status: Backend test suite passed — 70/70 tests.**
+
+The Sprint 1 backend has been tested using Django's automated test suite. The following checks were completed:
+
+- [x] **Django system check** — `python manage.py check`
+- [x] **Database migrations** — migrations applied successfully.
+- [x] **Automated test suite** — all 70 tests passed using `python manage.py test`.
+- [x] **Database setup** — PostgreSQL database configured and connected successfully.
+- [x] **Synthetic test data** — sample users, categories, expenses, budgets, and alerts seeded successfully.
+- [x] **Seed command dry run** — verified without making database changes.
+
+### Areas Covered by Automated Tests
+
+The existing test suite covers backend functionality including:
+
+- Expense CRUD operations and soft deletion
+- Expense filtering, sorting, pagination, and date/category queries
+- Authentication behavior and user-level data isolation
+- Receipt upload and retrieval
+- Budget functionality and related validations
+- Health endpoint and error handling
+
+### Sprint 1 Review Notes
+
+- The backend automated test suite is passing.
+- The synthetic dataset is available for development and API testing.
+- API endpoints requiring authentication must be tested with valid credentials.
+- Authentication endpoints, category management, dashboard functionality, and other requirements should be checked against the submitted SRS, SAD, and Test Plan before declaring the entire Sprint 1 user flow complete.
+
+**Last verification:** 70 automated tests passed.
+
