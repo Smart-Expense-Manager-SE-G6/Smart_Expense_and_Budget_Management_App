@@ -46,8 +46,8 @@ INSTALLED_APPS = [
     "audit",
     "expenses",
      "budgets",
-     "alerts",
-]
+      "alerts.apps.AlertsConfig",
+     ]
 
 MIDDLEWARE = [
     "core.request_id.RequestIdMiddleware",
