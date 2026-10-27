@@ -70,36 +70,53 @@ docker-compose.yml, .env.example
 - Money is stored as `Decimal`, never float. Timestamps are UTC.
 ## Sprint 1 – Backend Testing & Verification
 
-### Backend Testing Status
+### Testing Status
 
-**Status: Backend test suite passed — 70/70 tests.**
+**Automated backend tests: 70/70 passed**
 
-The Sprint 1 backend has been tested using Django's automated test suite. The following checks were completed:
+The backend has been tested using Django's automated test suite. The following checks have been completed successfully:
 
-- [x] **Django system check** — `python manage.py check`
-- [x] **Database migrations** — migrations applied successfully.
-- [x] **Automated test suite** — all 70 tests passed using `python manage.py test`.
-- [x] **Database setup** — PostgreSQL database configured and connected successfully.
-- [x] **Synthetic test data** — sample users, categories, expenses, budgets, and alerts seeded successfully.
-- [x] **Seed command dry run** — verified without making database changes.
+- [x] Django system check (`python manage.py check`)
+- [x] Database migrations applied successfully
+- [x] Automated test suite — 70 tests passed
+- [x] PostgreSQL database setup and connectivity verified
+- [x] Synthetic test data seeded successfully
+- [x] Synthetic data dry run completed without database changes
 
-### Areas Covered by Automated Tests
+### Functionality Covered by Tests
 
-The existing test suite covers backend functionality including:
+The automated test suite covers:
 
+- Authentication behavior and user data isolation
 - Expense CRUD operations and soft deletion
 - Expense filtering, sorting, pagination, and date/category queries
-- Authentication behavior and user-level data isolation
 - Receipt upload and retrieval
-- Budget functionality and related validations
+- Budget functionality and validations
 - Health endpoint and error handling
 
-### Sprint 1 Review Notes
+### Synthetic Test Data
 
-- The backend automated test suite is passing.
-- The synthetic dataset is available for development and API testing.
-- API endpoints requiring authentication must be tested with valid credentials.
-- Authentication endpoints, category management, dashboard functionality, and other requirements should be checked against the submitted SRS, SAD, and Test Plan before declaring the entire Sprint 1 user flow complete.
+A Django management command is available to populate the database with synthetic data for development and testing.
 
-**Last verification:** 70 automated tests passed.
+Run a dry run first:
+
+```bash
+python manage.py seed_synthetic_data --dry-run
+```
+
+To seed the database:
+
+```bash
+python manage.py seed_synthetic_data
+```
+
+The seed command creates sample users, categories, expenses, budgets, and alerts.
+
+### Sprint 1 Verification Notes
+
+- All 70 automated backend tests passed during verification.
+- The backend database and migrations were verified successfully.
+- API endpoints requiring authentication must be tested using valid credentials.
+- The complete user flow and remaining requirements must be checked against the project's SRS, SAD, and Test Plan before declaring Sprint 1 fully complete.
+
 
