@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     "accounts",
     "audit",
     "expenses",
+     "budgets",
+     "alerts",
 ]
 
 MIDDLEWARE = [
