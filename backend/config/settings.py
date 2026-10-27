@@ -7,11 +7,12 @@ All secrets and environment-specific values come from environment variables
 
 import os
 from pathlib import Path
-
+from dotenv import load_dotenv
 from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+load_dotenv(BASE_DIR / ".env")
 
 def env(name, default=None, required=False):
     value = os.environ.get(name, default)
