@@ -24,10 +24,16 @@ class BudgetSerializer(serializers.ModelSerializer):
             "period",
             "start_date",
             "end_date",
+            "rollover_mode",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "user", "created_at", "updated_at"]
+        read_only_fields = [
+            "id",
+            "user",
+            "created_at",
+            "updated_at",
+        ]
 
     def validate(self, attrs):
         start_date = attrs.get(
@@ -41,14 +47,17 @@ class BudgetSerializer(serializers.ModelSerializer):
 
         if start_date and end_date and start_date > end_date:
             raise serializers.ValidationError(
-                {"end_date": "End date must be on or after the start date."}
+                {
+                    "end_date": (
+                        "End date must be on or after the start date."
+                    )
+                }
             )
 
         category = attrs.get(
             "category",
             getattr(self.instance, "category", None),
         )
-        name = attrs.get("name", getattr(self.instance, "name", None))
 
         if category is not None and not Category.objects.filter(
             pk=category.pk
