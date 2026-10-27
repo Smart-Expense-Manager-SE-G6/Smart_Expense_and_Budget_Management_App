@@ -3,10 +3,12 @@ from datetime import date
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
+from django.core.management import call_command
 from django.test import TestCase
 from rest_framework.test import APIClient
 
 from budgets.models import Budget
+from expenses.models import Expense
 
 
 class BudgetAPITests(TestCase):
@@ -106,3 +108,114 @@ class BudgetAPITests(TestCase):
 
         self.assertEqual(response.status_code, 404)
 
+
+class BudgetRolloverTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+
+        self.user = User.objects.create_user(
+            email="rollovertester@example.com",
+            password="TestPassword123!",
+        )
+
+    def create_expired_budget(self, rollover_mode="rollover"):
+        return Budget.objects.create(
+            user=self.user,
+            name="Monthly Budget",
+            limit_amount=Decimal("5000.00"),
+            base_limit_amount=Decimal("5000.00"),
+            period="monthly",
+            start_date=date(2026, 9, 1),
+            end_date=date(2026, 9, 30),
+            rollover_mode=rollover_mode,
+        )
+
+    def test_rollover_creates_next_period(self):
+        self.create_expired_budget()
+
+        call_command("rollover_budgets")
+
+        next_budget = Budget.objects.filter(
+            user=self.user,
+            start_date=date(2026, 10, 1),
+            end_date=date(2026, 10, 31),
+        ).first()
+
+        self.assertIsNotNone(next_budget)
+        self.assertEqual(
+            next_budget.limit_amount,
+            Decimal("10000.00"),
+        )
+        self.assertEqual(
+            next_budget.base_limit_amount,
+            Decimal("5000.00"),
+        )
+        self.assertEqual(
+            next_budget.rollover_mode,
+            "rollover",
+        )
+
+    def test_rollover_carries_forward_unused_amount(self):
+        self.create_expired_budget(rollover_mode="rollover")
+
+        Expense.objects.create(
+            owner=self.user,
+            amount=Decimal("1000.00"),
+            date=date(2026, 9, 15),
+        )
+
+        call_command("rollover_budgets")
+
+        next_budget = Budget.objects.get(
+            user=self.user,
+            start_date=date(2026, 10, 1),
+            end_date=date(2026, 10, 31),
+        )
+
+        # 5000 limit - 1000 spent = 4000 unused.
+        # Next limit = 5000 base + 4000 carried forward.
+        self.assertEqual(
+            next_budget.limit_amount,
+            Decimal("9000.00"),
+        )
+        self.assertEqual(
+            next_budget.base_limit_amount,
+            Decimal("5000.00"),
+        )
+
+    def test_reset_mode_does_not_carry_forward_unused_amount(self):
+        self.create_expired_budget(rollover_mode="reset")
+
+        Expense.objects.create(
+            owner=self.user,
+            amount=Decimal("1000.00"),
+            date=date(2026, 9, 15),
+        )
+
+        call_command("rollover_budgets")
+
+        next_budget = Budget.objects.get(
+            user=self.user,
+            start_date=date(2026, 10, 1),
+            end_date=date(2026, 10, 31),
+        )
+
+        self.assertEqual(
+            next_budget.limit_amount,
+            Decimal("5000.00"),
+        )
+        self.assertEqual(next_budget.rollover_mode, "reset")
+
+    def test_running_command_twice_does_not_duplicate_period(self):
+        self.create_expired_budget()
+
+        call_command("rollover_budgets")
+        call_command("rollover_budgets")
+
+        next_periods = Budget.objects.filter(
+            user=self.user,
+            start_date=date(2026, 10, 1),
+            end_date=date(2026, 10, 31),
+        )
+
+        self.assertEqual(next_periods.count(), 1)
