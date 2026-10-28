@@ -3,6 +3,67 @@ from rest_framework import serializers
 from .models import Category, Expense
 
 
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = [
+            "id",
+            "name",
+            "owner",
+            "parent",
+            "is_active",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "owner", "is_active", "created_at", "updated_at"]
+
+    def validate_name(self, name):
+        name = name.strip()
+        if not name:
+            raise serializers.ValidationError("Category name cannot be empty.")
+
+        user = self.context["request"].user
+        queryset = Category.objects.filter(name__iexact=name)
+        if self.instance is not None:
+            queryset = queryset.exclude(pk=self.instance.pk)
+        if queryset.filter(owner=user).exists():
+            raise serializers.ValidationError(
+                "You already have a category with this name."
+            )
+        return name
+
+    def validate_parent(self, parent):
+        if parent is None:
+            return parent
+
+        user = self.context["request"].user
+        if not parent.is_active:
+            raise serializers.ValidationError("The selected parent is inactive.")
+        if parent.owner_id is not None and parent.owner_id != user.pk:
+            raise serializers.ValidationError(
+                "You cannot use another user's category as the parent."
+            )
+        if self.instance is not None and parent.pk == self.instance.pk:
+            raise serializers.ValidationError(
+                "A category cannot be its own parent."
+            )
+
+        ancestor = parent
+        visited = set()
+        while ancestor is not None:
+            if ancestor.pk in visited:
+                raise serializers.ValidationError(
+                    "The category hierarchy contains a cycle."
+                )
+            visited.add(ancestor.pk)
+            if self.instance is not None and ancestor.pk == self.instance.pk:
+                raise serializers.ValidationError(
+                    "The category hierarchy cannot contain a cycle."
+                )
+            ancestor = ancestor.parent
+        return parent
+
+
 class ExpenseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Expense

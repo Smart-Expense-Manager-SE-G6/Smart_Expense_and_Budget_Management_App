@@ -1,15 +1,17 @@
 from datetime import date
 
+from django.db import transaction
 from django.db.models import Q
 from rest_framework import viewsets
 from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
 
 from audit.mixins import AuditedModelViewSetMixin
-from audit.services import audited
+from audit.models import AuditLog
+from audit.services import audited, log_change
 
 from .models import Category, Expense
-from .serializers import ExpenseSerializer
+from .serializers import CategorySerializer, ExpenseSerializer
 
 
 class ExpensePagination(PageNumberPagination):
@@ -87,3 +89,32 @@ class ExpenseViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
         with audited(self.request.user, instance):
             instance.is_deleted = True
             instance.save(update_fields=["is_deleted", "updated_at"])
+
+
+class CategoryViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
+    serializer_class = CategorySerializer
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+
+    def get_queryset(self):
+        return Category.objects.filter(
+            is_active=True,
+        ).filter(
+            Q(owner__isnull=True) | Q(owner=self.request.user)
+        ).select_related("owner", "parent").order_by("name", "id")
+
+    def perform_create(self, serializer):
+        with transaction.atomic():
+            category = serializer.save(owner=self.request.user)
+            log_change(self.request.user, AuditLog.Action.CREATE, category)
+
+    def perform_update(self, serializer):
+        if serializer.instance.owner_id is None:
+            raise ValidationError("Global categories cannot be modified.")
+        super().perform_update(serializer)
+
+    def perform_destroy(self, instance):
+        if instance.owner_id is None:
+            raise ValidationError("Global categories cannot be deleted.")
+        with audited(self.request.user, instance):
+            instance.is_active = False
+            instance.save(update_fields=["is_active", "updated_at"])
