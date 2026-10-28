@@ -135,12 +135,27 @@ SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_HTTPONLY = False  # React reads it to send the X-CSRFToken header
+CSRF_FAILURE_VIEW = "core.exceptions.csrf_failure"
+
+# Failed-login limits (accounts.throttles.LoginFailureGuard).
+LOGIN_FAILURE_WINDOW_SECONDS = int(env("LOGIN_FAILURE_WINDOW_SECONDS", "300"))
+LOGIN_FAILURES_PER_ACCOUNT_AND_IP = int(env("LOGIN_FAILURES_PER_ACCOUNT_AND_IP", "5"))
+LOGIN_FAILURES_PER_ACCOUNT = int(env("LOGIN_FAILURES_PER_ACCOUNT", "25"))
+TRUSTED_DEVICE_MAX_AGE_SECONDS = int(env("TRUSTED_DEVICE_MAX_AGE_SECONDS", str(90 * 24 * 3600)))
 
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_AUTHENTICATION_CLASSES": ["core.authentication.SessionAuthentication401"],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "EXCEPTION_HANDLER": "core.exceptions.api_exception_handler",
+    "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.ScopedRateThrottle"],
+    "DEFAULT_THROTTLE_RATES": {
+        "login": env("LOGIN_RATE_LIMIT", "10/min"),  # per client IP
+        "register": env("REGISTER_RATE_LIMIT", "5/min"),  # per client IP
+    },
+    # Number of trusted reverse proxies in front of Django. 0 = use the socket
+    # address and ignore X-Forwarded-For, which clients can forge.
+    "NUM_PROXIES": int(env("NUM_PROXIES", "0")),
 }
 
 # Every log line carries the request id (NFR12).
