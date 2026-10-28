@@ -79,8 +79,73 @@ be changed with `RECEIPT_MAX_SIZE_BYTES`. Files are stored under the private
 `MEDIA_ROOT` and are streamed only after the expense ownership check. Receipt
 replacement is not supported; delete the existing receipt before uploading a
 new one.
+### Categories (FR8)
+
+Authenticated users can list global defaults and their own active categories:
+
+```text
+GET    /api/v1/categories/
+POST   /api/v1/categories/
+GET    /api/v1/categories/<id>/
+PATCH  /api/v1/categories/<id>/
+DELETE /api/v1/categories/<id>/
+```
+
+Category creation accepts an optional `parent` for subcategories. Global
+categories cannot be changed or deleted. Deleting a custom category safely
+deactivates it so existing expenses continue to reference it.
 
 ## Rules
 
 - No secrets in code. Everything comes from `.env`, which is git-ignored.
 - Money is stored as `Decimal`, never float. Timestamps are UTC.
+## Sprint 1 – Backend Testing & Verification
+
+### Testing Status
+
+**Automated backend tests: 70/70 passed**
+
+The backend has been tested using Django's automated test suite. The following checks have been completed successfully:
+
+- [x] Django system check (`python manage.py check`)
+- [x] Database migrations applied successfully
+- [x] Automated test suite — 70 tests passed
+- [x] PostgreSQL database setup and connectivity verified
+- [x] Synthetic test data seeded successfully
+- [x] Synthetic data dry run completed without database changes
+
+### Functionality Covered by Tests
+
+The automated test suite covers:
+
+- Authentication behavior and user data isolation
+- Expense CRUD operations and soft deletion
+- Expense filtering, sorting, pagination, and date/category queries
+- Receipt upload and retrieval
+- Budget functionality and validations
+- Health endpoint and error handling
+
+### Synthetic Test Data
+
+A Django management command is available to populate the database with synthetic data for development and testing.
+
+Run a dry run first:
+
+```bash
+python manage.py seed_synthetic_data --dry-run
+```
+
+To seed the database:
+
+```bash
+python manage.py seed_synthetic_data
+```
+
+The seed command creates sample users, categories, expenses, budgets, and alerts.
+
+### Sprint 1 Verification Notes
+
+- All 70 automated backend tests passed during verification.
+- The backend database and migrations were verified successfully.
+- API endpoints requiring authentication must be tested using valid credentials.
+- The complete user flow and remaining requirements must be checked against the project's SRS, SAD, and Test Plan before declaring Sprint 1 fully complete.

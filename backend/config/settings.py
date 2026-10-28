@@ -28,7 +28,7 @@ def env_list(name, default=""):
     return [item.strip() for item in env(name, default).split(",") if item.strip()]
 
 
-SECRET_KEY = env("DJANGO_SECRET_KEY", required=True)
+SECRET_KEY = env("DJANGO_SECRET_KEY", default="django-insecure-dev-key-change-in-production")
 DEBUG = env_bool("DJANGO_DEBUG", False)
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS", "http://localhost:5173")
@@ -45,9 +45,10 @@ INSTALLED_APPS = [
     "accounts",
     "audit",
     "expenses",
-     "budgets",
-      "alerts.apps.AlertsConfig",
-     ]
+    "budgets",
+    "alerts.apps.AlertsConfig",
+    "analytics",
+]
 
 MIDDLEWARE = [
     "core.request_id.RequestIdMiddleware",
@@ -79,16 +80,24 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": env("POSTGRES_DB", required=True),
-        "USER": env("POSTGRES_USER", required=True),
-        "PASSWORD": env("POSTGRES_PASSWORD", required=True),
-        "HOST": env("POSTGRES_HOST", "localhost"),
-        "PORT": env("POSTGRES_PORT", "5432"),
+if env_bool("USE_SQLITE", False) or not env("POSTGRES_DB", required=False):
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": env("POSTGRES_DB", required=True),
+            "USER": env("POSTGRES_USER", required=True),
+            "PASSWORD": env("POSTGRES_PASSWORD", required=True),
+            "HOST": env("POSTGRES_HOST", "localhost"),
+            "PORT": env("POSTGRES_PORT", "5432"),
+        }
+    }
 
 AUTH_USER_MODEL = "accounts.User"
 

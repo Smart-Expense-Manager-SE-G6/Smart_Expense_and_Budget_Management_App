@@ -18,7 +18,7 @@
 | **FR5** | Attach receipt/image to expense (secured store) | Shreya | Sec 3.4, 4.1 (D6) | `expenses/models.py`, `expenses/serializers.py`, `expenses/views.py` | `TC-Exp-03` | In Progress (#5) |
 | **FR6** | Recurring expense entries (rules materialization) | Shreya / Shashwath | Sec 3.4, 4.1 (D3) | `expenses/models.py`, `scheduler/tasks.py` | `TC-Exp-04` | Sprint 2 |
 | **FR7** | Bulk import of expenses via CSV (per-row errors) | Shreya | Sec 4.3, OI-7 | `expenses/services.py`, `expenses/views.py` | `TC-Import-01` | Sprint 2 |
-| **FR8** | Default categories & custom user categories/subcategories | Shreya | Sec 3.4, 4.1 | `categories/models.py`, `categories/views.py`| `TC-Cat-01` | Todo (#4) |
+| **FR8** | Default categories & custom user categories/subcategories | Shreya | Sec 3.4, 4.1 | `expenses/models.py`, `expenses/serializers.py`, `expenses/views.py` | `TC-Cat-01` | In Progress (#4) |
 | **FR9** | Rule-based category auto-suggestion | Shreya | Sec 3.4, 4.1 (D8) | `categories/services.py` | `TC-Cat-02` | Sprint 2 |
 | **FR10** | Set monthly/weekly budgets overall and per category | Shashwath | Sec 3.4, 4.1 (D2) | `budgets/models.py`, `budgets/views.py` | `TC-Bud-01` | Todo (Sprint 1) |
 | **FR11** | Track budget utilization in real-time | Shashwath | Sec 3.4, 4.3 | `budgets/services.py`, `budgets/views.py` | `TC-Bud-02` | Todo (Sprint 1) |
