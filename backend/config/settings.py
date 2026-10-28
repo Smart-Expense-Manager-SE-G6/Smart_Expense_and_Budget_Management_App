@@ -122,6 +122,8 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+MEDIA_ROOT = BASE_DIR / "private_media"
+RECEIPT_MAX_SIZE_BYTES = int(env("RECEIPT_MAX_SIZE_BYTES", str(5 * 1024 * 1024)))
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

@@ -15,7 +15,7 @@
 | **FR2** | Profile update and account settings | Shriram | Sec 3.4, 4.3 | `accounts/views.py` | `TC-Auth-03` | In Progress (#13) |
 | **FR3** | Shared budget and role-based access (admin/member) | Shriram | Sec 3.4, 3.9, 4.3 | `budgets/models.py`, `budgets/permissions.py` | `TC-Shared-01` | Sprint 2 |
 | **FR4** | Add, edit, view, delete expense entries (soft delete) | Shreya | Sec 3.4, 4.1 (D1, D4) | `expenses/models.py`, `expenses/views.py` | `TC-Exp-01`, `TC-Exp-02` | In Progress (#1, #2, #3) |
-| **FR5** | Attach receipt/image to expense (secured store) | Shreya | Sec 3.4, 4.1 (D6) | `expenses/models.py`, `expenses/views.py` | `TC-Exp-03` | Todo (#5) |
+| **FR5** | Attach receipt/image to expense (secured store) | Shreya | Sec 3.4, 4.1 (D6) | `expenses/models.py`, `expenses/serializers.py`, `expenses/views.py` | `TC-Exp-03` | In Progress (#5) |
 | **FR6** | Recurring expense entries (rules materialization) | Shreya / Shashwath | Sec 3.4, 4.1 (D3) | `expenses/models.py`, `scheduler/tasks.py` | `TC-Exp-04` | Sprint 2 |
 | **FR7** | Bulk import of expenses via CSV (per-row errors) | Shreya | Sec 4.3, OI-7 | `expenses/services.py`, `expenses/views.py` | `TC-Import-01` | Sprint 2 |
 | **FR8** | Default categories & custom user categories/subcategories | Shreya | Sec 3.4, 4.1 | `expenses/models.py`, `expenses/serializers.py`, `expenses/views.py` | `TC-Cat-01` | In Progress (#4) |

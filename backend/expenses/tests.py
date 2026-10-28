@@ -1,7 +1,10 @@
 from datetime import date
 from decimal import Decimal
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import include, path
 from rest_framework import routers
@@ -305,7 +308,149 @@ class ExpenseApiTests(TestCase):
 
         self.assertEqual(response.status_code, 401)
 
+    @override_settings(RECEIPT_MAX_SIZE_BYTES=1024)
+    def test_receipt_upload_retrieval_and_deletion(self):
+        with TemporaryDirectory() as media_root:
+            with override_settings(MEDIA_ROOT=media_root):
+                expense = self.create_expense()
+                upload = SimpleUploadedFile(
+                    "receipt.png",
+                    b"\x89PNG\r\n\x1a\nreceipt",
+                    content_type="image/png",
+                )
 
+                upload_response = self.client.post(
+                    f"/expenses/{expense.pk}/receipt/",
+                    {"receipt": upload},
+                    format="multipart",
+                )
+
+                self.assertEqual(upload_response.status_code, 201)
+                expense.refresh_from_db()
+                self.assertTrue(expense.receipt.name.startswith(f"receipts/{self.user.pk}/"))
+                self.assertNotIn("receipt.png", expense.receipt.name)
+                stored_path = Path(media_root, expense.receipt.name)
+                self.assertTrue(stored_path.is_file())
+                self.assertEqual(AuditLog.objects.filter(entity_type="expenses.expense").count(), 1)
+
+                retrieve_response = self.client.get(f"/expenses/{expense.pk}/receipt/")
+
+                self.assertEqual(retrieve_response.status_code, 200)
+                self.assertEqual(retrieve_response["Content-Type"], "image/png")
+                self.assertIn("attachment", retrieve_response["Content-Disposition"])
+                self.assertNotIn("private_media", retrieve_response.get("Content-Location", ""))
+                self.assertNotIn("receipt.png", retrieve_response["Content-Disposition"])
+                self.assertEqual(b"".join(retrieve_response.streaming_content), b"\x89PNG\r\n\x1a\nreceipt")
+
+                delete_response = self.client.delete(f"/expenses/{expense.pk}/receipt/")
+
+                self.assertEqual(delete_response.status_code, 204)
+                expense.refresh_from_db()
+                self.assertFalse(expense.receipt)
+                self.assertFalse(stored_path.exists())
+                self.assertEqual(AuditLog.objects.filter(entity_type="expenses.expense").count(), 2)
+
+    def test_rejects_invalid_receipts_and_missing_receipts(self):
+        expense = self.create_expense()
+        invalid_extension = SimpleUploadedFile(
+            "receipt.exe",
+            b"MZnot-an-image",
+            content_type="application/octet-stream",
+        )
+        invalid_content = SimpleUploadedFile(
+            "receipt.png",
+            b"not-a-png",
+            content_type="image/png",
+        )
+
+        invalid_extension_response = self.client.post(
+            f"/expenses/{expense.pk}/receipt/",
+            {"receipt": invalid_extension},
+            format="multipart",
+        )
+        invalid_content_response = self.client.post(
+            f"/expenses/{expense.pk}/receipt/",
+            {"receipt": invalid_content},
+            format="multipart",
+        )
+        missing_response = self.client.get(f"/expenses/{expense.pk}/receipt/")
+
+        self.assertEqual(invalid_extension_response.status_code, 400)
+        self.assertEqual(invalid_content_response.status_code, 400)
+        self.assertEqual(missing_response.status_code, 400)
+
+    @override_settings(RECEIPT_MAX_SIZE_BYTES=8)
+    def test_rejects_oversized_receipts(self):
+        expense = self.create_expense()
+        oversized = SimpleUploadedFile(
+            "receipt.png",
+            b"\x89PNG\r\n\x1a\nlarge",
+            content_type="image/png",
+        )
+
+        response = self.client.post(
+            f"/expenses/{expense.pk}/receipt/",
+            {"receipt": oversized},
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_receipt_replacement_is_rejected(self):
+        expense = self.create_expense()
+        first = SimpleUploadedFile(
+            "first.pdf",
+            b"%PDF-1.7 first",
+            content_type="application/pdf",
+        )
+        second = SimpleUploadedFile(
+            "second.pdf",
+            b"%PDF-1.7 second",
+            content_type="application/pdf",
+        )
+
+        first_response = self.client.post(
+            f"/expenses/{expense.pk}/receipt/",
+            {"receipt": first},
+            format="multipart",
+        )
+        second_response = self.client.post(
+            f"/expenses/{expense.pk}/receipt/",
+            {"receipt": second},
+            format="multipart",
+        )
+
+        self.assertEqual(first_response.status_code, 201)
+        self.assertEqual(second_response.status_code, 400)
+
+    def test_receipt_operations_are_owner_and_authentication_isolated(self):
+        own_expense = self.create_expense()
+        other_expense = Expense.objects.create(
+            owner=self.other_user,
+            category=self.global_category,
+            amount=Decimal("10.00"),
+            date=date(2026, 10, 26),
+        )
+        upload = SimpleUploadedFile(
+            "receipt.pdf",
+            b"%PDF-1.7 receipt",
+            content_type="application/pdf",
+        )
+
+        other_response = self.client.post(
+            f"/expenses/{other_expense.pk}/receipt/",
+            {"receipt": upload},
+            format="multipart",
+        )
+        self.assertEqual(other_response.status_code, 404)
+
+        self.client.logout()
+        unauthenticated_response = self.client.get(
+            f"/expenses/{own_expense.pk}/receipt/"
+        )
+        self.assertEqual(unauthenticated_response.status_code, 401)
+
+@override_settings(ROOT_URLCONF=__name__)
 class CategoryApiTests(TestCase):
     def setUp(self):
         self.User = get_user_model()

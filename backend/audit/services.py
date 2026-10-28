@@ -19,7 +19,7 @@ DRF ViewSets can use AuditedModelViewSetMixin from audit.mixins instead.
 
 from contextlib import contextmanager
 
-from django.db import connection, transaction
+from django.db import connection, models, transaction
 
 from core.request_id import get_request_id
 
@@ -31,11 +31,15 @@ EXCLUDED_FIELDS = {"password"}
 
 def snapshot(instance):
     """Current field values of a model instance, keyed by column attribute name."""
-    return {
-        field.attname: getattr(instance, field.attname)
-        for field in instance._meta.concrete_fields
-        if field.attname not in EXCLUDED_FIELDS
-    }
+    values = {}
+    for field in instance._meta.concrete_fields:
+        if field.attname in EXCLUDED_FIELDS:
+            continue
+        value = getattr(instance, field.attname)
+        if isinstance(field, models.FileField):
+            value = value.name if value else None
+        values[field.attname] = value
+    return values
 
 
 def log_change(actor, action, instance, before=None, entity_id=None):

@@ -65,6 +65,21 @@ docker-compose.yml, .env.example
   - Audit rows are append-only. Passwords are never recorded.
 - **Frontend:** call relative URLs (`/api/v1/...`) and send the `X-CSRFToken` header (value of the `csrftoken` cookie) on POST, PUT, PATCH and DELETE.
 
+### Receipts (FR5)
+
+Authenticated owners can attach, retrieve, and delete a private receipt:
+
+```text
+POST   /api/v1/expenses/<id>/receipt/
+GET    /api/v1/expenses/<id>/receipt/
+DELETE /api/v1/expenses/<id>/receipt/
+```
+
+Receipts accept JPEG, PNG, and PDF files up to 5 MiB by default. The limit can
+be changed with `RECEIPT_MAX_SIZE_BYTES`. Files are stored under the private
+`MEDIA_ROOT` and are streamed only after the expense ownership check. Receipt
+replacement is not supported; delete the existing receipt before uploading a
+new one.
 ### Categories (FR8)
 
 Authenticated users can list global defaults and their own active categories:
@@ -135,5 +150,3 @@ The seed command creates sample users, categories, expenses, budgets, and alerts
 - The backend database and migrations were verified successfully.
 - API endpoints requiring authentication must be tested using valid credentials.
 - The complete user flow and remaining requirements must be checked against the project's SRS, SAD, and Test Plan before declaring Sprint 1 fully complete.
-
-
