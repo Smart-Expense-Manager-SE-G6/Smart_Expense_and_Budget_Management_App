@@ -29,7 +29,7 @@ def env_list(name, default=""):
     return [item.strip() for item in env(name, default).split(",") if item.strip()]
 
 
-SECRET_KEY = env("DJANGO_SECRET_KEY", required=True)
+SECRET_KEY = env("DJANGO_SECRET_KEY", default="django-insecure-dev-key-change-in-production")
 DEBUG = env_bool("DJANGO_DEBUG", False)
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS", "http://localhost:5173")
@@ -46,9 +46,10 @@ INSTALLED_APPS = [
     "accounts",
     "audit",
     "expenses",
-     "budgets",
-      "alerts.apps.AlertsConfig",
-     ]
+    "budgets",
+    "alerts.apps.AlertsConfig",
+    "analytics",
+]
 
 MIDDLEWARE = [
     "core.request_id.RequestIdMiddleware",
@@ -80,16 +81,24 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": env("POSTGRES_DB", required=True),
-        "USER": env("POSTGRES_USER", required=True),
-        "PASSWORD": env("POSTGRES_PASSWORD", required=True),
-        "HOST": env("POSTGRES_HOST", "localhost"),
-        "PORT": env("POSTGRES_PORT", "5432"),
+if env_bool("USE_SQLITE", False) or not env("POSTGRES_DB", required=False):
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": env("POSTGRES_DB", required=True),
+            "USER": env("POSTGRES_USER", required=True),
+            "PASSWORD": env("POSTGRES_PASSWORD", required=True),
+            "HOST": env("POSTGRES_HOST", "localhost"),
+            "PORT": env("POSTGRES_PORT", "5432"),
+        }
+    }
 
 AUTH_USER_MODEL = "accounts.User"
 
@@ -129,12 +138,27 @@ SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_HTTPONLY = False  # React reads it to send the X-CSRFToken header
+CSRF_FAILURE_VIEW = "core.exceptions.csrf_failure"
+
+# Failed-login limits (accounts.throttles.LoginFailureGuard).
+LOGIN_FAILURE_WINDOW_SECONDS = int(env("LOGIN_FAILURE_WINDOW_SECONDS", "300"))
+LOGIN_FAILURES_PER_ACCOUNT_AND_IP = int(env("LOGIN_FAILURES_PER_ACCOUNT_AND_IP", "5"))
+LOGIN_FAILURES_PER_ACCOUNT = int(env("LOGIN_FAILURES_PER_ACCOUNT", "25"))
+TRUSTED_DEVICE_MAX_AGE_SECONDS = int(env("TRUSTED_DEVICE_MAX_AGE_SECONDS", str(90 * 24 * 3600)))
 
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_AUTHENTICATION_CLASSES": ["core.authentication.SessionAuthentication401"],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "EXCEPTION_HANDLER": "core.exceptions.api_exception_handler",
+    "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.ScopedRateThrottle"],
+    "DEFAULT_THROTTLE_RATES": {
+        "login": env("LOGIN_RATE_LIMIT", "10/min"),  # per client IP
+        "register": env("REGISTER_RATE_LIMIT", "5/min"),  # per client IP
+    },
+    # Number of trusted reverse proxies in front of Django. 0 = use the socket
+    # address and ignore X-Forwarded-For, which clients can forge.
+    "NUM_PROXIES": int(env("NUM_PROXIES", "0")),
 }
 
 # Every log line carries the request id (NFR12).
