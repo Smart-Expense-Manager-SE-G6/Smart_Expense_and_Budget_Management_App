@@ -108,6 +108,113 @@ class BudgetAPITests(TestCase):
 
         self.assertEqual(response.status_code, 404)
 
+    # FR11 TEST 1: Verify utilization calculations and deleted expenses.
+    def test_budget_utilization_calculates_spending(self):
+        budget = Budget.objects.create(
+            user=self.user,
+            name="October Budget",
+            limit_amount=Decimal("5000.00"),
+            period="monthly",
+            start_date=date(2026, 10, 1),
+            end_date=date(2026, 10, 31),
+        )
+
+        Expense.objects.create(
+            owner=self.user,
+            amount=Decimal("1200.00"),
+            date=date(2026, 10, 5),
+        )
+
+        Expense.objects.create(
+            owner=self.user,
+            amount=Decimal("300.00"),
+            date=date(2026, 10, 10),
+            is_deleted=True,
+        )
+
+        response = self.client.get(
+            f"/api/v1/budgets/{budget.pk}/utilization/"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["amount_spent"], "1200.00")
+        self.assertEqual(response.data["budget_limit"], "5000.00")
+        self.assertEqual(response.data["remaining_amount"], "3800.00")
+        self.assertEqual(response.data["percentage_used"], "24.00")
+
+    # FR11 TEST 2: Ignore expenses outside the budget period.
+    def test_budget_utilization_excludes_expenses_outside_period(self):
+        budget = Budget.objects.create(
+            user=self.user,
+            name="October Budget",
+            limit_amount=Decimal("2000.00"),
+            period="monthly",
+            start_date=date(2026, 10, 1),
+            end_date=date(2026, 10, 31),
+        )
+
+        Expense.objects.create(
+            owner=self.user,
+            amount=Decimal("500.00"),
+            date=date(2026, 9, 30),
+        )
+
+        response = self.client.get(
+            f"/api/v1/budgets/{budget.pk}/utilization/"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["amount_spent"], "0.00")
+        self.assertEqual(response.data["remaining_amount"], "2000.00")
+        self.assertEqual(response.data["percentage_used"], "0.00")
+
+    # FR11 TEST 3: Category-specific budget utilization.
+    def test_category_budget_utilization_counts_only_matching_category(self):
+        from expenses.models import Category
+
+        food = Category.objects.create(
+            name="Food",
+            owner=self.user,
+        )
+
+        travel = Category.objects.create(
+            name="Travel",
+            owner=self.user,
+        )
+
+        budget = Budget.objects.create(
+            user=self.user,
+            name="Food Budget",
+            category=food,
+            limit_amount=Decimal("1000.00"),
+            period="monthly",
+            start_date=date(2026, 10, 1),
+            end_date=date(2026, 10, 31),
+        )
+
+        Expense.objects.create(
+            owner=self.user,
+            category=food,
+            amount=Decimal("300.00"),
+            date=date(2026, 10, 10),
+        )
+
+        Expense.objects.create(
+            owner=self.user,
+            category=travel,
+            amount=Decimal("500.00"),
+            date=date(2026, 10, 11),
+        )
+
+        response = self.client.get(
+            f"/api/v1/budgets/{budget.pk}/utilization/"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["amount_spent"], "300.00")
+        self.assertEqual(response.data["remaining_amount"], "700.00")
+        self.assertEqual(response.data["percentage_used"], "30.00")
+
 
 class BudgetRolloverTests(TestCase):
     def setUp(self):

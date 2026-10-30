@@ -1,4 +1,8 @@
-
+from decimal import Decimal
+from django.db.models import Sum
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from expenses.models import Expense
 from django.db import transaction
 from rest_framework import viewsets
 
@@ -32,3 +36,35 @@ class BudgetViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
             action=AuditLog.Action.DELETE,
         ):
             instance.delete()
+
+    # NEW: FR11 - Budget utilization
+    @action(detail=True, methods=["get"], url_path="utilization")
+    def utilization(self, request, pk=None):
+        budget = self.get_object()
+
+        expenses = Expense.objects.filter(
+            owner=request.user,
+            is_deleted=False,
+            date__range=(budget.start_date, budget.end_date),
+        )
+
+        if budget.category_id is not None:
+            expenses = expenses.filter(category_id=budget.category_id)
+
+        amount_spent = expenses.aggregate(
+            total=Sum("amount")
+        )["total"] or Decimal("0.00")
+
+        remaining_amount = budget.limit_amount - amount_spent
+
+        percentage_used = (
+            amount_spent * Decimal("100") / budget.limit_amount
+        ).quantize(Decimal("0.01"))
+
+        return Response({
+            "budget_id": budget.pk,
+            "amount_spent": str(amount_spent),
+            "budget_limit": str(budget.limit_amount),
+            "remaining_amount": str(remaining_amount),
+            "percentage_used": str(percentage_used),
+        })
