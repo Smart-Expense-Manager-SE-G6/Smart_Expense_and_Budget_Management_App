@@ -5,11 +5,10 @@ from decimal import Decimal
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from django.db.models import Sum
 from django.utils import timezone
 
-from budgets.models import Budget
-from expenses.models import Expense
+from budgets.models import Budget, BudgetMember
+from budgets.services import amount_spent
 
 
 def next_period_dates(budget):
@@ -57,24 +56,8 @@ class Command(BaseCommand):
                 if budget is None or budget.end_date >= today:
                     continue
 
-                expenses = Expense.objects.filter(
-                    owner=budget.user,
-                    is_deleted=False,
-                    date__gte=budget.start_date,
-                    date__lte=budget.end_date,
-                )
-
-                if budget.category_id is not None:
-                    expenses = expenses.filter(
-                        category_id=budget.category_id
-                    )
-
-                spent = expenses.aggregate(
-                    total=Sum("amount")
-                )["total"]
-
-                if spent is None:
-                    spent = Decimal("0.00")
+                # Counts every member of a shared budget (FR3).
+                spent = amount_spent(budget)
 
                 base_limit = (
                     budget.base_limit_amount
@@ -109,7 +92,7 @@ class Command(BaseCommand):
                 if next_budget_exists:
                     continue
 
-                Budget.objects.create(
+                next_budget = Budget.objects.create(
                     user=budget.user,
                     category=budget.category,
                     name=budget.name,
@@ -119,6 +102,16 @@ class Command(BaseCommand):
                     start_date=next_start,
                     end_date=next_end,
                     rollover_mode=budget.rollover_mode,
+                )
+
+                # A shared budget stays shared in the next period.
+                BudgetMember.objects.bulk_create(
+                    BudgetMember(
+                        budget=next_budget,
+                        user_id=member.user_id,
+                        role=member.role,
+                    )
+                    for member in budget.memberships.all()
                 )
 
                 processed += 1

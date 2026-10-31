@@ -2,7 +2,7 @@ from django.db.models import Q
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from budgets.models import Budget
+from budgets.services import budgets_for_user
 from expenses.models import Expense
 from .services import evaluate_budget_thresholds
 
@@ -12,8 +12,7 @@ def check_budget_thresholds(sender, instance, **kwargs):
     if instance.is_deleted:
         return
 
-    budgets = Budget.objects.filter(
-        user=instance.owner,
+    budgets = budgets_for_user(instance.owner).filter(
         start_date__lte=instance.date,
         end_date__gte=instance.date,
     ).filter(

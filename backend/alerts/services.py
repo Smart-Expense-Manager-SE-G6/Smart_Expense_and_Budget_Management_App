@@ -2,9 +2,8 @@
 from decimal import Decimal
 
 from django.db import transaction
-from django.db.models import Sum
 
-from expenses.models import Expense
+from budgets.services import amount_spent
 from core.adapters.factory import get_email_adapter
 from .models import Alert
 
@@ -12,19 +11,8 @@ from .models import Alert
 def evaluate_budget_thresholds(budget):
     """Create one alert per threshold for a budget period."""
 
-    expenses = Expense.objects.filter(
-        owner=budget.user,
-        is_deleted=False,
-        date__range=(budget.start_date, budget.end_date),
-    )
-
-    # Category-specific budgets count only their own category.
-    # A budget without a category counts all expenses.
-    if budget.category_id is not None:
-        expenses = expenses.filter(category_id=budget.category_id)
-
-    spent = expenses.aggregate(total=Sum("amount"))["total"]
-    spent = spent if spent is not None else Decimal("0.00")
+    # Counts the owner's and every member's expenses (FR3).
+    spent = amount_spent(budget)
 
     limit_amount = budget.limit_amount
 

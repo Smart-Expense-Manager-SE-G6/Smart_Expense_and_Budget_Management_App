@@ -83,3 +83,46 @@ class Budget(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.limit_amount}"
+
+
+class BudgetMember(models.Model):
+    """
+    A user, other than the owner, who shares a budget (FR3).
+
+    The owner (Budget.user) is always an admin and never has a row here.
+    Roles and what they allow are described in budgets/permissions.py.
+    """
+
+    class Role(models.TextChoices):
+        ADMIN = "admin", "Admin"
+        MEMBER = "member", "Member"
+
+    budget = models.ForeignKey(
+        Budget,
+        on_delete=models.CASCADE,
+        related_name="memberships",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="budget_memberships",
+    )
+    role = models.CharField(
+        max_length=10,
+        choices=Role.choices,
+        default=Role.MEMBER,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["created_at", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["budget", "user"],
+                name="unique_budget_member",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.user} ({self.role}) on {self.budget}"
