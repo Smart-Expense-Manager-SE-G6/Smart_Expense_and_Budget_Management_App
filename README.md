@@ -93,8 +93,13 @@ DELETE /api/v1/categories/<id>/
 ```
 
 Category creation accepts an optional `parent` for subcategories. Global
-categories cannot be changed or deleted. Deleting a custom category safely
-deactivates it so existing expenses continue to reference it.
+categories cannot be changed or deleted. Category responses retain the
+`parent` identifier and include active, visible direct children in `children`.
+Names remain unique per owner (case-insensitive), and a parent must be active
+and visible to the requesting user. Deleting a custom category safely
+deactivates it so existing expenses continue to reference it; a category with
+active subcategories must have those subcategories reassigned or deactivated
+first.
 
 ## Rules
 

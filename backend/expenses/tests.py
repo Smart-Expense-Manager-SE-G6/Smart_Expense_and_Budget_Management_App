@@ -511,6 +511,69 @@ class CategoryApiTests(TestCase):
             self.global_category.pk,
         )
 
+    def test_list_and_retrieve_include_parent_and_children(self):
+        parent = Category.objects.create(name="Dining", owner=self.user)
+        child = Category.objects.create(name="Coffee", owner=self.user, parent=parent)
+
+        list_response = self.client.get("/categories/")
+        detail_response = self.client.get(f"/categories/{parent.pk}/")
+
+        self.assertEqual(list_response.status_code, 200)
+        listed_parent = next(
+            item for item in list_response.json() if item["id"] == parent.pk
+        )
+        self.assertEqual(listed_parent["parent"], None)
+        self.assertEqual(
+            listed_parent["children"],
+            [{
+                "id": child.pk,
+                "name": "Coffee",
+                "parent": parent.pk,
+                "is_active": True,
+            }],
+        )
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertEqual(detail_response.json()["parent"], None)
+        self.assertEqual(detail_response.json()["children"][0]["id"], child.pk)
+
+    def test_children_do_not_expose_another_users_private_subcategories(self):
+        parent = Category.objects.create(name="Dining", owner=self.user)
+        own_child = Category.objects.create(
+            name="Coffee", owner=self.user, parent=parent
+        )
+        private_child = Category.objects.create(
+            name="Private Dining", owner=self.other_user, parent=parent
+        )
+
+        response = self.client.get("/categories/")
+
+        self.assertEqual(response.status_code, 200)
+        listed_parent = next(
+            item for item in response.json() if item["id"] == parent.pk
+        )
+        child_ids = {child["id"] for child in listed_parent["children"]}
+        self.assertIn(own_child.pk, child_ids)
+        self.assertNotIn(private_child.pk, child_ids)
+
+    def test_updates_subcategory_name_and_reassigns_parent(self):
+        first = Category.objects.create(name="First", owner=self.user)
+        second = Category.objects.create(name="Second", owner=self.user)
+        child = Category.objects.create(name="Child", owner=self.user, parent=first)
+
+        response = self.client.patch(
+            f"/categories/{child.pk}/",
+            {"name": "Renamed", "parent": second.pk},
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        child.refresh_from_db()
+        self.assertEqual(child.name, "Renamed")
+        self.assertEqual(child.parent_id, second.pk)
+        self.assertEqual(
+            AuditLog.objects.filter(entity_type="expenses.category").count(), 1
+        )
+
     def test_rejects_inaccessible_parent(self):
         private = Category.objects.create(name="Private", owner=self.other_user)
 
@@ -527,6 +590,17 @@ class CategoryApiTests(TestCase):
             {"parent": second.pk},
             content_type="application/json",
         )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("parent", response.json()["error"]["field"])
+
+    def test_rejects_inactive_ancestor_parent_assignment(self):
+        parent = Category.objects.create(name="Parent", owner=self.user)
+        child = Category.objects.create(name="Child", owner=self.user, parent=parent)
+        parent.is_active = False
+        parent.save(update_fields=["is_active"])
+
+        response = self.post_category(name="Grandchild", parent=child.pk)
 
         self.assertEqual(response.status_code, 400)
         self.assertIn("parent", response.json()["error"]["field"])
@@ -571,6 +645,17 @@ class CategoryApiTests(TestCase):
             ).count(),
             1,
         )
+
+    def test_parent_deactivation_is_rejected_when_active_children_exist(self):
+        parent = Category.objects.create(name="Parent", owner=self.user)
+        Category.objects.create(name="Child", owner=self.user, parent=parent)
+
+        response = self.client.delete(f"/categories/{parent.pk}/")
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("parent", response.json()["error"]["field"])
+        parent.refresh_from_db()
+        self.assertTrue(parent.is_active)
 
     def test_expenses_accept_global_and_custom_categories(self):
         custom = Category.objects.create(name="Custom", owner=self.user)
