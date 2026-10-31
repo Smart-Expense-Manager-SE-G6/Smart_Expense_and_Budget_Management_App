@@ -158,6 +158,8 @@ class CategoryViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
             is_active=True,
         ).filter(
             Q(owner__isnull=True) | Q(owner=self.request.user)
+        ).filter(
+            Q(parent__isnull=True) | Q(parent__is_active=True)
         ).select_related("owner", "parent").order_by("name", "id")
 
     def perform_create(self, serializer):
@@ -173,6 +175,10 @@ class CategoryViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         if instance.owner_id is None:
             raise ValidationError("Global categories cannot be deleted.")
+        if instance.children.filter(is_active=True).exists():
+            raise ValidationError(
+                {"parent": "Deactivate or reassign active subcategories first."}
+            )
         with audited(self.request.user, instance):
             instance.is_active = False
             instance.save(update_fields=["is_active", "updated_at"])
