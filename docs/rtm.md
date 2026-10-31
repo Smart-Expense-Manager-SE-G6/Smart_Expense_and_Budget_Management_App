@@ -32,7 +32,7 @@
 | **FR19** | Custom date range reports (1-year cap) | Shashank | Sec 3.4, 4.3, OI-3 | `reports/views.py`, `reports/validators.py` | `TC-Report-01` | Sprint 2 |
 | **FR20** | PDF & Excel report export with summary/breakdowns | Shashank | Sec 3.4, 4.3, R4 | `reports/services.py`, `reports/adapters.py` | `TC-Report-02` | Sprint 2 |
 | **FR21** | Audit trail of edits (written in same transaction) | Shriram | Sec 3.4, 3.5, 4.1 | `audit/models.py`, `audit/services.py` | `TC-Audit-01` | Done (#14) |
-| **FR22** | Data backup and restore rehearsal | Shriram / Shashwath | Sec 3.4, 3.6, R6 | `scripts/backup.sh`, `scripts/restore.sh` | `TC-Backup-01` | Sprint 2 |
+| **FR22** | Data backup and restore rehearsal | Shriram / Shashwath | Sec 3.4, 3.6, R6 | `scripts/backup.sh`, `scripts/restore.sh`, `scripts/rehearse_restore.sh`, `scripts/common.sh` | `TC-Backup-01` (`scripts/rehearse_restore.sh`) | Done (#45) |
 
 ---
 

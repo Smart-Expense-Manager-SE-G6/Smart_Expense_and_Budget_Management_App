@@ -41,5 +41,24 @@ services:
     depends_on:
       - backend
 
+  # Backup and restore tools (FR22); see "Backups" in README.md.
+  #   docker compose run --rm backup /scripts/backup.sh
+  backup:
+    image: postgres:16-alpine
+    profiles: ["tools"]
+    env_file: .env
+    environment:
+      PGHOST: db
+      BACKUP_DIR: /backups
+      MEDIA_DIR: /media
+    volumes:
+      - ./scripts:/scripts:ro
+      - ./backups:/backups
+      - ./backend/private_media:/media
+    entrypoint: ["sh"]
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   pgdata:
