@@ -96,11 +96,19 @@ Category creation accepts an optional `parent` for subcategories. Global
 categories cannot be changed or deleted. Deleting a custom category safely
 deactivates it so existing expenses continue to reference it.
 
-## Backups (FR22)
+## Backups (FR22, NFR10)
 
 Backups cover the database and uploaded receipts (`backend/private_media`).
 The scripts run in a `postgres:16-alpine` container, so nothing extra needs
 installing on your machine.
+
+**Scheduled (NFR10):** `docker compose up` also starts the `backup` service,
+which backs up daily at `BACKUP_SCHEDULE` (cron, UTC; default `0 2 * * *`,
+07:30 IST). Because laptops are often off at that time, it also takes a backup
+on start whenever the newest one is more than 24 hours old. Check it with
+`docker compose logs backup`.
+
+**By hand:**
 
 ```bash
 docker compose run --rm backup /scripts/backup.sh                      # take a backup
