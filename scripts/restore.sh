@@ -49,7 +49,6 @@ log "Restoring receipts into $MEDIA_DIR"
 staging="$(mktemp -d)"
 trap 'rm -rf "$staging"' EXIT
 tar -xzf "$source/media.tar.gz" -C "$staging"
-find "$MEDIA_DIR" -mindepth 1 -delete
+find "$MEDIA_DIR" -mindepth 1 -depth -exec rm -rf {} \;
 cp -a "$staging/." "$MEDIA_DIR/"
-
 log "Restore complete from $(basename "$source")"
