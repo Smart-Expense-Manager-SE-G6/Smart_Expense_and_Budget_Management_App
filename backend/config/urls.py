@@ -9,6 +9,7 @@ urlpatterns = [
     path("api/v1/", include("accounts.urls")),
     # Unknown API URLs get the JSON error envelope, even with DEBUG on.
     re_path(r"^api/", api_not_found),
+    path("api/v1/", include("alerts.urls")),
 ]
 
 handler404 = "core.exceptions.handler404"

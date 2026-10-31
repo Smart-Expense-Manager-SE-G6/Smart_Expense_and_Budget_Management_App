@@ -128,6 +128,15 @@ RECEIPT_MAX_SIZE_BYTES = int(env("RECEIPT_MAX_SIZE_BYTES", str(5 * 1024 * 1024))
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Email Configuration - Brevo SMTP
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = env("EMAIL_HOST", "smtp-relay.brevo.com")
+EMAIL_PORT = int(env("EMAIL_PORT", "587"))
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", "")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "krshashwath2@gmail.com")
+
 # Authentication: server-side sessions (docs/adr/0001-authentication-sessions.md).
 # Idle timeout: the session expires after this many seconds without a request.
 SESSION_COOKIE_AGE = int(env("SESSION_IDLE_TIMEOUT_SECONDS", "1800"))
