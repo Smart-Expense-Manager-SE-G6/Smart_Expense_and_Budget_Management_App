@@ -1,0 +1,55 @@
+name: Backup and Restore Tests
+
+on:
+  push:
+    branches:
+      - main
+      - 45-backup-restore
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  backup-restore:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create CI environment file
+        run: cp .env.example .env
+
+      - name: Build and start database and backend
+        run: docker compose up -d --build db backend
+
+      - name: Wait for backend and migrations
+        run: |
+          for i in {1..30}; do
+            if docker compose exec -T backend python manage.py check; then
+              echo "Backend is ready and migrations have completed."
+              exit 0
+            fi
+            echo "Waiting for backend..."
+            sleep 5
+          done
+          echo "Backend did not become ready."
+          docker compose logs
+          exit 1
+
+      - name: Seed synthetic data
+        run: docker compose exec -T backend python manage.py seed_synthetic_data
+
+      - name: Run backup
+        run: docker compose run --rm backup /scripts/backup.sh
+
+      - name: Run restore rehearsal
+        run: docker compose run --rm backup /scripts/rehearse_restore.sh
+
+      - name: Show logs if a step fails
+        if: failure()
+        run: docker compose logs
+
+      - name: Clean up
+        if: always()
+        run: docker compose down -v
