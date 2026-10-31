@@ -96,6 +96,34 @@ Category creation accepts an optional `parent` for subcategories. Global
 categories cannot be changed or deleted. Deleting a custom category safely
 deactivates it so existing expenses continue to reference it.
 
+## Backups (FR22)
+
+Backups cover the database and uploaded receipts (`backend/private_media`).
+The scripts run in a `postgres:16-alpine` container, so nothing extra needs
+installing on your machine.
+
+```bash
+docker compose run --rm backup /scripts/backup.sh                      # take a backup
+docker compose run --rm backup /scripts/rehearse_restore.sh            # TC-Backup-01
+docker compose run --rm backup /scripts/rehearse_restore.sh <backup>   # rehearse an older one
+
+docker compose stop backend                                            # full restore
+docker compose run --rm backup /scripts/restore.sh <backup>
+docker compose start backend
+```
+
+- Each backup is a folder in `backups/` (git-ignored) named by its UTC time, e.g.
+  `20261031T020000Z/`, holding `db.dump`, `media.tar.gz`, table row counts and
+  `SHA256SUMS`. `backups/LATEST` names the newest one. The newest
+  `BACKUP_KEEP` (default 7) are kept.
+- **Rehearsal (TC-Backup-01)** restores into a scratch database, never the live
+  one, then checks checksums, every table's row count and every receipt file.
+  It exits non-zero on any mismatch.
+- **Restore** asks you to type the database name (or pass `--yes`), takes a
+  `*-pre-restore` safety backup first so it can be undone, then replaces the
+  database and all receipts. Restore with the same code version (migrations)
+  the backup was taken with.
+
 ## Rules
 
 - No secrets in code. Everything comes from `.env`, which is git-ignored.
