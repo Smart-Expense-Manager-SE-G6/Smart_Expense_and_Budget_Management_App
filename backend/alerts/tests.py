@@ -1,12 +1,14 @@
 
 from datetime import date
 from decimal import Decimal
+from unittest.mock import Mock, patch
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 
 from budgets.models import Budget
 from expenses.models import Expense
+from .adapters import send_alert_email
 from .models import Alert
 from .services import evaluate_budget_thresholds
 
@@ -93,3 +95,33 @@ class BudgetThresholdAlertTests(TestCase):
                 threshold_percentage=100,
             ).exists()
         )
+
+
+class AlertEmailAdapterTests(SimpleTestCase):
+
+    @patch("alerts.adapters.get_email_adapter")
+    def test_send_alert_email_uses_configured_adapter(
+        self, mock_get_adapter
+    ):
+        alert = Mock()
+        alert.user.email = "user@example.com"
+        alert.title = "Budget reached 80%"
+        alert.message = "You have used 80% of your budget."
+
+        expected_result = object()
+
+        email_adapter = Mock()
+        email_adapter.send_email.return_value = expected_result
+        mock_get_adapter.return_value = email_adapter
+
+        result = send_alert_email(alert)
+
+        mock_get_adapter.assert_called_once_with()
+
+        email_adapter.send_email.assert_called_once_with(
+            recipient="user@example.com",
+            subject="Budget reached 80%",
+            message="You have used 80% of your budget.",
+        )
+
+        self.assertIs(result, expected_result)
