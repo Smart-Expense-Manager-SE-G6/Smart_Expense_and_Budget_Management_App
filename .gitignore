@@ -15,6 +15,9 @@ backend/media/
 node_modules/
 dist/
 
+# Backups (scripts/backup.sh)
+backups/
+
 # Editors / OS
 .vscode/
 .idea/

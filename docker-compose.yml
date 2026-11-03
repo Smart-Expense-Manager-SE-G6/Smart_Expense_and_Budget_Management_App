@@ -41,5 +41,30 @@ services:
     depends_on:
       - backend
 
+  # Daily scheduled backups (NFR10), plus the backup and restore tools (FR22).
+  # See "Backups" in README.md.
+  #   docker compose run --rm backup /scripts/backup.sh
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PGHOST: db
+      BACKUP_DIR: /backups
+      MEDIA_DIR: /media
+    volumes:
+      - ./scripts:/scripts:ro
+      - ./backups:/backups
+      - ./backend/private_media:/media
+    entrypoint: ["sh"]
+    command: ["/scripts/schedule_backups.sh"]
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "find /backups/LATEST -mmin -1500 | grep -q ."]
+      interval: 1h
+      start_period: 10m
+
 volumes:
   pgdata:
