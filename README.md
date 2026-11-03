@@ -108,6 +108,8 @@ which backs up daily at `BACKUP_SCHEDULE` (cron, UTC; default `0 2 * * *`,
 on start whenever the newest one is more than 24 hours old. Check it with
 `docker compose logs backup`.
 
+**Healthcheck:** Docker marks the backup service as healthy when `backups/LATEST` has been updated within the last 25 hours. If the marker is older, the service is marked unhealthy.
+
 **By hand:**
 
 ```bash

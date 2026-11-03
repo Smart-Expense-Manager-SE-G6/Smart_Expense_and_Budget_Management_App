@@ -61,6 +61,10 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "find /backups/LATEST -mmin -1500 | grep -q ."]
+      interval: 1h
+      start_period: 10m
 
 volumes:
   pgdata:
