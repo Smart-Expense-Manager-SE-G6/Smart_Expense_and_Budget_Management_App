@@ -1,3 +1,4 @@
+
 from datetime import date
 
 from django.http import FileResponse
@@ -13,6 +14,9 @@ from rest_framework.pagination import PageNumberPagination
 from audit.mixins import AuditedModelViewSetMixin
 from audit.models import AuditLog
 from audit.services import audited, log_change
+
+# FR17: Spending anomaly detection
+from alerts.services import detect_spending_anomaly
 
 from .models import Category, Expense
 from .serializers import CategorySerializer, ExpenseSerializer, ReceiptUploadSerializer
@@ -89,6 +93,12 @@ class ExpenseViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
         except (TypeError, ValueError):
             raise ValidationError({parameter: "Date must use YYYY-MM-DD format."})
 
+    # FR17: Run anomaly detection after creating an expense.
+    # Calling super() preserves the existing audit logging.
+    def perform_create(self, serializer):
+        super().perform_create(serializer)
+        detect_spending_anomaly(serializer.instance)
+
     def perform_destroy(self, instance):
         with audited(self.request.user, instance):
             instance.is_deleted = True
@@ -148,6 +158,7 @@ class ExpenseViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
             expense.receipt = None
             expense.save(update_fields=["receipt", "updated_at"])
         return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class CategoryViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
     serializer_class = CategorySerializer

@@ -1,3 +1,4 @@
+
 :root {
   --bg: #f6f7f9;
   --surface: #ffffff;
@@ -145,7 +146,7 @@ select {
   border-radius: 8px;
   background: var(--surface);
   color: var(--text);
-  min-height: 44px; /* comfortable touch target on phones */
+  min-height: 44px;
 }
 
 input[readonly] {
@@ -204,4 +205,97 @@ button:disabled {
 .success {
   color: var(--success);
   margin: 0;
+}
+
+/* FR17 - Anomaly notification styles */
+.notification-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.notification-button {
+  position: relative;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 20px;
+  padding: 6px 10px;
+  min-height: 44px;
+}
+
+.notification-count {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: #dc2626;
+  color: white;
+  border-radius: 50%;
+  min-width: 17px;
+  height: 17px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 1000;
+  width: 320px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 16px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.notification-panel h3 {
+  margin-top: 0;
+}
+
+.notification-item {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.notification-item p {
+  margin: 6px 0;
+}
+
+.notification-item.unread {
+  background: #fff7ed;
+  color: #222;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.notification-item.read {
+  opacity: 0.7;
+}
+
+.notification-item button {
+  margin-top: 8px;
+  cursor: pointer;
+}
+
+.anomaly-label {
+  display: inline-block;
+  margin-top: 5px;
+  font-size: 12px;
+  color: #b45309;
+  font-weight: bold;
+}
+
+@media (max-width: 480px) {
+  .notification-panel {
+    width: min(300px, calc(100vw - 30px));
+    right: -90px;
+  }
 }
