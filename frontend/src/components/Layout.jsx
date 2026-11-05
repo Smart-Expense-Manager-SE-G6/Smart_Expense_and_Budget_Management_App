@@ -1,5 +1,7 @@
+
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/context'
+import Notifications from './Notifications'
 
 export default function Layout() {
   const { user, logout } = useAuth()
@@ -19,6 +21,7 @@ export default function Layout() {
             Home
           </NavLink>
           <NavLink to="/profile">Profile</NavLink>
+          <Notifications />
           <button type="button" className="link-button" onClick={handleLogout}>
             Log out
           </button>
