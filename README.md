@@ -96,6 +96,30 @@ Category creation accepts an optional `parent` for subcategories. Global
 categories cannot be changed or deleted. Deleting a custom category safely
 deactivates it so existing expenses continue to reference it.
 
+### Category suggestions (FR9)
+
+While entering an expense description, authenticated users can request advisory
+suggestions:
+
+```text
+GET /api/v1/categories/suggestions/?description=Lunch%20at%20a%20cafe
+```
+
+Example response:
+
+```json
+{
+  "suggestions": [
+    {"id": 2, "name": "Food"}
+  ]
+}
+```
+
+Suggestions use hard-coded, deterministic keyword rules and return only active
+global categories. The endpoint never assigns a category or changes an
+expense; the user must explicitly select a suggestion. Empty or unmatched
+descriptions return `{"suggestions": []}`. Custom categories are not suggested.
+
 ## Rules
 
 - No secrets in code. Everything comes from `.env`, which is git-ignored.
