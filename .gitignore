@@ -19,3 +19,5 @@ dist/
 .vscode/
 .idea/
 .DS_Store
+# User-uploaded receipt files
+backend/private_media/
