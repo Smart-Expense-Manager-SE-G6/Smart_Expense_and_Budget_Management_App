@@ -13,9 +13,9 @@ docker compose up --build
 
 | Service  | URL                                   |
 |----------|---------------------------------------|
-| Frontend | http://localhost:5173                 |
-| API      | http://localhost:8000/api/v1/health/  |
-| Admin    | http://localhost:8000/admin/          |
+| Frontend | http://localhost:5174                 |
+| API      | http://localhost:8001/api/v1/health/  |
+| Admin    | http://localhost:8001/admin/          |
 
 The frontend proxies `/api` to the backend, so in React code always call relative URLs like `fetch('/api/v1/...')`.
 
