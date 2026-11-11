@@ -215,6 +215,92 @@ class BudgetAPITests(TestCase):
         self.assertEqual(response.data["remaining_amount"], "700.00")
         self.assertEqual(response.data["percentage_used"], "30.00")
 
+    def test_rejects_zero_and_negative_limits(self):
+        for limit in ("0.00", "-100.00"):
+            response = self.client.post(
+                "/api/v1/budgets/",
+                {**self.payload, "limit_amount": limit},
+                format="json",
+            )
+
+            self.assertEqual(response.status_code, 400, limit)
+            self.assertEqual(response.data["error"]["field"], "limit_amount")
+
+        self.assertEqual(Budget.objects.count(), 0)
+
+    def test_rejects_another_users_category_without_revealing_it(self):
+        from expenses.models import Category
+
+        private = Category.objects.create(
+            name="Other user's private category",
+            owner=self.other_user,
+        )
+
+        response = self.client.post(
+            "/api/v1/budgets/",
+            {**self.payload, "category": private.pk},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.data["error"]["field"], "category")
+        self.assertNotIn(private.name, response.content.decode())
+        self.assertEqual(Budget.objects.count(), 0)
+
+    def test_rejects_inactive_category(self):
+        from expenses.models import Category
+
+        inactive = Category.objects.create(
+            name="Old",
+            owner=self.user,
+            is_active=False,
+        )
+
+        response = self.client.post(
+            "/api/v1/budgets/",
+            {**self.payload, "category": inactive.pk},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.data["error"]["field"], "category")
+
+    def test_rejects_duplicate_budgets_for_same_period(self):
+        from expenses.models import Category
+
+        food = Category.objects.create(name="Food budget test", owner=self.user)
+
+        for category in (None, food.pk):
+            payload = {**self.payload, "category": category}
+            first = self.client.post("/api/v1/budgets/", payload, format="json")
+            second = self.client.post("/api/v1/budgets/", payload, format="json")
+
+            self.assertEqual(first.status_code, 201, category)
+            self.assertEqual(second.status_code, 400, category)
+            self.assertEqual(second.data["error"]["code"], "duplicate_budget")
+
+        self.assertEqual(Budget.objects.filter(user=self.user).count(), 2)
+
+    def test_update_does_not_conflict_with_itself(self):
+        budget = Budget.objects.create(
+            user=self.user,
+            name="October Budget",
+            limit_amount=Decimal("1000.00"),
+            period="monthly",
+            start_date=date(2026, 10, 1),
+            end_date=date(2026, 10, 31),
+        )
+
+        response = self.client.patch(
+            f"/api/v1/budgets/{budget.pk}/",
+            {"name": "Renamed", "limit_amount": "1200.00"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        budget.refresh_from_db()
+        self.assertEqual(budget.limit_amount, Decimal("1200.00"))
+
 
 class BudgetRolloverTests(TestCase):
     def setUp(self):
