@@ -24,6 +24,13 @@ urlpatterns = [path("", include(router.urls))]
 @override_settings(ROOT_URLCONF=__name__)
 class ExpenseApiTests(TestCase):
     def setUp(self):
+        # Receipt uploads must never land in the real MEDIA_ROOT inside the repository.
+        media_root = TemporaryDirectory()
+        self.addCleanup(media_root.cleanup)
+        media_override = override_settings(MEDIA_ROOT=media_root.name)
+        media_override.enable()
+        self.addCleanup(media_override.disable)
+
         self.User = get_user_model()
         self.user = self.User.objects.create_user("alice@example.com", "s3cure-pass!")
         self.other_user = self.User.objects.create_user("bob@example.com", "s3cure-pass!")
