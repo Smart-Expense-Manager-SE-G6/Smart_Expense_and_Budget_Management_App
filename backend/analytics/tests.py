@@ -38,10 +38,10 @@ class AnalyticsAPITests(TestCase):
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
 
-        # Create categories
+        # Global "Travel" and "Bills" are seeded by expenses migration 0002, so reuse them.
         self.cat_food = Category.objects.create(name="Food & Dining", is_active=True)
-        self.cat_travel = Category.objects.create(name="Travel", is_active=True)
-        self.cat_bills = Category.objects.create(name="Bills", is_active=True)
+        self.cat_travel, _ = Category.objects.get_or_create(name="Travel", owner=None, defaults={"is_active": True})
+        self.cat_bills, _ = Category.objects.get_or_create(name="Bills", owner=None, defaults={"is_active": True})
 
         today = date.today()
 
