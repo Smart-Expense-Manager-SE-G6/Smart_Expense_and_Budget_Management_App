@@ -11,11 +11,14 @@ cp .env.example .env      # then set DJANGO_SECRET_KEY and POSTGRES_PASSWORD
 docker compose up --build
 ```
 
-| Service  | URL                                   |
-|----------|---------------------------------------|
-| Frontend | http://localhost:5173                 |
-| API      | http://localhost:8000/api/v1/health/  |
-| Admin    | http://localhost:8000/admin/          |
+| Service    | URL                                   |
+|------------|---------------------------------------|
+| Frontend   | http://localhost:5174                 |
+| API        | http://localhost:8001/api/v1/health/  |
+| Admin      | http://localhost:8001/admin/          |
+| PostgreSQL | localhost:5433                        |
+
+If your `.env` was copied before this change, add `http://localhost:5174` to `DJANGO_CSRF_TRUSTED_ORIGINS`, otherwise sign-in fails with "CSRF check failed".
 
 The frontend proxies `/api` to the backend, so in React code always call relative URLs like `fetch('/api/v1/...')`.
 
