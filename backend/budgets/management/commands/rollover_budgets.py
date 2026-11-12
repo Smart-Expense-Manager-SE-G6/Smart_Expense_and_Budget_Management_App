@@ -2,16 +2,25 @@
 import calendar
 from datetime import timedelta
 from decimal import Decimal
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
 
-from audit.models import AuditLog
-from audit.services import log_change
+from audit.services import audited
 from budgets.models import Budget
 from expenses.models import Expense
+
+
+def user_local_date(user, now):
+    """Today's date in the user's IANA time zone (falls back to UTC if unknown)."""
+    try:
+        zone = ZoneInfo(user.timezone)
+    except (ZoneInfoNotFoundError, ValueError, TypeError):
+        zone = ZoneInfo("UTC")
+    return now.astimezone(zone).date()
 
 
 def next_period_dates(budget):
@@ -20,18 +29,11 @@ def next_period_dates(budget):
 
     if budget.period == "weekly":
         next_end = next_start + timedelta(days=6)
-
     elif budget.period == "monthly":
-        last_day = calendar.monthrange(
-            next_start.year,
-            next_start.month,
-        )[1]
+        last_day = calendar.monthrange(next_start.year, next_start.month)[1]
         next_end = next_start.replace(day=last_day)
-
     else:
-        raise ValueError(
-            f"Unsupported budget period: {budget.period}"
-        )
+        raise ValueError(f"Unsupported budget period: {budget.period}")
 
     return next_start, next_end
 
@@ -40,11 +42,11 @@ class Command(BaseCommand):
     help = "Process expired budgets and create their next periods."
 
     def handle(self, *args, **options):
-        today = timezone.localdate()
+        now = timezone.now()
         processed = 0
 
         expired_ids = list(
-            Budget.objects.filter(end_date__lt=today)
+            Budget.objects.filter(end_date__lt=now.date() + timedelta(days=1))
             .order_by("end_date")
             .values_list("id", flat=True)
         )
@@ -58,7 +60,7 @@ class Command(BaseCommand):
                     .first()
                 )
 
-                if budget is None or budget.end_date >= today:
+                if budget is None or budget.end_date >= user_local_date(budget.user, now):
                     continue
 
                 expenses = Expense.objects.filter(
@@ -69,14 +71,9 @@ class Command(BaseCommand):
                 )
 
                 if budget.category_id is not None:
-                    expenses = expenses.filter(
-                        category_id=budget.category_id
-                    )
+                    expenses = expenses.filter(category_id=budget.category_id)
 
-                spent = expenses.aggregate(
-                    total=Sum("amount")
-                )["total"]
-
+                spent = expenses.aggregate(total=Sum("amount"))["total"]
                 if spent is None:
                     spent = Decimal("0.00")
 
@@ -86,21 +83,16 @@ class Command(BaseCommand):
                     else budget.limit_amount
                 )
 
-                unused = max(
-                    Decimal("0.00"),
-                    budget.limit_amount - spent,
-                )
+                unused = max(Decimal("0.00"), budget.limit_amount - spent)
 
                 carry_forward = (
-                    unused
-                    if budget.rollover_mode == "rollover"
+                    unused if budget.rollover_mode == "rollover"
                     else Decimal("0.00")
                 )
 
                 next_start, next_end = next_period_dates(budget)
                 next_limit = base_limit + carry_forward
 
-                # Avoid creating duplicate budget periods.
                 next_budget_exists = Budget.objects.filter(
                     user=budget.user,
                     category=budget.category,
@@ -111,8 +103,7 @@ class Command(BaseCommand):
                 if next_budget_exists:
                     continue
 
-                # Create the next budget period.
-                next_budget = Budget.objects.create(
+                next_budget = Budget(
                     user=budget.user,
                     category=budget.category,
                     name=budget.name,
@@ -124,19 +115,15 @@ class Command(BaseCommand):
                     rollover_mode=budget.rollover_mode,
                 )
 
-                # Record the automatic budget creation in the audit log.
-                log_change(
-                    actor=None,
-                    action=AuditLog.Action.CREATE,
-                    instance=next_budget,
-                )
+                # FR21 audit helper records the creation atomically.
+                with audited(None, next_budget):
+                    next_budget.save()
 
                 processed += 1
 
                 self.stdout.write(
                     f"Created next period for '{budget.name}': "
-                    f"{next_start} to {next_end}, "
-                    f"limit {next_limit}"
+                    f"{next_start} to {next_end}, limit {next_limit}"
                 )
 
         self.stdout.write(

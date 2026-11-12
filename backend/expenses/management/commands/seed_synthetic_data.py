@@ -91,7 +91,9 @@ class Command(BaseCommand):
 
     def _seed(self):
         users = self._seed_users()
-        categories = self._seed_categories()
+        # Categories are owned by each synthetic user, never global: global
+        # categories would show up for every real user of the database.
+        categories = {id(user): self._seed_categories(user) for user in users}
         self._seed_expenses(users, categories)
         budgets = self._seed_budgets(users, categories)
         self._seed_alerts(budgets)
@@ -124,21 +126,23 @@ class Command(BaseCommand):
 
         return users
 
-    def _seed_categories(self):
+    def _seed_categories(self, user):
         categories = []
 
         for name in CATEGORIES:
-            category = Category.objects.filter(
-                owner__isnull=True,
-                name__iexact=name,
-            ).first()
+            category = None
+            if user.pk is not None:
+                category = Category.objects.filter(
+                    owner=user,
+                    name__iexact=name,
+                ).first()
             if category is not None:
                 self.summary["categories"]["reused"] += 1
             elif self.dry_run:
-                category = Category(name=name)
+                category = Category(name=name, owner=user)
                 self.summary["categories"]["created"] += 1
             else:
-                category = Category.objects.create(name=name)
+                category = Category.objects.create(name=name, owner=user)
                 self.summary["categories"]["created"] += 1
             categories.append(category)
 
@@ -150,6 +154,7 @@ class Command(BaseCommand):
         date_span = (end_date - start_date).days
 
         for user in users:
+            user_categories = categories[id(user)]
             existing = {}
             if user.pk is not None:
                 existing = {
@@ -170,14 +175,14 @@ class Command(BaseCommand):
                 expense_date = start_date + timedelta(
                     days=(index * date_span) // (EXPENSES_PER_USER - 1)
                 )
-                category_index = index % len(categories)
+                category_index = index % len(user_categories)
                 amount = Decimal(
                     str(Decimal("120.00") + Decimal((index * 47) % 1880))
                 ).quantize(Decimal("0.01"))
                 pending.append(
                     Expense(
                         owner=user,
-                        category=categories[category_index],
+                        category=user_categories[category_index],
                         amount=amount,
                         description=description,
                         date=expense_date,
@@ -198,7 +203,7 @@ class Command(BaseCommand):
         budget_specs = (
             (
                 "Synthetic monthly groceries",
-                categories[0],
+                0,
                 Decimal("2500.00"),
                 "monthly",
                 current_month_start,
@@ -206,7 +211,7 @@ class Command(BaseCommand):
             ),
             (
                 "Synthetic monthly dining",
-                categories[1],
+                1,
                 Decimal("1800.00"),
                 "monthly",
                 previous_month_start,
@@ -214,7 +219,7 @@ class Command(BaseCommand):
             ),
             (
                 "Synthetic weekly transport",
-                categories[2],
+                2,
                 Decimal("900.00"),
                 "weekly",
                 current_week_start,
@@ -222,7 +227,7 @@ class Command(BaseCommand):
             ),
             (
                 "Synthetic monthly utilities",
-                categories[3],
+                3,
                 Decimal("2200.00"),
                 "monthly",
                 previous_month_start,
@@ -232,7 +237,8 @@ class Command(BaseCommand):
         budgets = []
 
         for user in users:
-            for name, category, limit, period, start_date, end_date in budget_specs:
+            for name, category_index, limit, period, start_date, end_date in budget_specs:
+                category = categories[id(user)][category_index]
                 budget = None
                 if user.pk is not None:
                     budget = Budget.objects.filter(
