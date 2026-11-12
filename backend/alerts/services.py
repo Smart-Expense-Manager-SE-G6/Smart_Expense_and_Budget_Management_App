@@ -9,6 +9,10 @@ from core.adapters.factory import get_email_adapter
 from .models import Alert
 
 
+def _send_alert_email(recipient, subject, message):
+    get_email_adapter().send_email(recipient=recipient, subject=subject, message=message)
+
+
 def evaluate_budget_thresholds(budget):
     """Create one alert per threshold for a budget period."""
 
@@ -56,12 +60,11 @@ def evaluate_budget_thresholds(budget):
 
         if created:
             created_alerts.append(alert)
-
-            email_adapter = get_email_adapter()
-            email_adapter.send_email(
-                recipient=budget.user.email,
-                subject=alert.title,
-                message=alert.message,
+            # Send only once the surrounding change is committed, so a rolled-back
+            # expense or budget never produces an email.
+            transaction.on_commit(
+                lambda recipient=budget.user.email, subject=alert.title, message=alert.message:
+                    _send_alert_email(recipient, subject, message)
             )
 
     return created_alerts
