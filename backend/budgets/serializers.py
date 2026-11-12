@@ -1,4 +1,6 @@
 
+import calendar
+from datetime import timedelta
 from decimal import Decimal
 
 from django.db.models import Q
@@ -75,6 +77,26 @@ class BudgetSerializer(serializers.ModelSerializer):
                     )
                 }
             )
+
+        # D2: the period label must match the explicit dates, the same way
+        # rollover_budgets computes the next period. Only checked when the period
+        # or dates are being set, so older budgets can still be renamed.
+        period = attrs.get("period", getattr(self.instance, "period", None))
+        if start_date and end_date and {"period", "start_date", "end_date"} & attrs.keys():
+            if period == "weekly" and end_date != start_date + timedelta(days=6):
+                raise serializers.ValidationError(
+                    {"end_date": "A weekly budget must cover exactly 7 days (end date = start date + 6 days)."}
+                )
+            if period == "monthly":
+                if start_date.day != 1:
+                    raise serializers.ValidationError(
+                        {"start_date": "A monthly budget must start on the first day of a month."}
+                    )
+                month_end = start_date.replace(day=calendar.monthrange(start_date.year, start_date.month)[1])
+                if end_date != month_end:
+                    raise serializers.ValidationError(
+                        {"end_date": "A monthly budget must end on the last day of the month it starts in."}
+                    )
 
         category = attrs.get(
             "category",
