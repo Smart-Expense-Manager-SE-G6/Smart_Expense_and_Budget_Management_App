@@ -223,6 +223,13 @@ class CsrfTests(AuthApiTestCase):
                              client=self.csrf_client, HTTP_X_CSRFTOKEN=token)
         self.assertEqual(response.status_code, 200)
 
+    def test_signed_in_write_without_csrf_token_uses_same_error_code(self):
+        self.csrf_client.force_login(User.objects.get(email="alice@example.com"))
+        response = self.csrf_client.patch("/api/v1/me/", {"first_name": "X"}, content_type="application/json")
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()["error"]["code"], "csrf_failed")
+        self.assertEqual(User.objects.get(email="alice@example.com").first_name, "")
+
 
 class ProfileTests(AuthApiTestCase):
     def setUp(self):
