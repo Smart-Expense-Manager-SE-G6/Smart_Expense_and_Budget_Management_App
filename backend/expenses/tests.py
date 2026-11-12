@@ -349,11 +349,16 @@ class ExpenseApiTests(TestCase):
                 self.assertNotIn("receipt.png", retrieve_response["Content-Disposition"])
                 self.assertEqual(b"".join(retrieve_response.streaming_content), b"\x89PNG\r\n\x1a\nreceipt")
 
-                delete_response = self.client.delete(f"/expenses/{expense.pk}/receipt/")
+                with self.captureOnCommitCallbacks(execute=False) as callbacks:
+                    delete_response = self.client.delete(f"/expenses/{expense.pk}/receipt/")
 
                 self.assertEqual(delete_response.status_code, 204)
                 expense.refresh_from_db()
                 self.assertFalse(expense.receipt)
+                # The file stays until the transaction commits, then is removed.
+                self.assertTrue(stored_path.exists())
+                for callback in callbacks:
+                    callback()
                 self.assertFalse(stored_path.exists())
                 self.assertEqual(AuditLog.objects.filter(entity_type="expenses.expense").count(), 2)
 
@@ -384,7 +389,7 @@ class ExpenseApiTests(TestCase):
 
         self.assertEqual(invalid_extension_response.status_code, 400)
         self.assertEqual(invalid_content_response.status_code, 400)
-        self.assertEqual(missing_response.status_code, 400)
+        self.assertEqual(missing_response.status_code, 404)
 
     @override_settings(RECEIPT_MAX_SIZE_BYTES=8)
     def test_rejects_oversized_receipts(self):
@@ -456,6 +461,38 @@ class ExpenseApiTests(TestCase):
             f"/expenses/{own_expense.pk}/receipt/"
         )
         self.assertEqual(unauthenticated_response.status_code, 401)
+
+    def test_has_receipt_reflects_upload_and_delete(self):
+        expense = self.create_expense()
+        self.assertFalse(self.client.get(f"/expenses/{expense.pk}/").json()["has_receipt"])
+
+        self.client.post(
+            f"/expenses/{expense.pk}/receipt/",
+            {"receipt": SimpleUploadedFile("r.pdf", b"%PDF-1.7 r", content_type="application/pdf")},
+            format="multipart",
+        )
+        self.assertTrue(self.client.get(f"/expenses/{expense.pk}/").json()["has_receipt"])
+
+        self.client.delete(f"/expenses/{expense.pk}/receipt/")
+        self.assertFalse(self.client.get(f"/expenses/{expense.pk}/").json()["has_receipt"])
+
+    def test_deleting_a_missing_receipt_returns_404(self):
+        expense = self.create_expense()
+
+        response = self.client.delete(f"/expenses/{expense.pk}/receipt/")
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_another_users_category_is_indistinguishable_from_unknown(self):
+        private = Category.objects.create(name="Private", owner=self.other_user)
+
+        foreign = self.client.post("/expenses/", self.payload(category=private.pk), content_type="application/json")
+        unknown = self.client.post("/expenses/", self.payload(category=999999), content_type="application/json")
+
+        self.assertEqual(foreign.status_code, 400)
+        self.assertEqual(foreign.json()["error"]["code"], unknown.json()["error"]["code"])
+        self.assertNotIn("another user", foreign.json()["error"]["message"])
+
 
 @override_settings(ROOT_URLCONF=__name__)
 class CategoryApiTests(TestCase):
@@ -546,10 +583,11 @@ class CategoryApiTests(TestCase):
         )
         delete = self.client.delete(f"/categories/{self.global_category.pk}/")
 
-        self.assertEqual(update.status_code, 400)
-        self.assertEqual(delete.status_code, 400)
+        self.assertEqual(update.status_code, 403)
+        self.assertEqual(delete.status_code, 403)
         self.global_category.refresh_from_db()
         self.assertEqual(self.global_category.name, "Food")
+        self.assertTrue(self.global_category.is_active)
 
     def test_other_users_category_is_not_exposed(self):
         private = Category.objects.create(name="Private", owner=self.other_user)
@@ -593,3 +631,51 @@ class CategoryApiTests(TestCase):
                 content_type="application/json",
             )
             self.assertEqual(response.status_code, 201)
+
+    def test_recreating_a_deleted_category_restores_it(self):
+        category = Category.objects.create(name="Gym", owner=self.user)
+        expense = Expense.objects.create(
+            owner=self.user,
+            category=category,
+            amount=Decimal("10.00"),
+            date=date(2026, 10, 26),
+        )
+        self.client.delete(f"/categories/{category.pk}/")
+
+        response = self.post_category(name="gym")
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["id"], category.pk)
+        category.refresh_from_db()
+        self.assertTrue(category.is_active)
+        self.assertEqual(category.name, "gym")
+        expense.refresh_from_db()
+        self.assertEqual(expense.category_id, category.pk)
+        self.assertEqual(Category.objects.filter(owner=self.user, name__iexact="gym").count(), 1)
+
+    def test_restoring_cannot_create_a_cycle(self):
+        parent = Category.objects.create(name="Transport", owner=self.user)
+        child = Category.objects.create(name="Metro", owner=self.user, parent=parent)
+        self.client.delete(f"/categories/{parent.pk}/")
+
+        response = self.post_category(name="Transport", parent=child.pk)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["error"]["field"], "parent")
+        parent.refresh_from_db()
+        self.assertFalse(parent.is_active)
+
+    def test_renaming_onto_a_deleted_categorys_name_is_rejected(self):
+        deleted = Category.objects.create(name="Gym", owner=self.user, is_active=False)
+        other = Category.objects.create(name="Fitness", owner=self.user)
+
+        response = self.client.patch(
+            f"/categories/{other.pk}/",
+            {"name": "GYM"},
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["error"]["field"], "name")
+        deleted.refresh_from_db()
+        self.assertFalse(deleted.is_active)
