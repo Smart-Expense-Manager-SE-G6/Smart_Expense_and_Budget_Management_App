@@ -8,6 +8,8 @@ from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
 
+from audit.models import AuditLog
+from audit.services import log_change
 from budgets.models import Budget
 from expenses.models import Expense
 
@@ -18,12 +20,14 @@ def next_period_dates(budget):
 
     if budget.period == "weekly":
         next_end = next_start + timedelta(days=6)
+
     elif budget.period == "monthly":
         last_day = calendar.monthrange(
             next_start.year,
             next_start.month,
         )[1]
         next_end = next_start.replace(day=last_day)
+
     else:
         raise ValueError(
             f"Unsupported budget period: {budget.period}"
@@ -96,9 +100,7 @@ class Command(BaseCommand):
                 next_start, next_end = next_period_dates(budget)
                 next_limit = base_limit + carry_forward
 
-                # Locking the source budget serializes processing of
-                # that budget. Explicitly check for an existing period,
-                # including budgets whose category is NULL.
+                # Avoid creating duplicate budget periods.
                 next_budget_exists = Budget.objects.filter(
                     user=budget.user,
                     category=budget.category,
@@ -109,7 +111,8 @@ class Command(BaseCommand):
                 if next_budget_exists:
                     continue
 
-                Budget.objects.create(
+                # Create the next budget period.
+                next_budget = Budget.objects.create(
                     user=budget.user,
                     category=budget.category,
                     name=budget.name,
@@ -119,6 +122,13 @@ class Command(BaseCommand):
                     start_date=next_start,
                     end_date=next_end,
                     rollover_mode=budget.rollover_mode,
+                )
+
+                # Record the automatic budget creation in the audit log.
+                log_change(
+                    actor=None,
+                    action=AuditLog.Action.CREATE,
+                    instance=next_budget,
                 )
 
                 processed += 1
