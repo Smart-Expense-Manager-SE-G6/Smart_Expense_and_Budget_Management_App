@@ -1,5 +1,6 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone as dt_timezone
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -201,3 +202,23 @@ class AnalyticsAPITests(TestCase):
         anonymous_client = APIClient()
         response = anonymous_client.get("/api/v1/analytics/summary/")
         self.assertEqual(response.status_code, 401)
+
+    def test_one_year_range_of_366_days_is_allowed(self):
+        response = self.client.get("/api/v1/analytics/summary/?start_date=2025-10-31&end_date=2026-11-01")
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_range_over_366_days_uses_adr_error_code(self):
+        response = self.client.get("/api/v1/analytics/summary/?start_date=2025-10-31&end_date=2026-11-02")
+
+        self.assertEqual(response.status_code, 400)
+        error = response.json()["error"]
+        self.assertEqual((error["code"], error["field"]), ("DATE_RANGE_EXCEEDED", "date_range"))
+
+    def test_default_range_uses_the_users_time_zone(self):
+        # 20:00 UTC on 31 Oct is already 1 Nov in Asia/Kolkata (UTC+5:30).
+        fixed_now = datetime(2026, 10, 31, 20, 0, tzinfo=dt_timezone.utc)
+        with patch("django.utils.timezone.now", return_value=fixed_now):
+            data = self.client.get("/api/v1/analytics/summary/").json()
+
+        self.assertEqual((data["start_date"], data["end_date"]), ("2026-11-01", "2026-11-01"))
