@@ -5,12 +5,8 @@ from django.db import transaction
 from django.db.models import Sum
 
 from expenses.models import Expense
-from core.adapters.factory import get_email_adapter
+from .adapters import send_alert_email
 from .models import Alert
-
-
-def _send_alert_email(recipient, subject, message):
-    get_email_adapter().send_email(recipient=recipient, subject=subject, message=message)
 
 
 def evaluate_budget_thresholds(budget):
@@ -62,9 +58,6 @@ def evaluate_budget_thresholds(budget):
             created_alerts.append(alert)
             # Send only once the surrounding change is committed, so a rolled-back
             # expense or budget never produces an email.
-            transaction.on_commit(
-                lambda recipient=budget.user.email, subject=alert.title, message=alert.message:
-                    _send_alert_email(recipient, subject, message)
-            )
+            transaction.on_commit(lambda alert=alert: send_alert_email(alert))
 
     return created_alerts
