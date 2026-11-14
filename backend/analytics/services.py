@@ -357,3 +357,74 @@ def get_spending_comparison(
         "periods": periods,
         "chart": chart,
     }
+
+
+def get_custom_date_range_report(user, start_date, end_date):
+    """
+    Generate a custom date range report with summary statistics,
+    category-wise breakdown, and budget vs. actual comparison (FR19, FR20, NFR2).
+    """
+    from budgets.models import Budget
+
+    summary_data = get_analytics_summary(user, start_date, end_date)
+    category_data = get_analytics_by_category(user, start_date, end_date)
+
+    budgets = (
+        Budget.objects.filter(
+            user=user,
+            start_date__lte=end_date,
+            end_date__gte=start_date,
+        )
+        .select_related("category")
+        .order_by("start_date", "name")
+    )
+
+    budget_vs_actual = []
+    for budget in budgets:
+        overlap_start = max(start_date, budget.start_date)
+        overlap_end = min(end_date, budget.end_date)
+        spent_qs = Expense.objects.filter(
+            owner=user,
+            is_deleted=False,
+            date__gte=overlap_start,
+            date__lte=overlap_end,
+        )
+        if budget.category_id is not None:
+            spent_qs = spent_qs.filter(category_id=budget.category_id)
+
+        actual_spent = spent_qs.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+        remaining = budget.limit_amount - actual_spent
+        utilization = 0.0
+        if budget.limit_amount > Decimal("0.00"):
+            utilization = round(float((actual_spent / budget.limit_amount) * 100), 2)
+
+        budget_vs_actual.append(
+            {
+                "budget_id": budget.id,
+                "name": budget.name,
+                "category_name": budget.category.name if budget.category else "Overall",
+                "period": budget.period,
+                "start_date": budget.start_date.isoformat(),
+                "end_date": budget.end_date.isoformat(),
+                "limit_amount": format_decimal(budget.limit_amount),
+                "actual_spent": format_decimal(actual_spent),
+                "remaining_amount": format_decimal(remaining),
+                "utilization_percentage": utilization,
+            }
+        )
+
+    total_spend_dec = Decimal(summary_data["total_spend"])
+    tx_count = summary_data["transaction_count"]
+    avg_spend = (total_spend_dec / Decimal(tx_count)).quantize(Decimal("0.01")) if tx_count > 0 else Decimal("0.00")
+
+    return {
+        "start_date": start_date.isoformat(),
+        "end_date": end_date.isoformat(),
+        "summary": {
+            "total_spend": summary_data["total_spend"],
+            "transaction_count": tx_count,
+            "average_spend": format_decimal(avg_spend),
+        },
+        "category_breakdown": category_data["categories"],
+        "budget_vs_actual": budget_vs_actual,
+    }

@@ -349,3 +349,94 @@ class SpendingComparisonTests(TestCase):
     def test_invalid_granularity_returns_400(self):
         res = self.client.get("/api/v1/analytics/comparison/?granularity=weekly")
         self.assertEqual(res.status_code, 400)
+
+
+class CustomReportTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            email="report@example.com",
+            password="Password123!",
+        )
+        self.client.force_authenticate(user=self.user)
+        self.food, _ = Category.objects.get_or_create(name="Food", owner=self.user)
+
+    def test_unauthenticated_returns_401(self):
+        anon = APIClient()
+        res = anon.get("/api/v1/analytics/reports/")
+        self.assertEqual(res.status_code, 401)
+
+    def test_custom_report_1_year_cap_enforced(self):
+        res = self.client.get("/api/v1/analytics/reports/?start_date=2025-10-31&end_date=2026-11-02")
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()["error"]["code"], "DATE_RANGE_EXCEEDED")
+
+    def test_custom_report_includes_summary_categories_and_budget_vs_actual(self):
+        from budgets.models import Budget
+
+        Expense.objects.create(
+            owner=self.user,
+            category=self.food,
+            amount=Decimal("400.00"),
+            date=date(2026, 11, 5),
+            payment_method="card",
+        )
+        Budget.objects.create(
+            user=self.user,
+            name="Food Nov",
+            category=self.food,
+            period="monthly",
+            limit_amount=Decimal("1000.00"),
+            start_date=date(2026, 11, 1),
+            end_date=date(2026, 11, 30),
+        )
+
+        res = self.client.get("/api/v1/analytics/reports/?start_date=2026-11-01&end_date=2026-11-30")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["summary"]["total_spend"], "400.00")
+        self.assertEqual(res.data["summary"]["transaction_count"], 1)
+        self.assertEqual(len(res.data["category_breakdown"]), 1)
+        self.assertEqual(res.data["category_breakdown"][0]["category_name"], "Food")
+        self.assertEqual(len(res.data["budget_vs_actual"]), 1)
+        self.assertEqual(res.data["budget_vs_actual"][0]["actual_spent"], "400.00")
+        self.assertEqual(res.data["budget_vs_actual"][0]["remaining_amount"], "600.00")
+        self.assertEqual(res.data["budget_vs_actual"][0]["utilization_percentage"], 40.0)
+
+    def test_export_pdf_report(self):
+        Expense.objects.create(
+            owner=self.user,
+            category=self.food,
+            amount=Decimal("250.00"),
+            date=date(2026, 11, 5),
+            payment_method="card",
+        )
+        res = self.client.get(
+            "/api/v1/analytics/reports/export/?start_date=2026-11-01&end_date=2026-11-30&export_format=pdf"
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res["Content-Type"], "application/pdf")
+        self.assertTrue(res.content.startswith(b"%PDF"))
+
+    def test_export_excel_report(self):
+        Expense.objects.create(
+            owner=self.user,
+            category=self.food,
+            amount=Decimal("250.00"),
+            date=date(2026, 11, 5),
+            payment_method="card",
+        )
+        res = self.client.get(
+            "/api/v1/analytics/reports/export/?start_date=2026-11-01&end_date=2026-11-30&export_format=xlsx"
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(
+            res["Content-Type"],
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        self.assertTrue(res.content.startswith(b"PK"))
+
+    def test_export_invalid_format_returns_400(self):
+        res = self.client.get(
+            "/api/v1/analytics/reports/export/?start_date=2026-11-01&end_date=2026-11-30&export_format=csv"
+        )
+        self.assertEqual(res.status_code, 400)
