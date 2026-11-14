@@ -24,6 +24,7 @@ export default function Layout() {
           <NavLink to="/" end>
             Home
           </NavLink>
+          <NavLink to="/budgets">Budgets</NavLink>
           <NavLink to="/categories">Categories</NavLink>
           <NavLink to="/profile">Profile</NavLink>
           <Notifications />
