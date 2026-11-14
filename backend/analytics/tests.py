@@ -274,3 +274,42 @@ class CustomReportTests(TestCase):
         self.assertEqual(res.data["budget_vs_actual"][0]["actual_spent"], "400.00")
         self.assertEqual(res.data["budget_vs_actual"][0]["remaining_amount"], "600.00")
         self.assertEqual(res.data["budget_vs_actual"][0]["utilization_percentage"], 40.0)
+
+    def test_export_pdf_report(self):
+        Expense.objects.create(
+            owner=self.user,
+            category=self.food,
+            amount=Decimal("250.00"),
+            date=date(2026, 11, 5),
+            payment_method="card",
+        )
+        res = self.client.get(
+            "/api/v1/analytics/reports/export/?start_date=2026-11-01&end_date=2026-11-30&export_format=pdf"
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res["Content-Type"], "application/pdf")
+        self.assertTrue(res.content.startswith(b"%PDF"))
+
+    def test_export_excel_report(self):
+        Expense.objects.create(
+            owner=self.user,
+            category=self.food,
+            amount=Decimal("250.00"),
+            date=date(2026, 11, 5),
+            payment_method="card",
+        )
+        res = self.client.get(
+            "/api/v1/analytics/reports/export/?start_date=2026-11-01&end_date=2026-11-30&export_format=xlsx"
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(
+            res["Content-Type"],
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        self.assertTrue(res.content.startswith(b"PK"))
+
+    def test_export_invalid_format_returns_400(self):
+        res = self.client.get(
+            "/api/v1/analytics/reports/export/?start_date=2026-11-01&end_date=2026-11-30&export_format=csv"
+        )
+        self.assertEqual(res.status_code, 400)
