@@ -138,6 +138,122 @@ def get_analytics_by_category(user, start_date, end_date):
     }
 
 
+def get_predictive_insights(user, year: int | None = None, month: int | None = None, reference_date=None):
+    """
+    Compute projected month-end spend based on the user's current daily burn rate (FR14).
+    """
+    import calendar
+    from datetime import date
+    from django.utils import timezone
+    from budgets.models import Budget
+
+    today = reference_date or timezone.localdate()
+    target_year = year or today.year
+    target_month = month or today.month
+
+    _, days_in_month = calendar.monthrange(target_year, target_month)
+    month_start = date(target_year, target_month, 1)
+    month_end = date(target_year, target_month, days_in_month)
+
+    if (target_year, target_month) < (today.year, today.month):
+        days_elapsed = days_in_month
+        cutoff_date = month_end
+    elif (target_year, target_month) > (today.year, today.month):
+        days_elapsed = 0
+        cutoff_date = month_start
+    else:
+        days_elapsed = max(today.day, 1)
+        cutoff_date = today
+
+    days_remaining = max(days_in_month - days_elapsed, 0)
+
+    if days_elapsed == 0:
+        total_spent = Decimal("0.00")
+        cat_rows = []
+    else:
+        qs = Expense.objects.filter(
+            owner=user,
+            is_deleted=False,
+            date__gte=month_start,
+            date__lte=cutoff_date,
+        )
+        total_spent = qs.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+        cat_rows = (
+            qs.values("category__id", "category__name")
+            .annotate(total_amount=Sum("amount"))
+            .order_by("-total_amount")
+        )
+
+    if days_elapsed > 0:
+        daily_avg = (total_spent / Decimal(days_elapsed)).quantize(Decimal("0.01"))
+        projected_spend = (daily_avg * Decimal(days_in_month)).quantize(Decimal("0.01"))
+    else:
+        daily_avg = Decimal("0.00")
+        projected_spend = Decimal("0.00")
+
+    # Check active monthly budgets overlapping this month
+    active_budget_limit = (
+        Budget.objects.filter(
+            user=user,
+            period="monthly",
+            start_date__lte=month_end,
+            end_date__gte=month_start,
+            category__isnull=True,
+        ).aggregate(total=Sum("limit_amount"))["total"]
+    )
+    if active_budget_limit is None:
+        active_budget_limit = (
+            Budget.objects.filter(
+                user=user,
+                period="monthly",
+                start_date__lte=month_end,
+                end_date__gte=month_start,
+            ).aggregate(total=Sum("limit_amount"))["total"]
+        )
+
+    projected_overrun = None
+    status = "no_budget"
+    if active_budget_limit is not None and active_budget_limit > Decimal("0.00"):
+        projected_overrun = format_decimal(projected_spend - active_budget_limit)
+        ratio = projected_spend / active_budget_limit
+        if ratio > Decimal("1.0"):
+            status = "over_budget"
+        elif ratio >= Decimal("0.8"):
+            status = "at_risk"
+        else:
+            status = "on_track"
+
+    by_category = []
+    for row in cat_rows:
+        cat_spent = row["total_amount"] or Decimal("0.00")
+        cat_daily = (cat_spent / Decimal(days_elapsed)).quantize(Decimal("0.01")) if days_elapsed > 0 else Decimal("0.00")
+        cat_proj = (cat_daily * Decimal(days_in_month)).quantize(Decimal("0.01"))
+        by_category.append(
+            {
+                "category_id": row["category__id"],
+                "category_name": row["category__name"] or "Uncategorized",
+                "spent_so_far": format_decimal(cat_spent),
+                "daily_average": format_decimal(cat_daily),
+                "projected_month_end": format_decimal(cat_proj),
+            }
+        )
+
+    return {
+        "year": target_year,
+        "month": target_month,
+        "days_in_month": days_in_month,
+        "days_elapsed": days_elapsed,
+        "days_remaining": days_remaining,
+        "total_spent_so_far": format_decimal(total_spent),
+        "daily_average_spend": format_decimal(daily_avg),
+        "projected_month_end_spend": format_decimal(projected_spend),
+        "active_monthly_budget_limit": format_decimal(active_budget_limit) if active_budget_limit is not None else None,
+        "projected_overrun": projected_overrun,
+        "status": status,
+        "by_category": by_category,
+    }
+
+
 def get_spending_comparison(
     user,
     granularity: str = "monthly",

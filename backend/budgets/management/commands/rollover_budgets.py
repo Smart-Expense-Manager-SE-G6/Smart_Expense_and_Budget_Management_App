@@ -30,15 +30,10 @@ def next_period_dates(budget):
     if budget.period == "weekly":
         next_end = next_start + timedelta(days=6)
     elif budget.period == "monthly":
-        last_day = calendar.monthrange(
-            next_start.year,
-            next_start.month,
-        )[1]
+        last_day = calendar.monthrange(next_start.year, next_start.month)[1]
         next_end = next_start.replace(day=last_day)
     else:
-        raise ValueError(
-            f"Unsupported budget period: {budget.period}"
-        )
+        raise ValueError(f"Unsupported budget period: {budget.period}")
 
     return next_start, next_end
 
@@ -50,9 +45,6 @@ class Command(BaseCommand):
         now = timezone.now()
         processed = 0
 
-        # Budget periods end in the owner's own time zone (D7). No zone is more
-        # than a day ahead of UTC, so this pre-filter keeps every candidate; the
-        # exact per-user check happens below.
         expired_ids = list(
             Budget.objects.filter(end_date__lt=now.date() + timedelta(days=1))
             .order_by("end_date")
@@ -79,14 +71,9 @@ class Command(BaseCommand):
                 )
 
                 if budget.category_id is not None:
-                    expenses = expenses.filter(
-                        category_id=budget.category_id
-                    )
+                    expenses = expenses.filter(category_id=budget.category_id)
 
-                spent = expenses.aggregate(
-                    total=Sum("amount")
-                )["total"]
-
+                spent = expenses.aggregate(total=Sum("amount"))["total"]
                 if spent is None:
                     spent = Decimal("0.00")
 
@@ -96,23 +83,16 @@ class Command(BaseCommand):
                     else budget.limit_amount
                 )
 
-                unused = max(
-                    Decimal("0.00"),
-                    budget.limit_amount - spent,
-                )
+                unused = max(Decimal("0.00"), budget.limit_amount - spent)
 
                 carry_forward = (
-                    unused
-                    if budget.rollover_mode == "rollover"
+                    unused if budget.rollover_mode == "rollover"
                     else Decimal("0.00")
                 )
 
                 next_start, next_end = next_period_dates(budget)
                 next_limit = base_limit + carry_forward
 
-                # Locking the source budget serializes processing of
-                # that budget. Explicitly check for an existing period,
-                # including budgets whose category is NULL.
                 next_budget_exists = Budget.objects.filter(
                     user=budget.user,
                     category=budget.category,
@@ -134,7 +114,8 @@ class Command(BaseCommand):
                     end_date=next_end,
                     rollover_mode=budget.rollover_mode,
                 )
-                # Every budget write is audited (FR21); the scheduler has no user.
+
+                # FR21 audit helper records the creation atomically.
                 with audited(None, next_budget):
                     next_budget.save()
 
@@ -142,8 +123,7 @@ class Command(BaseCommand):
 
                 self.stdout.write(
                     f"Created next period for '{budget.name}': "
-                    f"{next_start} to {next_end}, "
-                    f"limit {next_limit}"
+                    f"{next_start} to {next_end}, limit {next_limit}"
                 )
 
         self.stdout.write(

@@ -2,9 +2,11 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
 import { GuestOnly, RequireAuth } from './components/RouteGuards'
 import HomePage from './pages/HomePage'
+import CategoriesPage from './pages/CategoriesPage'
 import LoginPage from './pages/LoginPage'
 import ProfilePage from './pages/ProfilePage'
 import RegisterPage from './pages/RegisterPage'
+import BudgetsPage from './pages/BudgetsPage'
 
 export default function App() {
   return (
@@ -16,6 +18,8 @@ export default function App() {
       <Route element={<RequireAuth />}>
         <Route element={<Layout />}>
           <Route index element={<HomePage />} />
+          <Route path="/budgets" element={<BudgetsPage />} />
+          <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/profile" element={<ProfilePage />} />
         </Route>
       </Route>
