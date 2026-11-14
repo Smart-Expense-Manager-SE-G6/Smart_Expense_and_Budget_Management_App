@@ -9,6 +9,7 @@ from rest_framework.exceptions import NotFound, PermissionDenied, ValidationErro
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated
 
 from audit.mixins import AuditedModelViewSetMixin
 from audit.models import AuditLog
@@ -16,6 +17,7 @@ from audit.services import audited, log_change
 
 from .models import Category, Expense
 from .serializers import CategorySerializer, ExpenseSerializer, ReceiptUploadSerializer
+from .services import suggest_categories
 
 
 class ExpensePagination(PageNumberPagination):
@@ -154,6 +156,7 @@ class ExpenseViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
 
 class CategoryViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
     serializer_class = CategorySerializer
+    permission_classes = [IsAuthenticated]
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
     def get_queryset(self):
@@ -202,3 +205,19 @@ class CategoryViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
         with audited(self.request.user, instance):
             instance.is_active = False
             instance.save(update_fields=["is_active", "updated_at"])
+
+    @action(detail=False, methods=["get"], url_path="suggestions")
+    def suggestions(self, request):
+        description = request.query_params.get("description", "")
+        if len(description) > 255:
+            raise ValidationError(
+                {"description": "Description must not exceed 255 characters."}
+            )
+        return Response(
+            {
+                "suggestions": [
+                    {"id": category.pk, "name": category.name}
+                    for category in suggest_categories(description)
+                ]
+            }
+        )
