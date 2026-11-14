@@ -17,7 +17,12 @@ backend/private_media/
 node_modules/
 dist/
 
+# Backups (scripts/backup.sh)
+backups/
+
 # Editors / OS
 .vscode/
 .idea/
 .DS_Store
+# User-uploaded receipt files
+backend/private_media/

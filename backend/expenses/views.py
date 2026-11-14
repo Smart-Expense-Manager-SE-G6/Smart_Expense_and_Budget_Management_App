@@ -1,3 +1,4 @@
+
 from datetime import date
 
 from django.http import FileResponse
@@ -9,13 +10,18 @@ from rest_framework.exceptions import NotFound, PermissionDenied, ValidationErro
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated
 
 from audit.mixins import AuditedModelViewSetMixin
 from audit.models import AuditLog
 from audit.services import audited, log_change
 
+# FR17: Spending anomaly detection
+from alerts.services import detect_spending_anomaly
+
 from .models import Category, Expense
 from .serializers import CategorySerializer, ExpenseSerializer, ReceiptUploadSerializer
+from .services import suggest_categories
 
 
 class ExpensePagination(PageNumberPagination):
@@ -89,6 +95,12 @@ class ExpenseViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
         except (TypeError, ValueError):
             raise ValidationError({parameter: "Date must use YYYY-MM-DD format."})
 
+    # FR17: Run anomaly detection after creating an expense.
+    # Calling super() preserves the existing audit logging.
+    def perform_create(self, serializer):
+        super().perform_create(serializer)
+        detect_spending_anomaly(serializer.instance)
+
     def perform_destroy(self, instance):
         with audited(self.request.user, instance):
             instance.is_deleted = True
@@ -154,6 +166,7 @@ class ExpenseViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
 
 class CategoryViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
     serializer_class = CategorySerializer
+    permission_classes = [IsAuthenticated]
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
     def get_queryset(self):
@@ -161,6 +174,8 @@ class CategoryViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
             is_active=True,
         ).filter(
             Q(owner__isnull=True) | Q(owner=self.request.user)
+        ).filter(
+            Q(parent__isnull=True) | Q(parent__is_active=True)
         ).select_related("owner", "parent").order_by("name", "id")
 
     def perform_create(self, serializer):
@@ -199,6 +214,26 @@ class CategoryViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         if instance.owner_id is None:
             raise PermissionDenied("Global categories cannot be deleted.")
+        if instance.children.filter(is_active=True).exists():
+            raise ValidationError(
+                {"parent": "Deactivate or reassign active subcategories first."}
+            )
         with audited(self.request.user, instance):
             instance.is_active = False
             instance.save(update_fields=["is_active", "updated_at"])
+
+    @action(detail=False, methods=["get"], url_path="suggestions")
+    def suggestions(self, request):
+        description = request.query_params.get("description", "")
+        if len(description) > 255:
+            raise ValidationError(
+                {"description": "Description must not exceed 255 characters."}
+            )
+        return Response(
+            {
+                "suggestions": [
+                    {"id": category.pk, "name": category.name}
+                    for category in suggest_categories(description)
+                ]
+            }
+        )

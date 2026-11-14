@@ -224,6 +224,133 @@ class AnalyticsAPITests(TestCase):
         self.assertEqual((data["start_date"], data["end_date"]), ("2026-11-01", "2026-11-01"))
 
 
+class PredictiveInsightsTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            email="predict@example.com",
+            password="Password123!",
+        )
+        self.client.force_authenticate(user=self.user)
+        self.food, _ = Category.objects.get_or_create(name="Food", owner=self.user)
+
+    def test_unauthenticated_returns_401(self):
+        anon = APIClient()
+        res = anon.get("/api/v1/analytics/predictive-insights/")
+        self.assertEqual(res.status_code, 401)
+
+    def test_predictive_insights_current_month_projection(self):
+        from analytics.services import get_predictive_insights
+        from budgets.models import Budget
+
+        # 2026-11 has 30 days; reference_date = 2026-11-10 -> 10 days elapsed
+        Expense.objects.create(
+            owner=self.user,
+            category=self.food,
+            amount=Decimal("1000.00"),
+            date=date(2026, 11, 5),
+            payment_method="card",
+        )
+        Budget.objects.create(
+            user=self.user,
+            name="Nov Overall",
+            period="monthly",
+            limit_amount=Decimal("2500.00"),
+            start_date=date(2026, 11, 1),
+            end_date=date(2026, 11, 30),
+        )
+
+        data = get_predictive_insights(self.user, year=2026, month=11, reference_date=date(2026, 11, 10))
+        self.assertEqual(data["days_in_month"], 30)
+        self.assertEqual(data["days_elapsed"], 10)
+        self.assertEqual(data["days_remaining"], 20)
+        self.assertEqual(data["total_spent_so_far"], "1000.00")
+        self.assertEqual(data["daily_average_spend"], "100.00")
+        self.assertEqual(data["projected_month_end_spend"], "3000.00")
+        self.assertEqual(data["projected_overrun"], "500.00")
+        self.assertEqual(data["status"], "over_budget")
+        self.assertEqual(len(data["by_category"]), 1)
+        self.assertEqual(data["by_category"][0]["projected_month_end"], "3000.00")
+
+    def test_predictive_insights_api_invalid_params(self):
+        res = self.client.get("/api/v1/analytics/predictive-insights/?month=13")
+        self.assertEqual(res.status_code, 400)
+        res2 = self.client.get("/api/v1/analytics/predictive-insights/?year=abc")
+        self.assertEqual(res2.status_code, 400)
+
+    def test_predictive_insights_api_endpoint(self):
+        res = self.client.get("/api/v1/analytics/predictive-insights/?year=2026&month=11")
+        self.assertEqual(res.status_code, 200)
+        self.assertIn("projected_month_end_spend", res.data)
+        self.assertIn("status", res.data)
+
+
+class SpendingComparisonTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            email="compare@example.com",
+            password="Password123!",
+        )
+        self.client.force_authenticate(user=self.user)
+        self.food, _ = Category.objects.get_or_create(name="Food", owner=self.user)
+
+    def test_unauthenticated_returns_401(self):
+        anon = APIClient()
+        res = anon.get("/api/v1/analytics/comparison/")
+        self.assertEqual(res.status_code, 401)
+
+    def test_monthly_comparison_calculates_change(self):
+        from analytics.services import get_spending_comparison
+
+        Expense.objects.create(
+            owner=self.user,
+            category=self.food,
+            amount=Decimal("200.00"),
+            date=date(2026, 9, 15),
+            payment_method="card",
+        )
+        Expense.objects.create(
+            owner=self.user,
+            category=self.food,
+            amount=Decimal("300.00"),
+            date=date(2026, 10, 10),
+            payment_method="card",
+        )
+
+        data = get_spending_comparison(
+            self.user,
+            granularity="monthly",
+            months=3,
+            reference_date=date(2026, 11, 14),
+        )
+        self.assertEqual(data["granularity"], "monthly")
+        self.assertEqual(len(data["periods"]), 3)
+        self.assertEqual(data["periods"][0]["period"], "2026-09")
+        self.assertEqual(data["periods"][0]["total_amount"], "200.00")
+        self.assertEqual(data["periods"][1]["period"], "2026-10")
+        self.assertEqual(data["periods"][1]["total_amount"], "300.00")
+        self.assertEqual(data["periods"][1]["change_amount"], "100.00")
+        self.assertEqual(data["periods"][1]["change_percentage"], 50.0)
+
+    def test_yearly_comparison_endpoint(self):
+        Expense.objects.create(
+            owner=self.user,
+            category=self.food,
+            amount=Decimal("500.00"),
+            date=date(2025, 5, 1),
+            payment_method="cash",
+        )
+        res = self.client.get("/api/v1/analytics/comparison/?granularity=yearly&years=2")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["granularity"], "yearly")
+        self.assertEqual(len(res.data["periods"]), 2)
+
+    def test_invalid_granularity_returns_400(self):
+        res = self.client.get("/api/v1/analytics/comparison/?granularity=weekly")
+        self.assertEqual(res.status_code, 400)
+
+
 class CustomReportTests(TestCase):
     def setUp(self):
         self.client = APIClient()

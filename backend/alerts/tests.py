@@ -1,16 +1,20 @@
 
 from datetime import date
 from decimal import Decimal
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 
 from budgets.models import Budget
 from expenses.models import Expense
+from .adapters import send_alert_email
 from .models import Alert
-from .services import evaluate_budget_thresholds
+from .services import (
+    evaluate_budget_thresholds,
+    detect_spending_anomaly,
+)
 
 
 class BudgetThresholdAlertTests(TestCase):
@@ -95,6 +99,132 @@ class BudgetThresholdAlertTests(TestCase):
                 threshold_percentage=100,
             ).exists()
         )
+
+
+class SpendingAnomalyAlertTests(TestCase):
+
+    def setUp(self):
+        User = get_user_model()
+
+        self.user = User.objects.create_user(
+            email="anomaly_test@example.com",
+            password="test-password-123",
+        )
+
+    def add_expense(self, amount, is_deleted=False):
+        return Expense.objects.create(
+            owner=self.user,
+            amount=Decimal(str(amount)),
+            date=date(2026, 10, 15),
+            description="Test expense",
+            is_deleted=is_deleted,
+        )
+
+    def add_previous_expenses(self):
+        # Average = (100 + 150 + 200 + 150 + 200) / 5 = 160
+        for amount in [100, 150, 200, 150, 200]:
+            self.add_expense(amount)
+
+    def test_anomaly_alert_created_for_unusual_expense(self):
+        self.add_previous_expenses()
+
+        expense = self.add_expense(1000)
+
+        alert = detect_spending_anomaly(expense)
+
+        self.assertIsNotNone(alert)
+        self.assertEqual(alert.alert_type, "anomaly")
+        self.assertEqual(alert.user, self.user)
+
+    def test_no_alert_when_expense_is_within_limit(self):
+        self.add_previous_expenses()
+
+        expense = self.add_expense(400)
+
+        alert = detect_spending_anomaly(expense)
+
+        self.assertIsNone(alert)
+
+    def test_no_alert_when_expense_equals_threshold(self):
+        self.add_previous_expenses()
+
+        # Average = 160; threshold = 160 * 3 = 480
+        expense = self.add_expense(480)
+
+        alert = detect_spending_anomaly(expense)
+
+        self.assertIsNone(alert)
+
+    def test_no_alert_with_fewer_than_five_previous_expenses(self):
+        for amount in [100, 150, 200, 150]:
+            self.add_expense(amount)
+
+        expense = self.add_expense(1000)
+
+        alert = detect_spending_anomaly(expense)
+
+        self.assertIsNone(alert)
+
+    def test_deleted_expenses_are_ignored(self):
+        for amount in [100, 150, 200, 150]:
+            self.add_expense(amount)
+
+        self.add_expense(200, is_deleted=True)
+
+        expense = self.add_expense(1000)
+
+        alert = detect_spending_anomaly(expense)
+
+        self.assertIsNone(alert)
+
+    def test_repeated_evaluation_does_not_duplicate_alerts(self):
+        self.add_previous_expenses()
+
+        expense = self.add_expense(1000)
+
+        first_alert = detect_spending_anomaly(expense)
+        second_alert = detect_spending_anomaly(expense)
+
+        self.assertIsNotNone(first_alert)
+        self.assertIsNone(second_alert)
+
+        self.assertEqual(
+            Alert.objects.filter(
+                user=self.user,
+                alert_type="anomaly",
+            ).count(),
+            1,
+        )
+
+
+class AlertEmailAdapterTests(SimpleTestCase):
+
+    @patch("alerts.adapters.get_email_adapter")
+    def test_send_alert_email_uses_configured_adapter(
+        self, mock_get_adapter
+    ):
+        alert = Mock()
+        alert.user.email = "user@example.com"
+        alert.title = "Budget reached 80%"
+        alert.message = "You have used 80% of your budget."
+
+        expected_result = object()
+
+        email_adapter = Mock()
+        email_adapter.send_email.return_value = expected_result
+        mock_get_adapter.return_value = email_adapter
+
+        result = send_alert_email(alert)
+
+        mock_get_adapter.assert_called_once_with()
+
+        email_adapter.send_email.assert_called_once_with(
+            recipient="user@example.com",
+            subject="Budget reached 80%",
+            message="You have used 80% of your budget.",
+        )
+
+        self.assertIs(result, expected_result)
 
 
 class AlertApiTests(TestCase):
@@ -192,7 +322,7 @@ class AlertApiTests(TestCase):
             user=self.user, name="Oct", limit_amount=Decimal("1000.00"), period="monthly",
             start_date=date(2026, 10, 1), end_date=date(2026, 10, 31),
         )
-        with patch("alerts.services.get_email_adapter") as adapter:
+        with patch("alerts.adapters.get_email_adapter") as adapter:
             with self.captureOnCommitCallbacks(execute=False) as callbacks:
                 Expense.objects.create(owner=self.user, amount=Decimal("850.00"), date=date(2026, 10, 5))
             adapter.return_value.send_email.assert_not_called()
@@ -211,7 +341,7 @@ class AlertApiTests(TestCase):
             user=self.user, name="Oct", limit_amount=Decimal("1000.00"), period="monthly",
             start_date=date(2026, 10, 1), end_date=date(2026, 10, 31),
         )
-        with patch("alerts.services.get_email_adapter") as adapter:
+        with patch("alerts.adapters.get_email_adapter") as adapter:
             with self.captureOnCommitCallbacks(execute=True) as callbacks:
                 try:
                     with transaction.atomic():
