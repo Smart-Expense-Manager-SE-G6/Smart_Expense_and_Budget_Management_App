@@ -166,6 +166,33 @@ docker compose start backend
   database and all receipts. Restore with the same code version (migrations)
   the backup was taken with.
 
+### Shared budgets (FR3)
+
+A budget owner can share a budget with other registered users:
+
+```text
+GET    /api/v1/budgets/<id>/members/              list members
+POST   /api/v1/budgets/<id>/members/              {"email": "...", "role": "member" | "admin"}
+PATCH  /api/v1/budgets/<id>/members/<member_id>/  {"role": "admin"}
+DELETE /api/v1/budgets/<id>/members/<member_id>/
+GET    /api/v1/budgets/<id>/expenses/             expenses counted by the budget (paginated)
+```
+
+| Role   | View budget, utilization, expenses | Edit settings, manage members | Delete budget |
+|--------|:---:|:---:|:---:|
+| owner  | yes | yes | yes |
+| admin  | yes | yes | no  |
+| member | yes | no (may only leave) | no |
+
+- Members add expenses as usual (`POST /api/v1/expenses/`). Their expenses count
+  towards the shared budget's utilization, threshold alerts and rollover.
+- Users with no role get `404`; members trying an admin action get `403`.
+- A shared budget can only use a default category (or none), because members
+  cannot use the owner's custom categories.
+- Every membership change writes an audit entry (FR21). Rollover copies the
+  members into the next period.
+- Budget responses include `owner_email`, `role` (your role on that budget) and `member_count`.
+
 ## Rules
 
 - No secrets in code. Everything comes from `.env`, which is git-ignored.

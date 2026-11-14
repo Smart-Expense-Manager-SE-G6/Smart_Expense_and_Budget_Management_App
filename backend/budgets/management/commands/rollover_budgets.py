@@ -6,12 +6,11 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from django.db.models import Sum
 from django.utils import timezone
 
 from audit.services import audited
-from budgets.models import Budget
-from expenses.models import Expense
+from budgets.models import Budget, BudgetMember
+from budgets.services import amount_spent
 
 
 def user_local_date(user, now):
@@ -63,19 +62,8 @@ class Command(BaseCommand):
                 if budget is None or budget.end_date >= user_local_date(budget.user, now):
                     continue
 
-                expenses = Expense.objects.filter(
-                    owner=budget.user,
-                    is_deleted=False,
-                    date__gte=budget.start_date,
-                    date__lte=budget.end_date,
-                )
-
-                if budget.category_id is not None:
-                    expenses = expenses.filter(category_id=budget.category_id)
-
-                spent = expenses.aggregate(total=Sum("amount"))["total"]
-                if spent is None:
-                    spent = Decimal("0.00")
+                # Counts every member of a shared budget (FR3).
+                spent = amount_spent(budget)
 
                 base_limit = (
                     budget.base_limit_amount
@@ -118,6 +106,12 @@ class Command(BaseCommand):
                 # FR21 audit helper records the creation atomically.
                 with audited(None, next_budget):
                     next_budget.save()
+
+                # A shared budget stays shared in the next period, each membership audited (FR21).
+                for member in budget.memberships.all():
+                    membership = BudgetMember(budget=next_budget, user_id=member.user_id, role=member.role)
+                    with audited(None, membership):
+                        membership.save()
 
                 processed += 1
 
