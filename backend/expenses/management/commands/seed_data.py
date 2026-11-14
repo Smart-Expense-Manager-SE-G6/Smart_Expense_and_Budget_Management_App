@@ -9,6 +9,7 @@ Strictly adheres to:
 """
 
 import random
+import secrets
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -72,6 +73,12 @@ class Command(BaseCommand):
             action="store_true",
             help="Delete existing expenses for this user before seeding.",
         )
+        parser.add_argument(
+            "--password",
+            type=str,
+            default=None,
+            help="Password for a newly created user (default: a random one, printed once).",
+        )
 
     def handle(self, *args, **options):
         email = options["email"].lower().strip()
@@ -90,9 +97,13 @@ class Command(BaseCommand):
             },
         )
         if created:
-            user.set_password("Password123!")
+            # No fixed, publicly known password: use the one given or a random one.
+            password = options["password"] or secrets.token_urlsafe(12)
+            user.set_password(password)
             user.save()
             self.stdout.write(self.style.SUCCESS(f"Created user: {email}"))
+            if not options["password"]:
+                self.stdout.write(f"Generated password (shown once): {password}")
         else:
             self.stdout.write(f"Using existing user: {email}")
 

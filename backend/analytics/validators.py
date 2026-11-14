@@ -1,25 +1,31 @@
 from datetime import date
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from django.utils import timezone
 from rest_framework import serializers
+
+# docs/adr/0002-report-date-range-cap.md
+MAX_RANGE_DAYS = 366
+
+
+def user_today(user):
+    """Today's date in the user's configured IANA time zone (D7)."""
+    try:
+        zone = ZoneInfo(getattr(user, "timezone", None) or "Asia/Kolkata")
+    except (ZoneInfoNotFoundError, ValueError):
+        zone = ZoneInfo("Asia/Kolkata")
+    return timezone.now().astimezone(zone).date()
 
 
 def parse_date_range(request):
     """
     Parses and validates start_date and end_date query parameters.
 
-    Strictly complies with:
-    - SASD 4.1 (D7): Date boundaries evaluated within user's configured IANA timezone.
-    - ADR-0003 / OI-3: Date range strictly capped at 365 days (1 year).
+    - Missing values default to the current month to date, in the user's time zone (D7).
+    - The range is capped at 366 days with error code DATE_RANGE_EXCEEDED (ADR 0002).
     - Returns a tuple of (start_date, end_date) as datetime.date objects.
     """
-    user_tz_str = getattr(request.user, "timezone", "Asia/Kolkata") or "Asia/Kolkata"
-    try:
-        user_tz = ZoneInfo(user_tz_str)
-    except Exception:
-        user_tz = ZoneInfo("Asia/Kolkata")
-
-    today = date.today()
+    today = user_today(request.user)
 
     start_param = request.query_params.get("start_date")
     end_param = request.query_params.get("end_date")
@@ -54,13 +60,16 @@ def parse_date_range(request):
             {"date_range": "start_date must be earlier than or equal to end_date."}
         )
 
-    # 4. Check 365 days cap (OI-3 / ADR-0003)
-    delta_days = (end_date - start_date).days
-    if delta_days > 365:
+    # 4. Check the one-year cap (ADR 0002)
+    if (end_date - start_date).days > MAX_RANGE_DAYS:
         raise serializers.ValidationError(
             {
-                "date_range": "Requested range exceeds the maximum limit of 365 days (1 year)."
-            }
+                "date_range": (
+                    "Report date range cannot exceed 366 days (1 year). "
+                    "Please select a narrower date range."
+                )
+            },
+            code="DATE_RANGE_EXCEEDED",
         )
 
     return start_date, end_date

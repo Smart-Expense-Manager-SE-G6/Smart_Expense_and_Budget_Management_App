@@ -1,13 +1,19 @@
+
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/context'
+import Notifications from './Notifications'
 
 export default function Layout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
 
   async function handleLogout() {
-    await logout()
-    navigate('/login')
+    try {
+      await logout()
+    } finally {
+      // The local session is cleared either way, so always land on the sign-in page.
+      navigate('/login')
+    }
   }
 
   return (
@@ -19,7 +25,9 @@ export default function Layout() {
             Home
           </NavLink>
           <NavLink to="/budgets">Budgets</NavLink>
+          <NavLink to="/categories">Categories</NavLink>
           <NavLink to="/profile">Profile</NavLink>
+          <Notifications />
           <button type="button" className="link-button" onClick={handleLogout}>
             Log out
           </button>

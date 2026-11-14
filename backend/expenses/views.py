@@ -1,3 +1,4 @@
+
 from datetime import date
 
 from django.http import FileResponse
@@ -5,17 +6,22 @@ from django.db import transaction
 from django.db.models import Q
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated
 
 from audit.mixins import AuditedModelViewSetMixin
 from audit.models import AuditLog
 from audit.services import audited, log_change
 
+# FR17: Spending anomaly detection
+from alerts.services import detect_spending_anomaly
+
 from .models import Category, Expense
 from .serializers import CategorySerializer, ExpenseSerializer, ReceiptUploadSerializer
+from .services import suggest_categories
 
 
 class ExpensePagination(PageNumberPagination):
@@ -89,6 +95,12 @@ class ExpenseViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
         except (TypeError, ValueError):
             raise ValidationError({parameter: "Date must use YYYY-MM-DD format."})
 
+    # FR17: Run anomaly detection after creating an expense.
+    # Calling super() preserves the existing audit logging.
+    def perform_create(self, serializer):
+        super().perform_create(serializer)
+        detect_spending_anomaly(serializer.instance)
+
     def perform_destroy(self, instance):
         with audited(self.request.user, instance):
             instance.is_deleted = True
@@ -121,11 +133,11 @@ class ExpenseViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
 
     def _retrieve_receipt(self, expense):
         if not expense.receipt:
-            raise ValidationError({"receipt": "This expense has no receipt."})
+            raise NotFound("This expense has no receipt.")
         try:
             receipt_file = expense.receipt.storage.open(expense.receipt.name, "rb")
         except (FileNotFoundError, OSError):
-            raise ValidationError({"receipt": "The stored receipt is unavailable."})
+            raise NotFound("The stored receipt is unavailable.")
         content_type = "application/octet-stream"
         extension = expense.receipt.name.rsplit(".", 1)[-1].lower()
         if extension in {"jpg", "jpeg"}:
@@ -142,15 +154,19 @@ class ExpenseViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
 
     def _delete_receipt(self, request, expense):
         if not expense.receipt:
-            raise ValidationError({"receipt": "This expense has no receipt."})
+            raise NotFound("This expense has no receipt.")
+        storage, name = expense.receipt.storage, expense.receipt.name
         with audited(request.user, expense):
-            expense.receipt.delete(save=False)
             expense.receipt = None
             expense.save(update_fields=["receipt", "updated_at"])
+            # Remove the file only once the change is committed; a rollback keeps both.
+            transaction.on_commit(lambda: storage.delete(name))
         return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class CategoryViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
     serializer_class = CategorySerializer
+    permission_classes = [IsAuthenticated]
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
     def get_queryset(self):
@@ -158,21 +174,66 @@ class CategoryViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
             is_active=True,
         ).filter(
             Q(owner__isnull=True) | Q(owner=self.request.user)
+        ).filter(
+            Q(parent__isnull=True) | Q(parent__is_active=True)
         ).select_related("owner", "parent").order_by("name", "id")
 
     def perform_create(self, serializer):
+        name = serializer.validated_data["name"]
+        deleted = Category.objects.filter(
+            owner=self.request.user, is_active=False, name__iexact=name
+        ).first()
+        if deleted is not None:
+            # Re-creating a deleted category restores it, so its old expenses
+            # and budgets stay linked and the per-owner unique name holds.
+            self._restore(deleted, serializer)
+            return
         with transaction.atomic():
             category = serializer.save(owner=self.request.user)
             log_change(self.request.user, AuditLog.Action.CREATE, category)
 
+    def _restore(self, category, serializer):
+        parent = serializer.validated_data.get("parent")
+        ancestor = parent
+        while ancestor is not None:
+            if ancestor.pk == category.pk:
+                raise ValidationError({"parent": "The category hierarchy cannot contain a cycle."})
+            ancestor = ancestor.parent
+        with audited(self.request.user, category):
+            category.name = serializer.validated_data["name"]
+            category.parent = parent
+            category.is_active = True
+            category.save(update_fields=["name", "parent", "is_active", "updated_at"])
+        serializer.instance = category
+
     def perform_update(self, serializer):
         if serializer.instance.owner_id is None:
-            raise ValidationError("Global categories cannot be modified.")
+            raise PermissionDenied("Global categories cannot be modified.")
         super().perform_update(serializer)
 
     def perform_destroy(self, instance):
         if instance.owner_id is None:
-            raise ValidationError("Global categories cannot be deleted.")
+            raise PermissionDenied("Global categories cannot be deleted.")
+        if instance.children.filter(is_active=True).exists():
+            raise ValidationError(
+                {"parent": "Deactivate or reassign active subcategories first."}
+            )
         with audited(self.request.user, instance):
             instance.is_active = False
             instance.save(update_fields=["is_active", "updated_at"])
+
+    @action(detail=False, methods=["get"], url_path="suggestions")
+    def suggestions(self, request):
+        description = request.query_params.get("description", "")
+        if len(description) > 255:
+            raise ValidationError(
+                {"description": "Description must not exceed 255 characters."}
+            )
+        return Response(
+            {
+                "suggestions": [
+                    {"id": category.pk, "name": category.name}
+                    for category in suggest_categories(description)
+                ]
+            }
+        )
