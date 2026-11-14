@@ -1,15 +1,21 @@
 from datetime import date
 
+from django.http import FileResponse
+from django.db import transaction
 from django.db.models import Q
-from rest_framework import viewsets
-from rest_framework.exceptions import ValidationError
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
+from rest_framework.parsers import MultiPartParser
+from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 
 from audit.mixins import AuditedModelViewSetMixin
-from audit.services import audited
+from audit.models import AuditLog
+from audit.services import audited, log_change
 
 from .models import Category, Expense
-from .serializers import ExpenseSerializer
+from .serializers import CategorySerializer, ExpenseSerializer, ReceiptUploadSerializer
 
 
 class ExpensePagination(PageNumberPagination):
@@ -87,3 +93,112 @@ class ExpenseViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
         with audited(self.request.user, instance):
             instance.is_deleted = True
             instance.save(update_fields=["is_deleted", "updated_at"])
+
+    @action(
+        detail=True,
+        methods=["get", "post", "delete"],
+        url_path="receipt",
+        parser_classes=[MultiPartParser],
+    )
+    def receipt(self, request, pk=None):
+        expense = self.get_object()
+        if request.method == "GET":
+            return self._retrieve_receipt(expense)
+        if request.method == "DELETE":
+            return self._delete_receipt(request, expense)
+
+        if expense.receipt:
+            raise ValidationError(
+                {"receipt": "This expense already has a receipt. Delete it before uploading another."}
+            )
+        serializer = ReceiptUploadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        receipt = serializer.validated_data["receipt"]
+        with audited(request.user, expense):
+            expense.receipt = receipt
+            expense.save(update_fields=["receipt", "updated_at"])
+        return Response({"detail": "Receipt uploaded."}, status=status.HTTP_201_CREATED)
+
+    def _retrieve_receipt(self, expense):
+        if not expense.receipt:
+            raise NotFound("This expense has no receipt.")
+        try:
+            receipt_file = expense.receipt.storage.open(expense.receipt.name, "rb")
+        except (FileNotFoundError, OSError):
+            raise NotFound("The stored receipt is unavailable.")
+        content_type = "application/octet-stream"
+        extension = expense.receipt.name.rsplit(".", 1)[-1].lower()
+        if extension in {"jpg", "jpeg"}:
+            content_type = "image/jpeg"
+        elif extension == "png":
+            content_type = "image/png"
+        elif extension == "pdf":
+            content_type = "application/pdf"
+        response = FileResponse(receipt_file, content_type=content_type)
+        response["Content-Disposition"] = (
+            f'attachment; filename="receipt-{expense.pk}.{extension}"'
+        )
+        return response
+
+    def _delete_receipt(self, request, expense):
+        if not expense.receipt:
+            raise NotFound("This expense has no receipt.")
+        storage, name = expense.receipt.storage, expense.receipt.name
+        with audited(request.user, expense):
+            expense.receipt = None
+            expense.save(update_fields=["receipt", "updated_at"])
+            # Remove the file only once the change is committed; a rollback keeps both.
+            transaction.on_commit(lambda: storage.delete(name))
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class CategoryViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
+    serializer_class = CategorySerializer
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+
+    def get_queryset(self):
+        return Category.objects.filter(
+            is_active=True,
+        ).filter(
+            Q(owner__isnull=True) | Q(owner=self.request.user)
+        ).select_related("owner", "parent").order_by("name", "id")
+
+    def perform_create(self, serializer):
+        name = serializer.validated_data["name"]
+        deleted = Category.objects.filter(
+            owner=self.request.user, is_active=False, name__iexact=name
+        ).first()
+        if deleted is not None:
+            # Re-creating a deleted category restores it, so its old expenses
+            # and budgets stay linked and the per-owner unique name holds.
+            self._restore(deleted, serializer)
+            return
+        with transaction.atomic():
+            category = serializer.save(owner=self.request.user)
+            log_change(self.request.user, AuditLog.Action.CREATE, category)
+
+    def _restore(self, category, serializer):
+        parent = serializer.validated_data.get("parent")
+        ancestor = parent
+        while ancestor is not None:
+            if ancestor.pk == category.pk:
+                raise ValidationError({"parent": "The category hierarchy cannot contain a cycle."})
+            ancestor = ancestor.parent
+        with audited(self.request.user, category):
+            category.name = serializer.validated_data["name"]
+            category.parent = parent
+            category.is_active = True
+            category.save(update_fields=["name", "parent", "is_active", "updated_at"])
+        serializer.instance = category
+
+    def perform_update(self, serializer):
+        if serializer.instance.owner_id is None:
+            raise PermissionDenied("Global categories cannot be modified.")
+        super().perform_update(serializer)
+
+    def perform_destroy(self, instance):
+        if instance.owner_id is None:
+            raise PermissionDenied("Global categories cannot be deleted.")
+        with audited(self.request.user, instance):
+            instance.is_active = False
+            instance.save(update_fields=["is_active", "updated_at"])

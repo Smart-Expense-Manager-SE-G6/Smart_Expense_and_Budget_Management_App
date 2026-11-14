@@ -2,14 +2,25 @@
 import calendar
 from datetime import timedelta
 from decimal import Decimal
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
 
+from audit.services import audited
 from budgets.models import Budget
 from expenses.models import Expense
+
+
+def user_local_date(user, now):
+    """Today's date in the user's IANA time zone (falls back to UTC if unknown)."""
+    try:
+        zone = ZoneInfo(user.timezone)
+    except (ZoneInfoNotFoundError, ValueError, TypeError):
+        zone = ZoneInfo("UTC")
+    return now.astimezone(zone).date()
 
 
 def next_period_dates(budget):
@@ -36,11 +47,14 @@ class Command(BaseCommand):
     help = "Process expired budgets and create their next periods."
 
     def handle(self, *args, **options):
-        today = timezone.localdate()
+        now = timezone.now()
         processed = 0
 
+        # Budget periods end in the owner's own time zone (D7). No zone is more
+        # than a day ahead of UTC, so this pre-filter keeps every candidate; the
+        # exact per-user check happens below.
         expired_ids = list(
-            Budget.objects.filter(end_date__lt=today)
+            Budget.objects.filter(end_date__lt=now.date() + timedelta(days=1))
             .order_by("end_date")
             .values_list("id", flat=True)
         )
@@ -54,7 +68,7 @@ class Command(BaseCommand):
                     .first()
                 )
 
-                if budget is None or budget.end_date >= today:
+                if budget is None or budget.end_date >= user_local_date(budget.user, now):
                     continue
 
                 expenses = Expense.objects.filter(
@@ -109,7 +123,7 @@ class Command(BaseCommand):
                 if next_budget_exists:
                     continue
 
-                Budget.objects.create(
+                next_budget = Budget(
                     user=budget.user,
                     category=budget.category,
                     name=budget.name,
@@ -120,6 +134,9 @@ class Command(BaseCommand):
                     end_date=next_end,
                     rollover_mode=budget.rollover_mode,
                 )
+                # Every budget write is audited (FR21); the scheduler has no user.
+                with audited(None, next_budget):
+                    next_budget.save()
 
                 processed += 1
 

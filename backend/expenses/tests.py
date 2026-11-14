@@ -1,7 +1,10 @@
 from datetime import date
 from decimal import Decimal
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import include, path
 from rest_framework import routers
@@ -9,10 +12,11 @@ from rest_framework import routers
 from audit.models import AuditLog
 
 from .models import Category, Expense
-from .views import ExpenseViewSet
+from .views import CategoryViewSet, ExpenseViewSet
 
 
 router = routers.DefaultRouter()
+router.register("categories", CategoryViewSet, basename="category")
 router.register("expenses", ExpenseViewSet, basename="expense")
 urlpatterns = [path("", include(router.urls))]
 
@@ -20,10 +24,17 @@ urlpatterns = [path("", include(router.urls))]
 @override_settings(ROOT_URLCONF=__name__)
 class ExpenseApiTests(TestCase):
     def setUp(self):
+        # Receipt uploads must never land in the real MEDIA_ROOT inside the repository.
+        media_root = TemporaryDirectory()
+        self.addCleanup(media_root.cleanup)
+        media_override = override_settings(MEDIA_ROOT=media_root.name)
+        media_override.enable()
+        self.addCleanup(media_override.disable)
+
         self.User = get_user_model()
         self.user = self.User.objects.create_user("alice@example.com", "s3cure-pass!")
         self.other_user = self.User.objects.create_user("bob@example.com", "s3cure-pass!")
-        self.global_category = Category.objects.create(name="Food")
+        self.global_category, _ = Category.objects.get_or_create(name="Food")
         self.custom_category = Category.objects.create(name="Travel", owner=self.user)
         self.client.force_login(self.user)
 
@@ -303,3 +314,368 @@ class ExpenseApiTests(TestCase):
         response = self.client.get("/expenses/")
 
         self.assertEqual(response.status_code, 401)
+
+    @override_settings(RECEIPT_MAX_SIZE_BYTES=1024)
+    def test_receipt_upload_retrieval_and_deletion(self):
+        with TemporaryDirectory() as media_root:
+            with override_settings(MEDIA_ROOT=media_root):
+                expense = self.create_expense()
+                upload = SimpleUploadedFile(
+                    "receipt.png",
+                    b"\x89PNG\r\n\x1a\nreceipt",
+                    content_type="image/png",
+                )
+
+                upload_response = self.client.post(
+                    f"/expenses/{expense.pk}/receipt/",
+                    {"receipt": upload},
+                    format="multipart",
+                )
+
+                self.assertEqual(upload_response.status_code, 201)
+                expense.refresh_from_db()
+                self.assertTrue(expense.receipt.name.startswith(f"receipts/{self.user.pk}/"))
+                self.assertNotIn("receipt.png", expense.receipt.name)
+                stored_path = Path(media_root, expense.receipt.name)
+                self.assertTrue(stored_path.is_file())
+                self.assertEqual(AuditLog.objects.filter(entity_type="expenses.expense").count(), 1)
+
+                retrieve_response = self.client.get(f"/expenses/{expense.pk}/receipt/")
+
+                self.assertEqual(retrieve_response.status_code, 200)
+                self.assertEqual(retrieve_response["Content-Type"], "image/png")
+                self.assertIn("attachment", retrieve_response["Content-Disposition"])
+                self.assertNotIn("private_media", retrieve_response.get("Content-Location", ""))
+                self.assertNotIn("receipt.png", retrieve_response["Content-Disposition"])
+                self.assertEqual(b"".join(retrieve_response.streaming_content), b"\x89PNG\r\n\x1a\nreceipt")
+
+                with self.captureOnCommitCallbacks(execute=False) as callbacks:
+                    delete_response = self.client.delete(f"/expenses/{expense.pk}/receipt/")
+
+                self.assertEqual(delete_response.status_code, 204)
+                expense.refresh_from_db()
+                self.assertFalse(expense.receipt)
+                # The file stays until the transaction commits, then is removed.
+                self.assertTrue(stored_path.exists())
+                for callback in callbacks:
+                    callback()
+                self.assertFalse(stored_path.exists())
+                self.assertEqual(AuditLog.objects.filter(entity_type="expenses.expense").count(), 2)
+
+    def test_rejects_invalid_receipts_and_missing_receipts(self):
+        expense = self.create_expense()
+        invalid_extension = SimpleUploadedFile(
+            "receipt.exe",
+            b"MZnot-an-image",
+            content_type="application/octet-stream",
+        )
+        invalid_content = SimpleUploadedFile(
+            "receipt.png",
+            b"not-a-png",
+            content_type="image/png",
+        )
+
+        invalid_extension_response = self.client.post(
+            f"/expenses/{expense.pk}/receipt/",
+            {"receipt": invalid_extension},
+            format="multipart",
+        )
+        invalid_content_response = self.client.post(
+            f"/expenses/{expense.pk}/receipt/",
+            {"receipt": invalid_content},
+            format="multipart",
+        )
+        missing_response = self.client.get(f"/expenses/{expense.pk}/receipt/")
+
+        self.assertEqual(invalid_extension_response.status_code, 400)
+        self.assertEqual(invalid_content_response.status_code, 400)
+        self.assertEqual(missing_response.status_code, 404)
+
+    @override_settings(RECEIPT_MAX_SIZE_BYTES=8)
+    def test_rejects_oversized_receipts(self):
+        expense = self.create_expense()
+        oversized = SimpleUploadedFile(
+            "receipt.png",
+            b"\x89PNG\r\n\x1a\nlarge",
+            content_type="image/png",
+        )
+
+        response = self.client.post(
+            f"/expenses/{expense.pk}/receipt/",
+            {"receipt": oversized},
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_receipt_replacement_is_rejected(self):
+        expense = self.create_expense()
+        first = SimpleUploadedFile(
+            "first.pdf",
+            b"%PDF-1.7 first",
+            content_type="application/pdf",
+        )
+        second = SimpleUploadedFile(
+            "second.pdf",
+            b"%PDF-1.7 second",
+            content_type="application/pdf",
+        )
+
+        first_response = self.client.post(
+            f"/expenses/{expense.pk}/receipt/",
+            {"receipt": first},
+            format="multipart",
+        )
+        second_response = self.client.post(
+            f"/expenses/{expense.pk}/receipt/",
+            {"receipt": second},
+            format="multipart",
+        )
+
+        self.assertEqual(first_response.status_code, 201)
+        self.assertEqual(second_response.status_code, 400)
+
+    def test_receipt_operations_are_owner_and_authentication_isolated(self):
+        own_expense = self.create_expense()
+        other_expense = Expense.objects.create(
+            owner=self.other_user,
+            category=self.global_category,
+            amount=Decimal("10.00"),
+            date=date(2026, 10, 26),
+        )
+        upload = SimpleUploadedFile(
+            "receipt.pdf",
+            b"%PDF-1.7 receipt",
+            content_type="application/pdf",
+        )
+
+        other_response = self.client.post(
+            f"/expenses/{other_expense.pk}/receipt/",
+            {"receipt": upload},
+            format="multipart",
+        )
+        self.assertEqual(other_response.status_code, 404)
+
+        self.client.logout()
+        unauthenticated_response = self.client.get(
+            f"/expenses/{own_expense.pk}/receipt/"
+        )
+        self.assertEqual(unauthenticated_response.status_code, 401)
+
+    def test_has_receipt_reflects_upload_and_delete(self):
+        expense = self.create_expense()
+        self.assertFalse(self.client.get(f"/expenses/{expense.pk}/").json()["has_receipt"])
+
+        self.client.post(
+            f"/expenses/{expense.pk}/receipt/",
+            {"receipt": SimpleUploadedFile("r.pdf", b"%PDF-1.7 r", content_type="application/pdf")},
+            format="multipart",
+        )
+        self.assertTrue(self.client.get(f"/expenses/{expense.pk}/").json()["has_receipt"])
+
+        self.client.delete(f"/expenses/{expense.pk}/receipt/")
+        self.assertFalse(self.client.get(f"/expenses/{expense.pk}/").json()["has_receipt"])
+
+    def test_deleting_a_missing_receipt_returns_404(self):
+        expense = self.create_expense()
+
+        response = self.client.delete(f"/expenses/{expense.pk}/receipt/")
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_another_users_category_is_indistinguishable_from_unknown(self):
+        private = Category.objects.create(name="Private", owner=self.other_user)
+
+        foreign = self.client.post("/expenses/", self.payload(category=private.pk), content_type="application/json")
+        unknown = self.client.post("/expenses/", self.payload(category=999999), content_type="application/json")
+
+        self.assertEqual(foreign.status_code, 400)
+        self.assertEqual(foreign.json()["error"]["code"], unknown.json()["error"]["code"])
+        self.assertNotIn("another user", foreign.json()["error"]["message"])
+
+
+@override_settings(ROOT_URLCONF=__name__)
+class CategoryApiTests(TestCase):
+    def setUp(self):
+        self.User = get_user_model()
+        self.user = self.User.objects.create_user("alice@example.com", "s3cure-pass!")
+        self.other_user = self.User.objects.create_user("bob@example.com", "s3cure-pass!")
+        self.global_category, _ = Category.objects.get_or_create(name="Food")
+        self.client.force_login(self.user)
+
+    def post_category(self, **payload):
+        return self.client.post(
+            "/categories/",
+            payload,
+            content_type="application/json",
+        )
+
+    def test_list_returns_global_and_own_active_categories_only(self):
+        own = Category.objects.create(name="Personal", owner=self.user)
+        Category.objects.create(name="Private", owner=self.other_user)
+        Category.objects.create(name="Inactive", owner=self.user, is_active=False)
+
+        response = self.client.get("/categories/")
+
+        self.assertEqual(response.status_code, 200)
+        ids = {item["id"] for item in response.json()}
+        self.assertIn(self.global_category.pk, ids)
+        self.assertIn(own.pk, ids)
+        self.assertNotIn(Category.objects.get(name="Private").pk, ids)
+        self.assertNotIn(Category.objects.get(name="Inactive").pk, ids)
+
+    def test_create_assigns_owner_and_audits(self):
+        response = self.post_category(name="Subscriptions")
+
+        self.assertEqual(response.status_code, 201)
+        category = Category.objects.get(name="Subscriptions")
+        self.assertEqual(category.owner, self.user)
+        audit = AuditLog.objects.get(entity_type="expenses.category")
+        self.assertEqual(audit.action, AuditLog.Action.CREATE)
+
+    def test_rejects_empty_and_duplicate_names(self):
+        Category.objects.create(name="Travel", owner=self.user)
+        for name in ("", "   ", "travel"):
+            response = self.post_category(name=name)
+            self.assertEqual(response.status_code, 400)
+            self.assertIn("name", response.json()["error"]["field"])
+
+    def test_allows_same_name_as_global_category(self):
+        response = self.post_category(name="Food")
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(Category.objects.filter(name__iexact="food").count(), 2)
+
+    def test_creates_subcategory_under_visible_parent(self):
+        response = self.post_category(name="Coffee", parent=self.global_category.pk)
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(
+            Category.objects.get(name="Coffee").parent_id,
+            self.global_category.pk,
+        )
+
+    def test_rejects_inaccessible_parent(self):
+        private = Category.objects.create(name="Private", owner=self.other_user)
+
+        response = self.post_category(name="Child", parent=private.pk)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("parent", response.json()["error"]["field"])
+
+    def test_rejects_circular_parent_update(self):
+        first = Category.objects.create(name="First", owner=self.user)
+        second = Category.objects.create(name="Second", owner=self.user, parent=first)
+        response = self.client.patch(
+            f"/categories/{first.pk}/",
+            {"parent": second.pk},
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("parent", response.json()["error"]["field"])
+
+    def test_global_categories_cannot_be_updated_or_deleted(self):
+        update = self.client.patch(
+            f"/categories/{self.global_category.pk}/",
+            {"name": "Changed"},
+            content_type="application/json",
+        )
+        delete = self.client.delete(f"/categories/{self.global_category.pk}/")
+
+        self.assertEqual(update.status_code, 403)
+        self.assertEqual(delete.status_code, 403)
+        self.global_category.refresh_from_db()
+        self.assertEqual(self.global_category.name, "Food")
+        self.assertTrue(self.global_category.is_active)
+
+    def test_other_users_category_is_not_exposed(self):
+        private = Category.objects.create(name="Private", owner=self.other_user)
+
+        self.assertEqual(self.client.get(f"/categories/{private.pk}/").status_code, 404)
+        self.assertEqual(self.client.delete(f"/categories/{private.pk}/").status_code, 404)
+
+    def test_delete_deactivates_referenced_custom_category_and_audits(self):
+        category = Category.objects.create(name="Bills", owner=self.user)
+        Expense.objects.create(
+            owner=self.user,
+            category=category,
+            amount=Decimal("10.00"),
+            date=date(2026, 10, 26),
+        )
+
+        response = self.client.delete(f"/categories/{category.pk}/")
+
+        self.assertEqual(response.status_code, 204)
+        category.refresh_from_db()
+        self.assertFalse(category.is_active)
+        self.assertEqual(
+            AuditLog.objects.filter(
+                entity_type="expenses.category",
+                action=AuditLog.Action.UPDATE,
+            ).count(),
+            1,
+        )
+
+    def test_expenses_accept_global_and_custom_categories(self):
+        custom = Category.objects.create(name="Custom", owner=self.user)
+
+        for category in (self.global_category, custom):
+            response = self.client.post(
+                "/expenses/",
+                {
+                    "category": category.pk,
+                    "amount": "10.00",
+                    "date": "2026-10-26",
+                },
+                content_type="application/json",
+            )
+            self.assertEqual(response.status_code, 201)
+
+    def test_recreating_a_deleted_category_restores_it(self):
+        category = Category.objects.create(name="Gym", owner=self.user)
+        expense = Expense.objects.create(
+            owner=self.user,
+            category=category,
+            amount=Decimal("10.00"),
+            date=date(2026, 10, 26),
+        )
+        self.client.delete(f"/categories/{category.pk}/")
+
+        response = self.post_category(name="gym")
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["id"], category.pk)
+        category.refresh_from_db()
+        self.assertTrue(category.is_active)
+        self.assertEqual(category.name, "gym")
+        expense.refresh_from_db()
+        self.assertEqual(expense.category_id, category.pk)
+        self.assertEqual(Category.objects.filter(owner=self.user, name__iexact="gym").count(), 1)
+
+    def test_restoring_cannot_create_a_cycle(self):
+        parent = Category.objects.create(name="Transport", owner=self.user)
+        child = Category.objects.create(name="Metro", owner=self.user, parent=parent)
+        self.client.delete(f"/categories/{parent.pk}/")
+
+        response = self.post_category(name="Transport", parent=child.pk)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["error"]["field"], "parent")
+        parent.refresh_from_db()
+        self.assertFalse(parent.is_active)
+
+    def test_renaming_onto_a_deleted_categorys_name_is_rejected(self):
+        deleted = Category.objects.create(name="Gym", owner=self.user, is_active=False)
+        other = Category.objects.create(name="Fitness", owner=self.user)
+
+        response = self.client.patch(
+            f"/categories/{other.pk}/",
+            {"name": "GYM"},
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["error"]["field"], "name")
+        deleted.refresh_from_db()
+        self.assertFalse(deleted.is_active)

@@ -7,11 +7,15 @@ All secrets and environment-specific values come from environment variables
 
 import os
 from pathlib import Path
-
+from dotenv import load_dotenv
 from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# backend/.env first, then the repo-root .env that the README creates (used when
+# running outside Docker). Variables already set in the environment always win.
+load_dotenv(BASE_DIR / ".env")
+load_dotenv(BASE_DIR.parent / ".env")
 
 def env(name, default=None, required=False):
     value = os.environ.get(name, default)
@@ -28,10 +32,12 @@ def env_list(name, default=""):
     return [item.strip() for item in env(name, default).split(",") if item.strip()]
 
 
-SECRET_KEY = env("DJANGO_SECRET_KEY", default="django-insecure-dev-key-change-in-production")
 DEBUG = env_bool("DJANGO_DEBUG", False)
-ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,testserver")
-CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS", "http://localhost:5173")
+# Fail closed: outside debug the app refuses to start with a missing secret key
+# instead of silently signing sessions with a publicly known one.
+SECRET_KEY = env("DJANGO_SECRET_KEY", required=not DEBUG) or "django-insecure-dev-key-debug-only"
+ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
+CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS", "http://localhost:5174,http://localhost:5173")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -80,7 +86,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-if env_bool("USE_SQLITE", False) or not env("POSTGRES_DB", required=False):
+# PostgreSQL unless SQLite is asked for explicitly; a missing POSTGRES_* variable is
+# an error rather than a silent switch to a different database engine.
+if env_bool("USE_SQLITE", False):
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
@@ -122,6 +130,8 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+MEDIA_ROOT = BASE_DIR / "private_media"
+RECEIPT_MAX_SIZE_BYTES = int(env("RECEIPT_MAX_SIZE_BYTES", str(5 * 1024 * 1024)))
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -135,12 +145,36 @@ SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_HTTPONLY = False  # React reads it to send the X-CSRFToken header
+CSRF_FAILURE_VIEW = "core.exceptions.csrf_failure"
+
+# Transport security (NFR4). On by default outside debug; each can be overridden from
+# the environment, e.g. DJANGO_SECURE_SSL_REDIRECT=false when TLS ends elsewhere.
+SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", not DEBUG)
+SECURE_HSTS_SECONDS = int(env("DJANGO_SECURE_HSTS_SECONDS", "0" if DEBUG else "31536000"))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = SECURE_HSTS_SECONDS > 0
+# Trust X-Forwarded-Proto only when a reverse proxy we control sets it.
+if int(env("NUM_PROXIES", "0")) > 0:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Failed-login limits (accounts.throttles.LoginFailureGuard).
+LOGIN_FAILURE_WINDOW_SECONDS = int(env("LOGIN_FAILURE_WINDOW_SECONDS", "300"))
+LOGIN_FAILURES_PER_ACCOUNT_AND_IP = int(env("LOGIN_FAILURES_PER_ACCOUNT_AND_IP", "5"))
+LOGIN_FAILURES_PER_ACCOUNT = int(env("LOGIN_FAILURES_PER_ACCOUNT", "25"))
+TRUSTED_DEVICE_MAX_AGE_SECONDS = int(env("TRUSTED_DEVICE_MAX_AGE_SECONDS", str(90 * 24 * 3600)))
 
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_AUTHENTICATION_CLASSES": ["core.authentication.SessionAuthentication401"],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "EXCEPTION_HANDLER": "core.exceptions.api_exception_handler",
+    "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.ScopedRateThrottle"],
+    "DEFAULT_THROTTLE_RATES": {
+        "login": env("LOGIN_RATE_LIMIT", "10/min"),  # per client IP
+        "register": env("REGISTER_RATE_LIMIT", "5/min"),  # per client IP
+    },
+    # Number of trusted reverse proxies in front of Django. 0 = use the socket
+    # address and ignore X-Forwarded-For, which clients can forge.
+    "NUM_PROXIES": int(env("NUM_PROXIES", "0")),
 }
 
 # Every log line carries the request id (NFR12).
