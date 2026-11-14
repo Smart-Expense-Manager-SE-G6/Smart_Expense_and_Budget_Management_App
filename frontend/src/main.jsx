@@ -7,6 +7,7 @@ import './styles/tokens.css'
 import './styles/base.css'
 import './styles/ui.css'
 import './styles/layout.css'
+import './styles/categories.css'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

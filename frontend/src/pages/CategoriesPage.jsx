@@ -175,7 +175,7 @@ export default function CategoriesPage() {
   }
 
   return (
-    <section className="card">
+    <section className="card categories-page">
       <h1>Categories</h1>
       <p className="muted">Global categories are read-only. You can manage your own categories and subcategories.</p>
       <form className="category-create-form" onSubmit={createCategory} noValidate>
