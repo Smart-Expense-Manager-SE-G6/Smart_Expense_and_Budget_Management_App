@@ -3,9 +3,10 @@ import { useAuth } from '../auth/context'
 
 function Loading() {
   return (
-    <p className="page muted" role="status">
-      Loading…
-    </p>
+    <div className="splash" role="status" aria-live="polite">
+      <span className="spinner splash-spinner" aria-hidden="true" />
+      <span className="sr-only">Loading…</span>
+    </div>
   )
 }
 
