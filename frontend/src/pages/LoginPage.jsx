@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/context'
+import AuthShell from '../components/layout/AuthShell'
 import FormField from '../components/FormField'
+import Button from '../components/ui/Button'
+import Notice from '../components/ui/Notice'
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -30,25 +33,25 @@ export default function LoginPage() {
   const fieldError = (name) => (error?.field === name ? error.message : null)
 
   return (
-    <main className="auth-card">
-      <h1>Sign in</h1>
-      <form onSubmit={handleSubmit} noValidate>
-        {error && !error.field && (
-          <p className="form-error" role="alert">
-            {error.message}
-          </p>
-        )}
-        <FormField label="Email" name="email" type="email" autoComplete="email" required
+    <AuthShell
+      title="Welcome back"
+      subtitle="Sign in to your account to continue."
+      footer={
+        <>
+          New here? <Link to="/register">Create an account</Link>
+        </>
+      }
+    >
+      <form className="form" onSubmit={handleSubmit} noValidate>
+        {error && !error.field && <Notice tone="danger">{error.message}</Notice>}
+        <FormField label="Email" name="email" type="email" autoComplete="email" placeholder="you@example.com" required autoFocus
           value={form.email} onChange={update} error={fieldError('email')} />
-        <FormField label="Password" name="password" type="password" autoComplete="current-password" required
+        <FormField label="Password" name="password" type="password" autoComplete="current-password" placeholder="••••••••" required
           value={form.password} onChange={update} error={fieldError('password')} />
-        <button type="submit" disabled={submitting}>
+        <Button type="submit" variant="primary" size="lg" block loading={submitting}>
           {submitting ? 'Signing in…' : 'Sign in'}
-        </button>
+        </Button>
       </form>
-      <p>
-        New here? <Link to="/register">Create an account</Link>
-      </p>
-    </main>
+    </AuthShell>
   )
 }

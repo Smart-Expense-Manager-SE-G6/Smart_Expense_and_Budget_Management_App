@@ -18,15 +18,15 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0f1419;
-    --surface: #182029;
-    --text: #e6e9ee;
-    --muted: #9aa4b2;
-    --border: #2d3846;
-    --primary: #4c8dff;
-    --danger: #ff8a7a;
-    --success: #4ade80;
-    --focus: #4c8dff;
+    --bg: #090d16;
+    --surface: rgba(17, 24, 39, 0.85);
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --border: rgba(148, 163, 184, 0.16);
+    --primary: #3b82f6;
+    --danger: #f87171;
+    --success: #34d399;
+    --focus: #60a5fa;
   }
 }
 
@@ -39,7 +39,12 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--bg);
+  background:
+    radial-gradient(circle at 15% 15%, rgba(59, 130, 246, 0.12), transparent 45%),
+    radial-gradient(circle at 85% 80%, rgba(16, 185, 129, 0.08), transparent 45%),
+    var(--bg);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
 }
 
 h1 {
@@ -102,14 +107,25 @@ a {
 .card,
 .auth-card {
   background: var(--surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+#root:has(.auth-card) {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
   padding: 1.5rem;
 }
 
 .auth-card {
+  width: 100%;
   max-width: 420px;
-  margin: 3rem auto;
+  margin: 0 auto;
 }
 
 @media (max-width: 480px) {

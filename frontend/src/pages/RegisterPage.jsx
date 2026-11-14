@@ -1,9 +1,13 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/context'
+import AuthShell from '../components/layout/AuthShell'
 import FormField from '../components/FormField'
+import Button from '../components/ui/Button'
+import Notice from '../components/ui/Notice'
 
 const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+const FIELDS = ['first_name', 'last_name', 'email', 'password']
 
 export default function RegisterPage() {
   const { register } = useAuth()
@@ -31,32 +35,32 @@ export default function RegisterPage() {
   const fieldError = (name) => (error?.field === name ? error.message : null)
 
   return (
-    <main className="auth-card">
-      <h1>Create your account</h1>
-      <form onSubmit={handleSubmit} noValidate>
-        {error && !['first_name', 'last_name', 'email', 'password'].includes(error.field) && (
-          <p className="form-error" role="alert">
-            {error.message}
-          </p>
-        )}
+    <AuthShell
+      title="Create your account"
+      subtitle="Start tracking your spending in under a minute."
+      footer={
+        <>
+          Already have an account? <Link to="/login">Sign in</Link>
+        </>
+      }
+    >
+      <form className="form" onSubmit={handleSubmit} noValidate>
+        {error && !FIELDS.includes(error.field) && <Notice tone="danger">{error.message}</Notice>}
         <div className="field-row">
-          <FormField label="First name" name="first_name" autoComplete="given-name"
+          <FormField label="First name" name="first_name" autoComplete="given-name" placeholder="Asha" autoFocus
             value={form.first_name} onChange={update} error={fieldError('first_name')} />
-          <FormField label="Last name" name="last_name" autoComplete="family-name"
+          <FormField label="Last name" name="last_name" autoComplete="family-name" placeholder="Rao"
             value={form.last_name} onChange={update} error={fieldError('last_name')} />
         </div>
-        <FormField label="Email" name="email" type="email" autoComplete="email" required
+        <FormField label="Email" name="email" type="email" autoComplete="email" placeholder="you@example.com" required
           value={form.email} onChange={update} error={fieldError('email')} />
         <FormField label="Password" name="password" type="password" autoComplete="new-password" required
           hint="At least 8 characters; not too common or similar to your name or email."
           value={form.password} onChange={update} error={fieldError('password')} />
-        <button type="submit" disabled={submitting}>
+        <Button type="submit" variant="primary" size="lg" block loading={submitting}>
           {submitting ? 'Creating account…' : 'Create account'}
-        </button>
+        </Button>
       </form>
-      <p>
-        Already have an account? <Link to="/login">Sign in</Link>
-      </p>
-    </main>
+    </AuthShell>
   )
 }
