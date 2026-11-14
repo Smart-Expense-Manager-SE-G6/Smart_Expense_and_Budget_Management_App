@@ -1,4 +1,5 @@
 from rest_framework.authentication import SessionAuthentication
+from rest_framework.exceptions import PermissionDenied
 
 
 class SessionAuthentication401(SessionAuthentication):
@@ -12,3 +13,13 @@ class SessionAuthentication401(SessionAuthentication):
 
     def authenticate_header(self, request):
         return "Session"
+
+    def enforce_csrf(self, request):
+        # Same code and message as Django's CSRF failure view (core.exceptions.csrf_failure),
+        # so the frontend sees one error for one problem.
+        try:
+            super().enforce_csrf(request)
+        except PermissionDenied as exc:
+            raise PermissionDenied(
+                "CSRF check failed. Reload the page and try again.", code="csrf_failed"
+            ) from exc

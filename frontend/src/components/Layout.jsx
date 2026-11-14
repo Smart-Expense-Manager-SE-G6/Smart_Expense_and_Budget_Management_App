@@ -8,8 +8,12 @@ export default function Layout() {
   const navigate = useNavigate()
 
   async function handleLogout() {
-    await logout()
-    navigate('/login')
+    try {
+      await logout()
+    } finally {
+      // The local session is cleared either way, so always land on the sign-in page.
+      navigate('/login')
+    }
   }
 
   return (
@@ -20,6 +24,7 @@ export default function Layout() {
           <NavLink to="/" end>
             Home
           </NavLink>
+          <NavLink to="/categories">Categories</NavLink>
           <NavLink to="/profile">Profile</NavLink>
           <Notifications />
           <button type="button" className="link-button" onClick={handleLogout}>
