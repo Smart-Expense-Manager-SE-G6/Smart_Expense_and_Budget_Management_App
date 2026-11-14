@@ -6,8 +6,12 @@ export default function Layout() {
   const navigate = useNavigate()
 
   async function handleLogout() {
-    await logout()
-    navigate('/login')
+    try {
+      await logout()
+    } finally {
+      // The local session is cleared either way, so always land on the sign-in page.
+      navigate('/login')
+    }
   }
 
   return (

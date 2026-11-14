@@ -4,5 +4,8 @@ Django==5.2.18
 djangorestframework==3.16.1
 psycopg==3.2.13
 psycopg-binary==3.2.13
-sqlparse==0.6.0
 python-dotenv==1.2.4
+sqlparse==0.6.0
+# Full IANA time zone data, including names like Asia/Calcutta that browsers report
+# but the Debian base image no longer ships.
+tzdata==2026.6

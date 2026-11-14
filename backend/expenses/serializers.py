@@ -47,12 +47,19 @@ class CategorySerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Category name cannot be empty.")
 
         user = self.context["request"].user
-        queryset = Category.objects.filter(name__iexact=name)
+        queryset = Category.objects.filter(name__iexact=name, owner=user)
         if self.instance is not None:
             queryset = queryset.exclude(pk=self.instance.pk)
-        if queryset.filter(owner=user).exists():
+        if queryset.filter(is_active=True).exists():
             raise serializers.ValidationError(
                 "You already have a category with this name."
+            )
+        # A deleted category keeps its name (expenses still point at it). Creating
+        # that name again restores it (CategoryViewSet.perform_create); renaming
+        # another category onto it is refused.
+        if self.instance is not None and queryset.exists():
+            raise serializers.ValidationError(
+                "A deleted category uses this name. Create a category with this name to restore it."
             )
         return name
 
@@ -97,6 +104,8 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class ExpenseSerializer(serializers.ModelSerializer):
+    has_receipt = serializers.SerializerMethodField()
+
     class Meta:
         model = Expense
         fields = [
@@ -107,21 +116,28 @@ class ExpenseSerializer(serializers.ModelSerializer):
             "description",
             "date",
             "payment_method",
+            "has_receipt",
             "is_deleted",
             "created_at",
             "updated_at",
         ]
         read_only_fields = ["id", "owner", "is_deleted", "created_at", "updated_at"]
 
-    def validate_category(self, category):
-        if category is None:
-            return category
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        request = self.context.get("request")
+        if request is not None and request.user.is_authenticated:
+            # Another user's category gets the same "does not exist" error as an unknown id.
+            self.fields["category"].queryset = Category.objects.filter(
+                Q(owner__isnull=True) | Q(owner=request.user)
+            )
 
-        user = self.context["request"].user
-        if not category.is_active:
+    def get_has_receipt(self, expense):
+        return bool(expense.receipt)
+
+    def validate_category(self, category):
+        if category is not None and not category.is_active:
             raise serializers.ValidationError("The selected category is inactive.")
-        if category.owner_id is not None and category.owner_id != user.pk:
-            raise serializers.ValidationError("You cannot use another user's category.")
         return category
 
     def create(self, validated_data):

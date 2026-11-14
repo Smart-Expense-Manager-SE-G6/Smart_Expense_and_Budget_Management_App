@@ -12,6 +12,7 @@ from rest_framework import routers
 from audit.models import AuditLog
 
 from .models import Category, Expense
+from .services import suggest_categories
 from .views import CategoryViewSet, ExpenseViewSet
 
 
@@ -24,6 +25,13 @@ urlpatterns = [path("", include(router.urls))]
 @override_settings(ROOT_URLCONF=__name__)
 class ExpenseApiTests(TestCase):
     def setUp(self):
+        # Receipt uploads must never land in the real MEDIA_ROOT inside the repository.
+        media_root = TemporaryDirectory()
+        self.addCleanup(media_root.cleanup)
+        media_override = override_settings(MEDIA_ROOT=media_root.name)
+        media_override.enable()
+        self.addCleanup(media_override.disable)
+
         self.User = get_user_model()
         self.user = self.User.objects.create_user("alice@example.com", "s3cure-pass!")
         self.other_user = self.User.objects.create_user("bob@example.com", "s3cure-pass!")
@@ -194,6 +202,8 @@ class ExpenseApiTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 201)
+
+
         expense = Expense.objects.get()
         self.assertEqual(expense.owner, self.user)
         self.assertEqual(expense.amount, Decimal("125.50"))
@@ -342,11 +352,16 @@ class ExpenseApiTests(TestCase):
                 self.assertNotIn("receipt.png", retrieve_response["Content-Disposition"])
                 self.assertEqual(b"".join(retrieve_response.streaming_content), b"\x89PNG\r\n\x1a\nreceipt")
 
-                delete_response = self.client.delete(f"/expenses/{expense.pk}/receipt/")
+                with self.captureOnCommitCallbacks(execute=False) as callbacks:
+                    delete_response = self.client.delete(f"/expenses/{expense.pk}/receipt/")
 
                 self.assertEqual(delete_response.status_code, 204)
                 expense.refresh_from_db()
                 self.assertFalse(expense.receipt)
+                # The file stays until the transaction commits, then is removed.
+                self.assertTrue(stored_path.exists())
+                for callback in callbacks:
+                    callback()
                 self.assertFalse(stored_path.exists())
                 self.assertEqual(AuditLog.objects.filter(entity_type="expenses.expense").count(), 2)
 
@@ -377,7 +392,7 @@ class ExpenseApiTests(TestCase):
 
         self.assertEqual(invalid_extension_response.status_code, 400)
         self.assertEqual(invalid_content_response.status_code, 400)
-        self.assertEqual(missing_response.status_code, 400)
+        self.assertEqual(missing_response.status_code, 404)
 
     @override_settings(RECEIPT_MAX_SIZE_BYTES=8)
     def test_rejects_oversized_receipts(self):
@@ -449,6 +464,167 @@ class ExpenseApiTests(TestCase):
             f"/expenses/{own_expense.pk}/receipt/"
         )
         self.assertEqual(unauthenticated_response.status_code, 401)
+
+    def test_has_receipt_reflects_upload_and_delete(self):
+        expense = self.create_expense()
+        self.assertFalse(self.client.get(f"/expenses/{expense.pk}/").json()["has_receipt"])
+
+        self.client.post(
+            f"/expenses/{expense.pk}/receipt/",
+            {"receipt": SimpleUploadedFile("r.pdf", b"%PDF-1.7 r", content_type="application/pdf")},
+            format="multipart",
+        )
+        self.assertTrue(self.client.get(f"/expenses/{expense.pk}/").json()["has_receipt"])
+
+        self.client.delete(f"/expenses/{expense.pk}/receipt/")
+        self.assertFalse(self.client.get(f"/expenses/{expense.pk}/").json()["has_receipt"])
+
+    def test_deleting_a_missing_receipt_returns_404(self):
+        expense = self.create_expense()
+
+        response = self.client.delete(f"/expenses/{expense.pk}/receipt/")
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_another_users_category_is_indistinguishable_from_unknown(self):
+        private = Category.objects.create(name="Private", owner=self.other_user)
+
+        foreign = self.client.post("/expenses/", self.payload(category=private.pk), content_type="application/json")
+        unknown = self.client.post("/expenses/", self.payload(category=999999), content_type="application/json")
+
+        self.assertEqual(foreign.status_code, 400)
+        self.assertEqual(foreign.json()["error"]["code"], unknown.json()["error"]["code"])
+        self.assertNotIn("another user", foreign.json()["error"]["message"])
+
+
+@override_settings(ROOT_URLCONF=__name__)
+class CategorySuggestionTests(TestCase):
+    def setUp(self):
+        self.User = get_user_model()
+        self.user = self.User.objects.create_user(
+            "suggestions@example.com", "s3cure-pass!"
+        )
+        self.other_user = self.User.objects.create_user(
+            "other@example.com", "s3cure-pass!"
+        )
+        self.global_categories = {
+            name: Category.objects.get_or_create(name=name, owner=None)[0]
+            for name in ("Food", "Travel", "Bills", "Shopping", "Healthcare")
+        }
+        self.client.force_login(self.user)
+
+    def names(self, description):
+        return [category.name for category in suggest_categories(description)]
+
+    def test_known_keyword_returns_global_category(self):
+        self.assertEqual(self.names("Lunch at a cafe"), ["Food"])
+
+    def test_matching_is_case_insensitive_and_normalizes_whitespace(self):
+        self.assertEqual(self.names("  ELECTRICITY   bill  "), ["Bills"])
+
+    def test_punctuation_does_not_break_matching(self):
+        self.assertEqual(self.names("flight-ticket"), ["Travel"])
+
+    def test_unrelated_words_do_not_match_inside_words(self):
+        self.assertEqual(self.names("medicality and foodie"), [])
+
+    def test_multiple_matches_are_distinct_and_deterministically_ordered(self):
+        self.assertEqual(
+            self.names("Lunch, flight, shopping and doctor"),
+            ["Food", "Travel", "Shopping", "Healthcare"],
+        )
+
+    def test_empty_and_unmatched_descriptions_return_no_suggestions(self):
+        for description in (None, "", "   ", "stationery"):
+            self.assertEqual(self.names(description), [])
+
+    def test_only_active_global_categories_are_returned(self):
+        self.global_categories["Food"].is_active = False
+        self.global_categories["Food"].save(update_fields=["is_active"])
+        Category.objects.create(name="Lunch", owner=self.user)
+
+        self.assertEqual(self.names("lunch"), [])
+
+    def test_custom_and_other_users_categories_are_never_returned(self):
+        Category.objects.create(name="Private", owner=self.user)
+        Category.objects.create(name="Travel", owner=self.other_user)
+
+        self.assertEqual(self.names("private travel"), ["Travel"])
+
+    def test_duplicate_global_and_custom_names_do_not_leak_custom_category(self):
+        custom = Category.objects.create(name="Food", owner=self.user)
+
+        suggestions = suggest_categories("food")
+
+        self.assertEqual([category.name for category in suggestions], ["Food"])
+        self.assertIsNone(suggestions[0].owner_id)
+        self.assertNotEqual(suggestions[0].pk, custom.pk)
+
+    def test_api_returns_suggestions_for_authenticated_user(self):
+        response = self.client.get("/categories/suggestions/?description=Lunch")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json(),
+            {"suggestions": [{"id": self.global_categories["Food"].pk, "name": "Food"}]},
+        )
+
+    def test_api_returns_empty_list_for_no_match_or_empty_description(self):
+        for query in ("?description=stationery", "?description="):
+            response = self.client.get(f"/categories/suggestions/{query}")
+
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json(), {"suggestions": []})
+
+    def test_api_rejects_descriptions_longer_than_expense_description(self):
+        response = self.client.get(
+            "/categories/suggestions/", {"description": "x" * 256}
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["error"]["field"], "description")
+
+    def test_api_requires_authentication(self):
+        self.client.logout()
+
+        response = self.client.get("/categories/suggestions/?description=Lunch")
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_api_does_not_create_or_modify_records(self):
+        before_categories = list(
+            Category.objects.values_list("id", "is_active", "name")
+        )
+        before_expenses = Expense.objects.count()
+
+        response = self.client.get("/categories/suggestions/?description=Lunch")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            list(Category.objects.values_list("id", "is_active", "name")),
+            before_categories,
+        )
+        self.assertEqual(Expense.objects.count(), before_expenses)
+
+    def test_suggestions_do_not_assign_or_overwrite_expense_categories(self):
+        expense = Expense.objects.create(
+            owner=self.user,
+            category=None,
+            amount=Decimal("10.00"),
+            description="Lunch",
+            date=date(2026, 10, 26),
+        )
+
+        self.client.get("/categories/suggestions/?description=Lunch")
+        expense.refresh_from_db()
+        self.assertIsNone(expense.category_id)
+
+        expense.category = self.global_categories["Travel"]
+        expense.save(update_fields=["category"])
+        self.client.get("/categories/suggestions/?description=Lunch")
+        expense.refresh_from_db()
+        self.assertEqual(expense.category_id, self.global_categories["Travel"].pk)
+
 
 @override_settings(ROOT_URLCONF=__name__)
 class CategoryApiTests(TestCase):
@@ -613,10 +789,11 @@ class CategoryApiTests(TestCase):
         )
         delete = self.client.delete(f"/categories/{self.global_category.pk}/")
 
-        self.assertEqual(update.status_code, 400)
-        self.assertEqual(delete.status_code, 400)
+        self.assertEqual(update.status_code, 403)
+        self.assertEqual(delete.status_code, 403)
         self.global_category.refresh_from_db()
         self.assertEqual(self.global_category.name, "Food")
+        self.assertTrue(self.global_category.is_active)
 
     def test_other_users_category_is_not_exposed(self):
         private = Category.objects.create(name="Private", owner=self.other_user)
@@ -671,3 +848,53 @@ class CategoryApiTests(TestCase):
                 content_type="application/json",
             )
             self.assertEqual(response.status_code, 201)
+
+    def test_recreating_a_deleted_category_restores_it(self):
+        category = Category.objects.create(name="Gym", owner=self.user)
+        expense = Expense.objects.create(
+            owner=self.user,
+            category=category,
+            amount=Decimal("10.00"),
+            date=date(2026, 10, 26),
+        )
+        self.client.delete(f"/categories/{category.pk}/")
+
+        response = self.post_category(name="gym")
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["id"], category.pk)
+        category.refresh_from_db()
+        self.assertTrue(category.is_active)
+        self.assertEqual(category.name, "gym")
+        expense.refresh_from_db()
+        self.assertEqual(expense.category_id, category.pk)
+        self.assertEqual(Category.objects.filter(owner=self.user, name__iexact="gym").count(), 1)
+
+    def test_restoring_cannot_create_a_cycle(self):
+        parent = Category.objects.create(name="Transport", owner=self.user)
+        child = Category.objects.create(name="Metro", owner=self.user, parent=parent)
+        # The API refuses to delete a parent with active children, but such rows
+        # can exist from before that rule, so set the state up directly.
+        Category.objects.filter(pk=parent.pk).update(is_active=False)
+
+        response = self.post_category(name="Transport", parent=child.pk)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["error"]["field"], "parent")
+        parent.refresh_from_db()
+        self.assertFalse(parent.is_active)
+
+    def test_renaming_onto_a_deleted_categorys_name_is_rejected(self):
+        deleted = Category.objects.create(name="Gym", owner=self.user, is_active=False)
+        other = Category.objects.create(name="Fitness", owner=self.user)
+
+        response = self.client.patch(
+            f"/categories/{other.pk}/",
+            {"name": "GYM"},
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["error"]["field"], "name")
+        deleted.refresh_from_db()
+        self.assertFalse(deleted.is_active)

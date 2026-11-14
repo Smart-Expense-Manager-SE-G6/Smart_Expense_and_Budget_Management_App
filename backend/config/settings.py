@@ -12,7 +12,10 @@ from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# backend/.env first, then the repo-root .env that the README creates (used when
+# running outside Docker). Variables already set in the environment always win.
 load_dotenv(BASE_DIR / ".env")
+load_dotenv(BASE_DIR.parent / ".env")
 
 def env(name, default=None, required=False):
     value = os.environ.get(name, default)
@@ -29,10 +32,12 @@ def env_list(name, default=""):
     return [item.strip() for item in env(name, default).split(",") if item.strip()]
 
 
-SECRET_KEY = env("DJANGO_SECRET_KEY", default="django-insecure-dev-key-change-in-production")
 DEBUG = env_bool("DJANGO_DEBUG", False)
+# Fail closed: outside debug the app refuses to start with a missing secret key
+# instead of silently signing sessions with a publicly known one.
+SECRET_KEY = env("DJANGO_SECRET_KEY", required=not DEBUG) or "django-insecure-dev-key-debug-only"
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
-CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS", "http://localhost:5174")
+CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS", "http://localhost:5174,http://localhost:5173")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -81,7 +86,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-if env_bool("USE_SQLITE", False) or not env("POSTGRES_DB", required=False):
+# PostgreSQL unless SQLite is asked for explicitly; a missing POSTGRES_* variable is
+# an error rather than a silent switch to a different database engine.
+if env_bool("USE_SQLITE", False):
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
@@ -139,6 +146,15 @@ CSRF_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_HTTPONLY = False  # React reads it to send the X-CSRFToken header
 CSRF_FAILURE_VIEW = "core.exceptions.csrf_failure"
+
+# Transport security (NFR4). On by default outside debug; each can be overridden from
+# the environment, e.g. DJANGO_SECURE_SSL_REDIRECT=false when TLS ends elsewhere.
+SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", not DEBUG)
+SECURE_HSTS_SECONDS = int(env("DJANGO_SECURE_HSTS_SECONDS", "0" if DEBUG else "31536000"))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = SECURE_HSTS_SECONDS > 0
+# Trust X-Forwarded-Proto only when a reverse proxy we control sets it.
+if int(env("NUM_PROXIES", "0")) > 0:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Failed-login limits (accounts.throttles.LoginFailureGuard).
 LOGIN_FAILURE_WINDOW_SECONDS = int(env("LOGIN_FAILURE_WINDOW_SECONDS", "300"))

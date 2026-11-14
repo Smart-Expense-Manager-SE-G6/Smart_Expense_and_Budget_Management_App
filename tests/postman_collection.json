@@ -2,7 +2,7 @@
   "info": {
     "name": "Smart Expense & Budget Management API - Test Suite",
     "_postman_id": "team6-smart-expense-postman-collection",
-    "description": "Comprehensive API collection and test suite covering Sprint 1 & Sprint 2 endpoints according to SASD 4.3 and STP v1.0.",
+    "description": "Comprehensive API collection and test suite covering Sprint 1 & Sprint 2 endpoints according to SASD 4.3 and STP v1.0. Run against the Docker stack: newman run tests/postman_collection.json",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -16,8 +16,15 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/v1/health/",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "health", ""]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "health",
+                ""
+              ]
             }
           },
           "event": [
@@ -47,6 +54,44 @@
       "name": "Authentication (FR1, FR2, NFR4, NFR5)",
       "item": [
         {
+          "name": "Get CSRF cookie",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 204', function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});",
+                  "pm.test('CSRF cookie set', function () {",
+                  "    pm.expect(pm.cookies.has('csrftoken')).to.be.true;",
+                  "});",
+                  "// Django rotates the CSRF token when the session changes; keep the newest one.",
+                  "if (pm.cookies.has('csrftoken')) { pm.collectionVariables.set('csrf_token', pm.cookies.get('csrftoken')); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/csrf/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "csrf",
+                ""
+              ]
+            }
+          }
+        },
+        {
           "name": "POST /api/v1/auth/register/",
           "request": {
             "method": "POST",
@@ -54,6 +99,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-CSRFToken",
+                "value": "{{csrf_token}}"
               }
             ],
             "body": {
@@ -62,8 +111,16 @@
             },
             "url": {
               "raw": "{{base_url}}/api/v1/auth/register/",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "auth", "register", ""]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                ""
+              ]
             }
           },
           "event": [
@@ -73,6 +130,11 @@
                 "exec": [
                   "pm.test('Status code is 201 Created or 400 Conflict', function () {",
                   "    pm.expect(pm.response.code).to.be.oneOf([201, 400]);",
+                  "});",
+                  "// Django rotates the CSRF token when the session changes; keep the newest one.",
+                  "if (pm.cookies.has('csrftoken')) { pm.collectionVariables.set('csrf_token', pm.cookies.get('csrftoken')); }",
+                  "pm.test('A 400 means the account already exists', function () {",
+                  "    if (pm.response.code === 400) { pm.expect(pm.response.json().error.code).to.eql('email_taken'); }",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -88,6 +150,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-CSRFToken",
+                "value": "{{csrf_token}}"
               }
             ],
             "body": {
@@ -96,8 +162,16 @@
             },
             "url": {
               "raw": "{{base_url}}/api/v1/auth/login/",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "auth", "login", ""]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login",
+                ""
+              ]
             }
           },
           "event": [
@@ -110,7 +184,9 @@
                   "});",
                   "pm.test('Session cookie set', function () {",
                   "    pm.expect(pm.cookies.has('sessionid')).to.be.true;",
-                  "});"
+                  "});",
+                  "// Django rotates the CSRF token when the session changes; keep the newest one.",
+                  "if (pm.cookies.has('csrftoken')) { pm.collectionVariables.set('csrf_token', pm.cookies.get('csrftoken')); }"
                 ],
                 "type": "text/javascript"
               }
@@ -123,9 +199,16 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/v1/users/me/",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "users", "me", ""]
+              "raw": "{{base_url}}/api/v1/me/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                ""
+              ]
             }
           },
           "event": [
@@ -145,16 +228,135 @@
               }
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "Analytics & Summary (FR13, R3)",
+      "item": [
+        {
+          "name": "GET /api/v1/analytics/summary/",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/analytics/summary/?start_date=2026-10-01&end_date=2026-10-31",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "analytics",
+                "summary",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "start_date",
+                  "value": "2026-10-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2026-10-31"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Summary fields present', function () {",
+                  "    var d = pm.response.json();",
+                  "    pm.expect(d).to.include.keys('total_spend', 'transaction_count', 'average_expense', 'top_category');",
+                  "    pm.expect(d.total_spend).to.match(/^\\d+\\.\\d{2}$/);",
+                  "});"
+                ]
+              }
+            }
+          ]
         },
+        {
+          "name": "GET /api/v1/analytics/by-category/",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Breakdown and chart present', function () {",
+                  "    var d = pm.response.json();",
+                  "    pm.expect(d.categories).to.be.an('array');",
+                  "    pm.expect(d.chart).to.have.property('labels');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/analytics/by-category/?start_date=2026-10-01&end_date=2026-10-31",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "analytics",
+                "by-category",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "start_date",
+                  "value": "2026-10-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2026-10-31"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sign out (NFR5)",
+      "item": [
         {
           "name": "POST /api/v1/auth/logout/",
           "request": {
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "X-CSRFToken",
+                "value": "{{csrf_token}}"
+              }
+            ],
             "url": {
               "raw": "{{base_url}}/api/v1/auth/logout/",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "auth", "logout", ""]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "logout",
+                ""
+              ]
             }
           },
           "event": [
@@ -170,40 +372,35 @@
               }
             }
           ]
-        }
-      ]
-    },
-    {
-      "name": "Analytics & Summary (FR13, R3)",
-      "item": [
-        {
-          "name": "GET /api/v1/analytics/summary/",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/v1/analytics/summary/?start_date=2026-10-01&end_date=2026-10-31",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "analytics", "summary", ""],
-              "query": [
-                { "key": "start_date", "value": "2026-10-01" },
-                { "key": "end_date", "value": "2026-10-31" }
-              ]
-            }
-          }
         },
         {
-          "name": "GET /api/v1/analytics/categories/",
+          "name": "Profile after logout is refused",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/v1/analytics/categories/?start_date=2026-10-01&end_date=2026-10-31",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "analytics", "categories", ""],
-              "query": [
-                { "key": "start_date", "value": "2026-10-01" },
-                { "key": "end_date", "value": "2026-10-31" }
+              "raw": "{{base_url}}/api/v1/me/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                ""
               ]
             }
           }
@@ -215,6 +412,10 @@
     {
       "key": "base_url",
       "value": "http://localhost:8001"
+    },
+    {
+      "key": "csrf_token",
+      "value": ""
     }
   ]
 }
