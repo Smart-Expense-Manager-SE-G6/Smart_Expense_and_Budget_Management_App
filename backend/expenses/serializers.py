@@ -8,6 +8,8 @@ from .models import Category, Expense
 
 
 class CategorySerializer(serializers.ModelSerializer):
+    children = serializers.SerializerMethodField()
+
     class Meta:
         model = Category
         fields = [
@@ -15,11 +17,29 @@ class CategorySerializer(serializers.ModelSerializer):
             "name",
             "owner",
             "parent",
+            "children",
             "is_active",
             "created_at",
             "updated_at",
         ]
         read_only_fields = ["id", "owner", "is_active", "created_at", "updated_at"]
+
+    def get_children(self, category):
+        user = self.context["request"].user
+        children = category.children.filter(
+            is_active=True,
+        ).filter(
+            Q(owner__isnull=True) | Q(owner=user)
+        ).order_by("name", "id")
+        return [
+            {
+                "id": child.pk,
+                "name": child.name,
+                "parent": child.parent_id,
+                "is_active": child.is_active,
+            }
+            for child in children
+        ]
 
     def validate_name(self, name):
         name = name.strip()
@@ -67,6 +87,14 @@ class CategorySerializer(serializers.ModelSerializer):
                     "The category hierarchy contains a cycle."
                 )
             visited.add(ancestor.pk)
+            if not ancestor.is_active:
+                raise serializers.ValidationError(
+                    "The category hierarchy contains an inactive parent."
+                )
+            if ancestor.owner_id is not None and ancestor.owner_id != user.pk:
+                raise serializers.ValidationError(
+                    "You cannot use another user's category in the parent hierarchy."
+                )
             if self.instance is not None and ancestor.pk == self.instance.pk:
                 raise serializers.ValidationError(
                     "The category hierarchy cannot contain a cycle."
