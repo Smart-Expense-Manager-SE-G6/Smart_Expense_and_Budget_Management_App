@@ -11,11 +11,14 @@ cp .env.example .env      # then set DJANGO_SECRET_KEY and POSTGRES_PASSWORD
 docker compose up --build
 ```
 
-| Service  | URL                                   |
-|----------|---------------------------------------|
-| Frontend | http://localhost:5173                 |
-| API      | http://localhost:8000/api/v1/health/  |
-| Admin    | http://localhost:8000/admin/          |
+| Service    | URL                                   |
+|------------|---------------------------------------|
+| Frontend   | http://localhost:5174                 |
+| API        | http://localhost:8001/api/v1/health/  |
+| Admin      | http://localhost:8001/admin/          |
+| PostgreSQL | localhost:5433                        |
+
+If your `.env` was copied before this change, add `http://localhost:5174` to `DJANGO_CSRF_TRUSTED_ORIGINS`, otherwise sign-in fails with "CSRF check failed".
 
 The frontend proxies `/api` to the backend, so in React code always call relative URLs like `fetch('/api/v1/...')`.
 
@@ -93,8 +96,37 @@ DELETE /api/v1/categories/<id>/
 ```
 
 Category creation accepts an optional `parent` for subcategories. Global
-categories cannot be changed or deleted. Deleting a custom category safely
-deactivates it so existing expenses continue to reference it.
+categories cannot be changed or deleted. Category responses retain the
+`parent` identifier and include active, visible direct children in `children`.
+Names remain unique per owner (case-insensitive), and a parent must be active
+and visible to the requesting user. Deleting a custom category safely
+deactivates it so existing expenses continue to reference it; a category with
+active subcategories must have those subcategories reassigned or deactivated
+first. Creating a category with the same name as a deleted one restores it.
+
+### Category suggestions (FR9)
+
+While entering an expense description, authenticated users can request advisory
+suggestions:
+
+```text
+GET /api/v1/categories/suggestions/?description=Lunch%20at%20a%20cafe
+```
+
+Example response:
+
+```json
+{
+  "suggestions": [
+    {"id": 2, "name": "Food"}
+  ]
+}
+```
+
+Suggestions use hard-coded, deterministic keyword rules and return only active
+global categories. The endpoint never assigns a category or changes an
+expense; the user must explicitly select a suggestion. Empty or unmatched
+descriptions return `{"suggestions": []}`. Custom categories are not suggested.
 
 ## Backups (FR22, NFR10)
 
@@ -138,53 +170,49 @@ docker compose start backend
 
 - No secrets in code. Everything comes from `.env`, which is git-ignored.
 - Money is stored as `Decimal`, never float. Timestamps are UTC.
-## Sprint 1 – Backend Testing & Verification
 
-### Testing Status
+## Sprint 1 – Testing & Verification
 
-**Automated backend tests: 70/70 passed**
+### Running the checks
 
-The backend has been tested using Django's automated test suite. The following checks have been completed successfully:
-
-- [x] Django system check (`python manage.py check`)
-- [x] Database migrations applied successfully
-- [x] Automated test suite — 70 tests passed
-- [x] PostgreSQL database setup and connectivity verified
-- [x] Synthetic test data seeded successfully
-- [x] Synthetic data dry run completed without database changes
-
-### Functionality Covered by Tests
-
-The automated test suite covers:
-
-- Authentication behavior and user data isolation
-- Expense CRUD operations and soft deletion
-- Expense filtering, sorting, pagination, and date/category queries
-- Receipt upload and retrieval
-- Budget functionality and validations
-- Health endpoint and error handling
-
-### Synthetic Test Data
-
-A Django management command is available to populate the database with synthetic data for development and testing.
-
-Run a dry run first:
+With the stack running (`docker compose up --build`):
 
 ```bash
-python manage.py seed_synthetic_data --dry-run
+docker compose exec backend python manage.py check
+docker compose exec backend python manage.py makemigrations --check --dry-run
+docker compose exec backend python manage.py test
+npx newman run tests/postman_collection.json      # API smoke test, base_url http://localhost:8001
 ```
 
-To seed the database:
+Outside Docker, run `python manage.py test` from `backend/` with the `POSTGRES_*` values in `.env`
+(or `USE_SQLITE=true` for a quick local run).
+
+### Latest result
+
+**157 backend tests pass on PostgreSQL in Docker (2026-11-12).** System check clean, no missing
+migrations, Postman collection passing against the running stack.
+
+### Functionality covered by tests
+
+- Registration, login, logout, session expiry, CSRF, rate limits and lockout
+- Profile editing and audit trail entries for every expense, category and budget change
+- Expense CRUD, soft deletion, filtering, sorting, pagination and per-user isolation
+- Receipt upload, download, deletion and access protection
+- Default, custom and restored categories with hierarchy checks
+- Budget validation (owner, active category, limit, period dates, duplicates), utilisation and rollover
+- 80% and 100% threshold alerts, de-duplication, alert API and email after commit
+- Analytics summary and category breakdown, date-range cap (ADR 0002)
+- Health endpoint, error envelope and request-id logging
+
+### Test data
 
 ```bash
-python manage.py seed_synthetic_data
+python manage.py seed_data --count 10000            # one user with 10,000 expenses (NFR1); prints a generated password
+python manage.py seed_synthetic_data --dry-run      # report what would be created
+python manage.py seed_synthetic_data                # 5 users with their own categories, expenses, budgets and alerts
 ```
 
-The seed command creates sample users, categories, expenses, budgets, and alerts.
+### Verification notes
 
-### Sprint 1 Verification Notes
-
-- All 70 automated backend tests passed during verification.
-- The backend database and migrations were verified successfully.
-- API endpoints requiring authentication must be tested using valid credentials.
-- The complete user flow and remaining requirements must be checked against the project's SRS, SAD, and Test Plan before declaring Sprint 1 fully complete.
+- API endpoints requiring authentication must be tested with a signed-in session and the `X-CSRFToken` header.
+- The complete user flow and remaining requirements must be checked against the project's SRS, SASD and Test Plan before declaring Sprint 1 fully complete.

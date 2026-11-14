@@ -10,6 +10,8 @@ __pycache__/
 venv/
 backend/staticfiles/
 backend/media/
+# Uploaded receipts (MEDIA_ROOT); private user data, never commit
+backend/private_media/
 
 # Node
 node_modules/
@@ -22,3 +24,5 @@ backups/
 .vscode/
 .idea/
 .DS_Store
+# User-uploaded receipt files
+backend/private_media/

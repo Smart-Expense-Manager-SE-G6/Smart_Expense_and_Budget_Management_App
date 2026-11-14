@@ -1,6 +1,8 @@
 
-from datetime import date
+from datetime import date, datetime, timezone as dt_timezone
 from decimal import Decimal
+from io import StringIO
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
@@ -215,6 +217,153 @@ class BudgetAPITests(TestCase):
         self.assertEqual(response.data["remaining_amount"], "700.00")
         self.assertEqual(response.data["percentage_used"], "30.00")
 
+    def test_rejects_zero_and_negative_limits(self):
+        for limit in ("0.00", "-100.00"):
+            response = self.client.post(
+                "/api/v1/budgets/",
+                {**self.payload, "limit_amount": limit},
+                format="json",
+            )
+
+            self.assertEqual(response.status_code, 400, limit)
+            self.assertEqual(response.data["error"]["field"], "limit_amount")
+
+        self.assertEqual(Budget.objects.count(), 0)
+
+    def test_rejects_another_users_category_without_revealing_it(self):
+        from expenses.models import Category
+
+        private = Category.objects.create(
+            name="Other user's private category",
+            owner=self.other_user,
+        )
+
+        response = self.client.post(
+            "/api/v1/budgets/",
+            {**self.payload, "category": private.pk},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.data["error"]["field"], "category")
+        self.assertNotIn(private.name, response.content.decode())
+        self.assertEqual(Budget.objects.count(), 0)
+
+    def test_rejects_inactive_category(self):
+        from expenses.models import Category
+
+        inactive = Category.objects.create(
+            name="Old",
+            owner=self.user,
+            is_active=False,
+        )
+
+        response = self.client.post(
+            "/api/v1/budgets/",
+            {**self.payload, "category": inactive.pk},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.data["error"]["field"], "category")
+
+    def test_rejects_duplicate_budgets_for_same_period(self):
+        from expenses.models import Category
+
+        food = Category.objects.create(name="Food budget test", owner=self.user)
+
+        for category in (None, food.pk):
+            payload = {**self.payload, "category": category}
+            first = self.client.post("/api/v1/budgets/", payload, format="json")
+            second = self.client.post("/api/v1/budgets/", payload, format="json")
+
+            self.assertEqual(first.status_code, 201, category)
+            self.assertEqual(second.status_code, 400, category)
+            self.assertEqual(second.data["error"]["code"], "duplicate_budget")
+
+        self.assertEqual(Budget.objects.filter(user=self.user).count(), 2)
+
+    def test_update_does_not_conflict_with_itself(self):
+        budget = Budget.objects.create(
+            user=self.user,
+            name="October Budget",
+            limit_amount=Decimal("1000.00"),
+            period="monthly",
+            start_date=date(2026, 10, 1),
+            end_date=date(2026, 10, 31),
+        )
+
+        response = self.client.patch(
+            f"/api/v1/budgets/{budget.pk}/",
+            {"name": "Renamed", "limit_amount": "1200.00"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        budget.refresh_from_db()
+        self.assertEqual(budget.limit_amount, Decimal("1200.00"))
+
+    def test_period_must_match_dates(self):
+        cases = [
+            ({"period": "weekly", "start_date": "2026-10-05", "end_date": "2026-10-12"}, "end_date"),
+            ({"period": "weekly", "start_date": "2026-10-01", "end_date": "2026-12-31"}, "end_date"),
+            ({"period": "monthly", "start_date": "2026-10-15", "end_date": "2026-11-14"}, "start_date"),
+            ({"period": "monthly", "start_date": "2026-10-01", "end_date": "2026-10-30"}, "end_date"),
+        ]
+        for overrides, field in cases:
+            response = self.client.post("/api/v1/budgets/", {**self.payload, **overrides}, format="json")
+
+            self.assertEqual(response.status_code, 400, overrides)
+            self.assertEqual(response.data["error"]["field"], field, overrides)
+
+        self.assertEqual(Budget.objects.count(), 0)
+
+    def test_valid_weekly_and_february_budgets_are_accepted(self):
+        weekly = self.client.post(
+            "/api/v1/budgets/",
+            {**self.payload, "period": "weekly", "start_date": "2026-10-05", "end_date": "2026-10-11"},
+            format="json",
+        )
+        february = self.client.post(
+            "/api/v1/budgets/",
+            {**self.payload, "start_date": "2028-02-01", "end_date": "2028-02-29"},
+            format="json",
+        )
+
+        self.assertEqual(weekly.status_code, 201)
+        self.assertEqual(february.status_code, 201)
+
+    def test_older_budget_with_irregular_dates_can_still_be_renamed(self):
+        legacy = Budget.objects.create(
+            user=self.user,
+            name="Legacy",
+            limit_amount=Decimal("500.00"),
+            period="weekly",
+            start_date=date(2026, 10, 1),
+            end_date=date(2026, 10, 31),
+        )
+
+        rename = self.client.patch(f"/api/v1/budgets/{legacy.pk}/", {"name": "Renamed"}, format="json")
+        bad_dates = self.client.patch(f"/api/v1/budgets/{legacy.pk}/", {"end_date": "2026-10-20"}, format="json")
+
+        self.assertEqual(rename.status_code, 200)
+        self.assertEqual(bad_dates.status_code, 400)
+
+    def test_budget_writes_are_audited(self):
+        from audit.models import AuditLog
+
+        created = self.client.post("/api/v1/budgets/", self.payload, format="json")
+        budget_id = created.data["id"]
+        self.client.patch(f"/api/v1/budgets/{budget_id}/", {"limit_amount": "6000.00"}, format="json")
+        self.client.delete(f"/api/v1/budgets/{budget_id}/")
+
+        actions = list(
+            AuditLog.objects.filter(entity_type="budgets.budget", entity_id=str(budget_id))
+            .order_by("id")
+            .values_list("action", flat=True)
+        )
+        self.assertEqual(actions, ["create", "update", "delete"])
+
 
 class BudgetRolloverTests(TestCase):
     def setUp(self):
@@ -326,3 +475,46 @@ class BudgetRolloverTests(TestCase):
         )
 
         self.assertEqual(next_periods.count(), 1)
+
+    def test_rollover_creates_audit_entry(self):
+        from audit.models import AuditLog
+
+        self.create_expired_budget()
+
+        call_command("rollover_budgets", stdout=StringIO())
+
+        next_budget = Budget.objects.get(user=self.user, start_date=date(2026, 10, 1))
+        entry = AuditLog.objects.get(entity_type="budgets.budget", entity_id=str(next_budget.pk))
+        self.assertEqual(entry.action, "create")
+        self.assertIsNone(entry.actor)
+        self.assertEqual(entry.after["limit_amount"], "10000.00")
+
+    def test_rollover_uses_each_users_time_zone(self):
+        ahead = get_user_model().objects.create_user(
+            email="ahead@example.com", password="TestPassword123!", timezone="Pacific/Kiritimati"
+        )
+        for owner in (self.user, ahead):  # self.user is Asia/Kolkata (UTC+5:30); ahead is UTC+14
+            Budget.objects.create(
+                user=owner,
+                name="October",
+                limit_amount=Decimal("100.00"),
+                period="monthly",
+                start_date=date(2026, 10, 1),
+                end_date=date(2026, 10, 31),
+            )
+
+        # 12:00 UTC on 31 Oct: still 31 Oct in Kolkata, already 1 Nov in Kiritimati.
+        fixed_now = datetime(2026, 10, 31, 12, 0, tzinfo=dt_timezone.utc)
+        with patch("django.utils.timezone.now", return_value=fixed_now):
+            call_command("rollover_budgets", stdout=StringIO())
+
+        self.assertTrue(Budget.objects.filter(user=ahead, start_date=date(2026, 11, 1)).exists())
+        self.assertFalse(Budget.objects.filter(user=self.user, start_date=date(2026, 11, 1)).exists())
+
+    def test_rollover_tolerates_an_unknown_time_zone(self):
+        get_user_model().objects.filter(pk=self.user.pk).update(timezone="Mars/Olympus")
+        self.create_expired_budget()
+
+        call_command("rollover_budgets", stdout=StringIO())
+
+        self.assertTrue(Budget.objects.filter(user=self.user, start_date=date(2026, 10, 1)).exists())

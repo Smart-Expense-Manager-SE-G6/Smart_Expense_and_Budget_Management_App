@@ -1,3 +1,4 @@
+
 services:
   db:
     image: postgres:16-alpine
@@ -5,7 +6,6 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
@@ -65,6 +65,19 @@ services:
       test: ["CMD-SHELL", "find /backups/LATEST -mmin -1500 | grep -q ."]
       interval: 1h
       start_period: 10m
+
+  # FR12: Automatic budget rollover scheduler
+  budget-scheduler:
+    build: ./backend
+    env_file: .env
+    environment:
+      POSTGRES_HOST: db
+    volumes:
+      - ./backend:/app
+    command: ["sh", "scripts/run_budget_scheduler.sh"]
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
   pgdata:

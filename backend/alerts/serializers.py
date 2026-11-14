@@ -28,3 +28,8 @@ class AlertSerializer(serializers.ModelSerializer):
             "message",
             "created_at",
         ]
+        # Alerts are created only by the system (get_or_create under the database
+        # constraint); clients may change is_read alone. DRF's auto-generated validator
+        # for the conditional UniqueConstraint crashes on partial updates (KeyError
+        # 'alert_type'), so it is switched off here.
+        validators = []
