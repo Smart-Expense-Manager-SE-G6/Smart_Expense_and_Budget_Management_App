@@ -9,3 +9,5 @@ sqlparse==0.6.0
 # Full IANA time zone data, including names like Asia/Calcutta that browsers report
 # but the Debian base image no longer ships.
 tzdata==2026.6
+openpyxl==3.1.5
+reportlab==5.1.0
