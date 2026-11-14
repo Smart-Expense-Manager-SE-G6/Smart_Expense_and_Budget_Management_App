@@ -3,6 +3,7 @@ import AppShell from './components/layout/AppShell'
 import { GuestOnly, RequireAuth } from './components/RouteGuards'
 import AlertsPage from './pages/AlertsPage'
 import BudgetsPage from './pages/BudgetsPage'
+import CategoriesPage from './pages/CategoriesPage'
 import DashboardPage from './pages/DashboardPage'
 import ExpensesPage from './pages/ExpensesPage'
 import LoginPage from './pages/LoginPage'
@@ -22,6 +23,7 @@ export default function App() {
           <Route index element={<DashboardPage />} />
           <Route path="/expenses" element={<ExpensesPage />} />
           <Route path="/budgets" element={<BudgetsPage />} />
+          <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/alerts" element={<AlertsPage />} />
           <Route path="/profile" element={<ProfilePage />} />

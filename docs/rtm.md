@@ -32,7 +32,7 @@
 | **FR19** | Custom date range reports (1-year cap) | Shashank | Sec 3.4, 4.3, OI-3 | `reports/views.py`, `reports/validators.py` | `TC-Report-01` | Sprint 2 |
 | **FR20** | PDF & Excel report export with summary/breakdowns | Shashank | Sec 3.4, 4.3, R4 | `reports/services.py`, `reports/adapters.py` | `TC-Report-02` | Sprint 2 |
 | **FR21** | Audit trail of edits (written in same transaction) | Shriram | Sec 3.4, 3.5, 4.1 | `audit/models.py`, `audit/services.py` | `TC-Audit-01` | Done (#14) |
-| **FR22** | Data backup and restore rehearsal | Shriram / Shashwath | Sec 3.4, 3.6, R6 | `scripts/backup.sh`, `scripts/restore.sh` | `TC-Backup-01` | Sprint 2 |
+| **FR22** | Data backup and restore rehearsal | Shriram / Shashwath | Sec 3.4, 3.6, R6 | `scripts/backup.sh`, `scripts/restore.sh`, `scripts/rehearse_restore.sh`, `scripts/common.sh` | `TC-Backup-01` (`scripts/rehearse_restore.sh`) | Done (#45) |
 
 ---
 
@@ -49,7 +49,7 @@
 | **NFR7** | Responsive UI | Mobile, tablet, desktop | Responsive CSS layouts without frameworks | Team 6 | Active in frontend |
 | **NFR8** | Accessibility | WCAG basics (labels, contrast) | Form labels, keyboard focus, table fallbacks for charts | Team 6 | Enforced in UI |
 | **NFR9** | Uptime | 99% uptime target | Health endpoint `/api/v1/health/` | Shriram | Done (#10) |
-| **NFR10**| Automated backups | Daily scheduled backup | Cron job / scheduler script | Shriram / Shashwath | Sprint 2 |
+| **NFR10**| Automated backups | Daily scheduled backup | `backup` compose service runs `scripts/schedule_backups.sh` (cron, `BACKUP_SCHEDULE`) calling `scripts/backup.sh`; verified by `TC-Backup-01` | Shriram / Shashwath | Done (#46) |
 | **NFR11**| Modular architecture | MVC pattern; loose coupling | Modular monolith with independent Django apps | Team 6 | Enforced |
 | **NFR12**| Logging with Request ID | Request ID on every log & response | `RequestIdMiddleware` + standard logger | Shriram | Done (#12) |
 | **NFR13**| Containerization | One-command start | `docker compose up --build` | Shriram | Done (#10) |

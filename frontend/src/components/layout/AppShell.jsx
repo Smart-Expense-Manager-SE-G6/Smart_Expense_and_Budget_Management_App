@@ -14,6 +14,7 @@ const NAV = [
   { to: '/', label: 'Dashboard', icon: 'grid', end: true },
   { to: '/expenses', label: 'Expenses', icon: 'wallet' },
   { to: '/budgets', label: 'Budgets', icon: 'target' },
+  { to: '/categories', label: 'Categories', icon: 'tag' },
   { to: '/reports', label: 'Reports', icon: 'file' },
   { to: '/alerts', label: 'Alerts', icon: 'bell', badge: true },
 ]
@@ -22,6 +23,7 @@ const TITLES = {
   '/': 'Dashboard',
   '/expenses': 'Expenses',
   '/budgets': 'Budgets',
+  '/categories': 'Categories',
   '/reports': 'Reports',
   '/alerts': 'Alerts',
   '/profile': 'Profile',

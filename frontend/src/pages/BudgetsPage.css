@@ -1,0 +1,109 @@
+.budgets-page {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.budget-heading,
+.budget-card-heading,
+.budget-stats,
+.budget-form-actions,
+.budget-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.budget-heading h1,
+.budget-card h3,
+.budget-form-card h2,
+.budget-list-section h2 {
+  margin: 0;
+}
+
+.budget-count,
+.budget-mode {
+  color: var(--muted);
+  font-size: 0.85rem;
+  background: var(--bg);
+  padding: 0.35rem 0.7rem;
+  border-radius: 20px;
+}
+
+.budget-form-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.budget-list-section {
+  display: grid;
+  gap: 1rem;
+}
+
+.budget-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.budget-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.budget-card h3 {
+  font-size: 1.1rem;
+}
+
+.budget-amount strong {
+  font-size: 1.25rem;
+}
+
+.budget-progress {
+  height: 10px;
+  background: var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.budget-progress div {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 10px;
+}
+
+.budget-progress div.over-limit {
+  background: var(--danger);
+}
+
+.budget-stats {
+  font-size: 0.85rem;
+}
+
+.budget-dates {
+  font-size: 0.85rem;
+}
+
+.budget-card-actions {
+  justify-content: flex-start;
+}
+
+.budget-secondary-button {
+  background: var(--border);
+  color: var(--text);
+}
+
+.budget-delete-button {
+  background: var(--danger);
+}
+
+@media (max-width: 480px) {
+  .budget-heading {
+    align-items: flex-start;
+  }
+
+  .budget-card {
+    padding: 1rem;
+  }
+}

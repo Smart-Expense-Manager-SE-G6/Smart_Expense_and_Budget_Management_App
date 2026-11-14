@@ -1,4 +1,5 @@
-export default function Card({ title, subtitle, action, flush = false, className = '', children, as: Tag = 'section', ...rest }) {
+export default function Card({ title, subtitle, action, flush = false, className = '', children, as = 'section', ...rest }) {
+  const Tag = as
   return (
     <Tag className={`card ${flush ? 'card-flush' : ''} ${className}`.trim()} {...rest}>
       {(title || action) && (
