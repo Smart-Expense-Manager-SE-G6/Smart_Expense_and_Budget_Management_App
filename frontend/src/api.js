@@ -6,6 +6,9 @@
 const BASE = '/api/v1'
 const UNSAFE = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 
+// Fired on any 401 so the app can drop a session that expired on the server (ADR 0001: 30 min idle).
+export const SESSION_EXPIRED_EVENT = 'auth:session-expired'
+
 export class ApiError extends Error {
   constructor({ code, message, field, request_id }, status) {
     super(message)
@@ -33,6 +36,7 @@ export async function api(path, { method = 'GET', body } = {}) {
     body: body === undefined ? undefined : JSON.stringify(body),
   })
 
+  if (response.status === 401) window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT))
   if (response.status === 204) return null
   const data = await response.json().catch(() => null)
   if (!response.ok) {
