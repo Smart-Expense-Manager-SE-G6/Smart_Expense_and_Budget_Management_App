@@ -128,6 +128,44 @@ global categories. The endpoint never assigns a category or changes an
 expense; the user must explicitly select a suggestion. Empty or unmatched
 descriptions return `{"suggestions": []}`. Custom categories are not suggested.
 
+## Backups (FR22, NFR10)
+
+Backups cover the database and uploaded receipts (`backend/private_media`).
+The scripts run in a `postgres:16-alpine` container, so nothing extra needs
+installing on your machine.
+
+**Scheduled (NFR10):** `docker compose up` also starts the `backup` service,
+which backs up daily at `BACKUP_SCHEDULE` (cron, UTC; default `0 2 * * *`,
+07:30 IST). Because laptops are often off at that time, it also takes a backup
+on start whenever the newest one is more than 24 hours old. Check it with
+`docker compose logs backup`.
+
+**Healthcheck:** Docker marks the backup service as healthy when `backups/LATEST` has been updated within the last 25 hours. If the marker is older, the service is marked unhealthy.
+
+**By hand:**
+
+```bash
+docker compose run --rm backup /scripts/backup.sh                      # take a backup
+docker compose run --rm backup /scripts/rehearse_restore.sh            # TC-Backup-01
+docker compose run --rm backup /scripts/rehearse_restore.sh <backup>   # rehearse an older one
+
+docker compose stop backend                                            # full restore
+docker compose run --rm backup /scripts/restore.sh <backup>
+docker compose start backend
+```
+
+- Each backup is a folder in `backups/` (git-ignored) named by its UTC time, e.g.
+  `20261031T020000Z/`, holding `db.dump`, `media.tar.gz`, table row counts and
+  `SHA256SUMS`. `backups/LATEST` names the newest one. The newest
+  `BACKUP_KEEP` (default 7) are kept.
+- **Rehearsal (TC-Backup-01)** restores into a scratch database, never the live
+  one, then checks checksums, every table's row count and every receipt file.
+  It exits non-zero on any mismatch.
+- **Restore** asks you to type the database name (or pass `--yes`), takes a
+  `*-pre-restore` safety backup first so it can be undone, then replaces the
+  database and all receipts. Restore with the same code version (migrations)
+  the backup was taken with.
+
 ## Rules
 
 - No secrets in code. Everything comes from `.env`, which is git-ignored.
