@@ -252,3 +252,108 @@ def get_predictive_insights(user, year: int | None = None, month: int | None = N
         "status": status,
         "by_category": by_category,
     }
+
+
+def get_spending_comparison(
+    user,
+    granularity: str = "monthly",
+    months: int = 6,
+    years: int = 3,
+    category_id: int | None = None,
+    reference_date=None,
+):
+    """
+    Compare user spending across months or years using DB-level date truncation (FR15, NFR1).
+    """
+    from datetime import date
+    from django.db.models.functions import TruncMonth, TruncYear
+    from django.utils import timezone
+
+    today = reference_date or timezone.localdate()
+
+    qs = Expense.objects.filter(owner=user, is_deleted=False)
+    if category_id is not None:
+        qs = qs.filter(category_id=category_id)
+
+    if granularity == "yearly":
+        start_year = today.year - years + 1
+        start_date = date(start_year, 1, 1)
+        qs = qs.filter(date__gte=start_date, date__lte=today)
+        rows = (
+            qs.annotate(period=TruncYear("date"))
+            .values("period")
+            .annotate(total_amount=Sum("amount"), transaction_count=Count("id"))
+            .order_by("period")
+        )
+        row_map = {
+            r["period"].year: (r["total_amount"] or Decimal("0.00"), r["transaction_count"])
+            for r in rows
+            if r["period"] is not None
+        }
+        period_keys = [str(y) for y in range(start_year, today.year + 1)]
+        raw_series = [(str(y), *row_map.get(y, (Decimal("0.00"), 0))) for y in range(start_year, today.year + 1)]
+    else:
+        # Monthly: build the last `months` calendar months ending at today's month
+        total_months = today.year * 12 + (today.month - 1)
+        start_total = total_months - months + 1
+        start_year, start_month_zero = divmod(start_total, 12)
+        start_date = date(start_year, start_month_zero + 1, 1)
+
+        qs = qs.filter(date__gte=start_date, date__lte=today)
+        rows = (
+            qs.annotate(period=TruncMonth("date"))
+            .values("period")
+            .annotate(total_amount=Sum("amount"), transaction_count=Count("id"))
+            .order_by("period")
+        )
+        row_map = {
+            (r["period"].year, r["period"].month): (r["total_amount"] or Decimal("0.00"), r["transaction_count"])
+            for r in rows
+            if r["period"] is not None
+        }
+        raw_series = []
+        for idx in range(start_total, total_months + 1):
+            y, m0 = divmod(idx, 12)
+            m = m0 + 1
+            label = f"{y:04d}-{m:02d}"
+            amt, cnt = row_map.get((y, m), (Decimal("0.00"), 0))
+            raw_series.append((label, amt, cnt))
+
+    periods = []
+    chart_labels = []
+    chart_values = []
+    prev_amount = None
+
+    for label, amt, cnt in raw_series:
+        change_amount = None
+        change_percentage = None
+        if prev_amount is not None:
+            diff = amt - prev_amount
+            change_amount = format_decimal(diff)
+            if prev_amount > Decimal("0.00"):
+                change_percentage = round(float((diff / prev_amount) * 100), 2)
+        prev_amount = amt
+
+        periods.append(
+            {
+                "period": label,
+                "total_amount": format_decimal(amt),
+                "transaction_count": cnt,
+                "change_amount": change_amount,
+                "change_percentage": change_percentage,
+            }
+        )
+        chart_labels.append(label)
+        chart_values.append(float(amt))
+
+    chart = create_spending_chart(
+        title=f"Spending Comparison ({granularity.capitalize()})",
+        labels=chart_labels,
+        values=chart_values,
+    )
+
+    return {
+        "granularity": granularity,
+        "periods": periods,
+        "chart": chart,
+    }
