@@ -56,6 +56,8 @@ def evaluate_budget_thresholds(budget):
 
         if created:
             created_alerts.append(alert)
-            send_alert_email(alert)
+            # Send only once the surrounding change is committed, so a rolled-back
+            # expense or budget never produces an email.
+            transaction.on_commit(lambda alert=alert: send_alert_email(alert))
 
     return created_alerts

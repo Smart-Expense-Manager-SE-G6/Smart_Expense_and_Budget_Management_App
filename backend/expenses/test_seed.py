@@ -57,3 +57,40 @@ class SeedDataCommandTests(TestCase):
         # Re-run with clean flag
         call_command("seed_data", email=email, count=25, clean=True, stdout=StringIO())
         self.assertEqual(Expense.objects.filter(owner=user).count(), 25)
+
+    def test_seed_data_has_no_fixed_password(self):
+        out = StringIO()
+        call_command("seed_data", email="random_pw@example.com", count=1, stdout=out)
+
+        user = User.objects.get(email="random_pw@example.com")
+        self.assertFalse(user.check_password("Password123!"))
+        generated = out.getvalue().split("Generated password (shown once): ")[1].split()[0]
+        self.assertTrue(user.check_password(generated))
+
+    def test_seed_data_accepts_explicit_password(self):
+        call_command("seed_data", email="given_pw@example.com", count=1, password="Given-Passw0rd!", stdout=StringIO())
+
+        self.assertTrue(User.objects.get(email="given_pw@example.com").check_password("Given-Passw0rd!"))
+
+
+class SeedSyntheticDataCommandTests(TestCase):
+    def test_synthetic_categories_belong_to_synthetic_users(self):
+        globals_before = set(Category.objects.filter(owner__isnull=True).values_list("pk", flat=True))
+
+        call_command("seed_synthetic_data", stdout=StringIO())
+
+        self.assertEqual(set(Category.objects.filter(owner__isnull=True).values_list("pk", flat=True)), globals_before)
+        synthetic = Category.objects.filter(name__startswith="Synthetic ")
+        self.assertTrue(synthetic.exists())
+        self.assertFalse(synthetic.filter(owner__isnull=True).exists())
+        for expense in Expense.objects.filter(description__startswith="Synthetic expense "):
+            self.assertEqual(expense.category.owner_id, expense.owner_id)
+
+    def test_synthetic_seed_is_idempotent_and_dry_run_writes_nothing(self):
+        call_command("seed_synthetic_data", "--dry-run", stdout=StringIO())
+        self.assertFalse(Expense.objects.exists())
+
+        call_command("seed_synthetic_data", stdout=StringIO())
+        counts = (Category.objects.count(), Expense.objects.count())
+        call_command("seed_synthetic_data", stdout=StringIO())
+        self.assertEqual((Category.objects.count(), Expense.objects.count()), counts)
