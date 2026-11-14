@@ -192,6 +192,8 @@ GET    /api/v1/budgets/<id>/expenses/             expenses counted by the budget
 - Every membership change writes an audit entry (FR21). Rollover copies the
   members into the next period.
 - Budget responses include `owner_email`, `role` (your role on that budget) and `member_count`.
+- In the app, the people icon on a budget card opens the sharing dialog: owners and admins add people by email,
+  change roles and remove members; members see who shares the budget and its recent spending, and can leave.
 
 ## Rules
 
