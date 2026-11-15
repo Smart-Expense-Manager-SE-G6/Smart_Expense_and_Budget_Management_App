@@ -239,7 +239,7 @@ class ProfileTests(AuthApiTestCase):
 
     def test_view_profile(self):
         body = self.client.get("/api/v1/me/").json()
-        self.assertEqual(set(body), {"id", "email", "first_name", "last_name", "timezone", "date_joined"})
+        self.assertEqual(set(body), {"id", "email", "first_name", "last_name", "timezone", "email_alerts", "date_joined"})
 
     def test_edit_profile_persists_and_is_audited(self):
         response = self.client.patch("/api/v1/me/", {"first_name": "Alicia", "timezone": "Asia/Tokyo"},

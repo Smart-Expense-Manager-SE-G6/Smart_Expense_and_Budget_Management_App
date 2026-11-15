@@ -3,7 +3,9 @@ from core.adapters.factory import get_email_adapter
 
 
 def send_alert_email(alert):
-    """Deliver an alert email through the configured email adapter."""
+    """Deliver an alert email through the configured email adapter, if the user allows alert emails."""
+    if not alert.user.email_alerts:
+        return None
     email_adapter = get_email_adapter()
 
     return email_adapter.send_email(
