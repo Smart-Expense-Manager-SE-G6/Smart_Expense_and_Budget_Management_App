@@ -22,6 +22,7 @@ from alerts.services import detect_spending_anomaly
 from .models import Category, Expense, RecurringRule
 from .serializers import CategorySerializer, ExpenseSerializer, ReceiptUploadSerializer, RecurringRuleSerializer
 from .services import suggest_categories
+from .importers import ImportFileError, import_expenses
 
 
 class ExpensePagination(PageNumberPagination):
@@ -105,6 +106,18 @@ class ExpenseViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
         with audited(self.request.user, instance):
             instance.is_deleted = True
             instance.save(update_fields=["is_deleted", "updated_at"])
+
+    @action(detail=False, methods=["post"], url_path="import", parser_classes=[MultiPartParser])
+    def import_csv(self, request):
+        upload = request.FILES.get("file")
+        if upload is None:
+            raise ValidationError({"file": "This field is required."})
+        dry_run = request.query_params.get("dry_run", "false").lower() == "true"
+        try:
+            result = import_expenses(upload, request.user, dry_run=dry_run)
+        except ImportFileError as exc:
+            raise ValidationError({"file": exc.message}, code=exc.code)
+        return Response(result, status=status.HTTP_200_OK)
 
     @action(
         detail=True,
