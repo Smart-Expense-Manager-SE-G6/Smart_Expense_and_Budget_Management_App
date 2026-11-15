@@ -19,8 +19,8 @@ from audit.services import audited, log_change
 # FR17: Spending anomaly detection
 from alerts.services import detect_spending_anomaly
 
-from .models import Category, Expense
-from .serializers import CategorySerializer, ExpenseSerializer, ReceiptUploadSerializer
+from .models import Category, Expense, RecurringRule
+from .serializers import CategorySerializer, ExpenseSerializer, ReceiptUploadSerializer, RecurringRuleSerializer
 from .services import suggest_categories
 
 
@@ -237,3 +237,17 @@ class CategoryViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
                 ]
             }
         )
+
+
+class RecurringRuleViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
+    serializer_class = RecurringRuleSerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+
+    def get_queryset(self):
+        return RecurringRule.objects.filter(owner=self.request.user).select_related("category")
+
+    def perform_destroy(self, instance):
+        with audited(self.request.user, instance):
+            instance.is_active = False
+            instance.save(update_fields=["is_active", "updated_at"])

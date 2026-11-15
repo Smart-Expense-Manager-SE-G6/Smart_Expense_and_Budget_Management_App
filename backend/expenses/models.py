@@ -103,6 +103,10 @@ class Expense(models.Model):
         on_delete=models.CASCADE,
         related_name="expenses",
     )
+    recurring_rule = models.ForeignKey(
+        "RecurringRule", null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="generated_expenses",
+    )
     category = models.ForeignKey(
         Category,
         null=True,
@@ -116,6 +120,8 @@ class Expense(models.Model):
         validators=[MinValueValidator(Decimal("0.01"))],
     )
     description = models.CharField(max_length=255, blank=True)
+    merchant = models.CharField(max_length=255, blank=True)
+    notes = models.CharField(max_length=255, blank=True)
     date = models.DateField()
     payment_method = models.CharField(max_length=32, blank=True)
     receipt = models.FileField(
@@ -133,6 +139,7 @@ class Expense(models.Model):
                 condition=Q(amount__gt=0),
                 name="expense_amount_positive",
             ),
+            models.UniqueConstraint(fields=["recurring_rule", "date"], condition=Q(recurring_rule__isnull=False), name="expense_recurring_rule_date_unique"),
         ]
         indexes = [
             models.Index(
@@ -143,3 +150,25 @@ class Expense(models.Model):
 
     def __str__(self):
         return f"{self.owner} - {self.amount} on {self.date}"
+
+
+class RecurringRule(models.Model):
+    FREQUENCIES = [(value, value.title()) for value in ("daily", "weekly", "monthly", "yearly")]
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="recurring_rules")
+    amount = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal("0.01"))])
+    category = models.ForeignKey(Category, null=True, blank=True, on_delete=models.PROTECT, related_name="recurring_rules")
+    payment_method = models.CharField(max_length=32, blank=True)
+    merchant = models.CharField(max_length=255, blank=True)
+    notes = models.CharField(max_length=255, blank=True)
+    frequency = models.CharField(max_length=10, choices=FREQUENCIES)
+    start_date = models.DateField()
+    end_date = models.DateField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(condition=Q(amount__gt=0), name="recurring_rule_amount_positive"),
+            models.CheckConstraint(condition=Q(end_date__isnull=True) | Q(start_date__lte=F("end_date")), name="recurring_rule_dates_valid"),
+        ]

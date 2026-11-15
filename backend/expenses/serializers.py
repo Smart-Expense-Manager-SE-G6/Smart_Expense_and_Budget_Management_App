@@ -4,7 +4,7 @@ from django.conf import settings
 from django.db.models import Q
 from rest_framework import serializers
 
-from .models import Category, Expense
+from .models import Category, Expense, RecurringRule
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -114,6 +114,8 @@ class ExpenseSerializer(serializers.ModelSerializer):
             "category",
             "amount",
             "description",
+            "merchant",
+            "notes",
             "date",
             "payment_method",
             "has_receipt",
@@ -180,3 +182,26 @@ class ReceiptUploadSerializer(serializers.Serializer):
         if header != signature:
             raise serializers.ValidationError("The uploaded file content is invalid.")
         return receipt
+
+
+class RecurringRuleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RecurringRule
+        fields = ["id", "owner", "amount", "category", "payment_method", "merchant", "notes", "frequency", "start_date", "end_date", "is_active", "created_at", "updated_at"]
+        read_only_fields = ["id", "owner", "is_active", "created_at", "updated_at"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        request = self.context.get("request")
+        if request and request.user.is_authenticated:
+            self.fields["category"].queryset = Category.objects.filter(Q(owner__isnull=True) | Q(owner=request.user), is_active=True)
+
+    def validate(self, attrs):
+        start_date = attrs.get("start_date", self.instance.start_date if self.instance else None)
+        if attrs.get("end_date") and start_date and attrs["end_date"] < start_date:
+            raise serializers.ValidationError({"end_date": "End date cannot be before start date."})
+        return attrs
+
+    def create(self, validated_data):
+        validated_data["owner"] = self.context["request"].user
+        return super().create(validated_data)
