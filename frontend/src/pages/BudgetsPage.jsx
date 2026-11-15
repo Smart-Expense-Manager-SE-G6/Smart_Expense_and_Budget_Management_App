@@ -7,6 +7,7 @@ import Notice from '../components/ui/Notice'
 import Skeleton from '../components/ui/Skeleton'
 import BudgetCard from '../features/budgets/BudgetCard'
 import BudgetForm from '../features/budgets/BudgetForm'
+import BudgetMembersDialog from '../features/budgets/BudgetMembersDialog'
 import useBudgets from '../hooks/useBudgets'
 import useCategories from '../hooks/useCategories'
 
@@ -17,6 +18,7 @@ export default function BudgetsPage() {
   const [pendingDelete, setPendingDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
   const [flash, setFlash] = useState(null)
+  const [sharing, setSharing] = useState(null)
 
   const openEditor = (budget = null) => setEditor((prev) => ({ open: true, budget, key: prev.key + 1 }))
 
@@ -45,7 +47,7 @@ export default function BudgetsPage() {
       <header className="page-header">
         <div>
           <h1 className="page-title">Budgets</h1>
-          <p className="page-subtitle">Weekly and monthly limits, tracked against your spending in real time.</p>
+          <p className="page-subtitle">Weekly and monthly limits, tracked in real time. Share a budget to track it together.</p>
         </div>
         <div className="page-actions">
           <Button variant="primary" icon="plus" onClick={() => openEditor()}>
@@ -96,7 +98,7 @@ export default function BudgetsPage() {
             ) : (
               <div className="grid grid-3">
                 {active.map((budget) => (
-                  <BudgetCard key={budget.id} budget={budget} onEdit={openEditor} onDelete={setPendingDelete} />
+                  <BudgetCard key={budget.id} budget={budget} onEdit={openEditor} onDelete={setPendingDelete} onShare={setSharing} />
                 ))}
               </div>
             )}
@@ -109,7 +111,7 @@ export default function BudgetsPage() {
               </h2>
               <div className="grid grid-3">
                 {past.map((budget) => (
-                  <BudgetCard key={budget.id} budget={budget} muted onEdit={openEditor} onDelete={setPendingDelete} />
+                  <BudgetCard key={budget.id} budget={budget} muted onEdit={openEditor} onDelete={setPendingDelete} onShare={setSharing} />
                 ))}
               </div>
             </section>
@@ -125,6 +127,8 @@ export default function BudgetsPage() {
         onClose={() => setEditor((prev) => ({ ...prev, open: false }))}
         onSaved={handleSaved}
       />
+
+      {sharing && <BudgetMembersDialog budget={sharing} onClose={() => setSharing(null)} onChanged={reload} />}
 
       <ConfirmDialog
         open={Boolean(pendingDelete)}

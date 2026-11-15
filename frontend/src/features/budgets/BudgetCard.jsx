@@ -6,8 +6,12 @@ import { formatCurrency, formatDate, toneForPercent } from '../../lib/format'
 
 const TONE_LABEL = { success: 'On track', warning: 'Nearing limit', danger: 'Limit exceeded' }
 
-export default function BudgetCard({ budget, onEdit, onDelete, muted = false }) {
+export default function BudgetCard({ budget, onEdit, onDelete, onShare, muted = false }) {
   const { util } = budget
+  // Roles on shared budgets (FR3): only the owner deletes; owner and admins edit.
+  const role = budget.role ?? 'owner'
+  const canEdit = role === 'owner' || role === 'admin'
+  const shared = role !== 'owner' || (budget.member_count ?? 0) > 0
   const tone = toneForPercent(util.percent)
   const over = util.remaining < 0
 
@@ -22,8 +26,15 @@ export default function BudgetCard({ budget, onEdit, onDelete, muted = false }) 
           </p>
         </div>
         <span className="row-actions">
-          <Button variant="ghost" size="sm" iconOnly icon="pencil" aria-label={`Edit ${budget.name}`} onClick={() => onEdit(budget)} />
-          <Button variant="ghost" size="sm" iconOnly icon="trash" aria-label={`Delete ${budget.name}`} onClick={() => onDelete(budget)} />
+          {onShare && (
+            <Button variant="ghost" size="sm" iconOnly icon="user" aria-label={`Members of ${budget.name}`} onClick={() => onShare(budget)} />
+          )}
+          {canEdit && (
+            <Button variant="ghost" size="sm" iconOnly icon="pencil" aria-label={`Edit ${budget.name}`} onClick={() => onEdit(budget)} />
+          )}
+          {role === 'owner' && (
+            <Button variant="ghost" size="sm" iconOnly icon="trash" aria-label={`Delete ${budget.name}`} onClick={() => onDelete(budget)} />
+          )}
         </span>
       </header>
 
@@ -31,6 +42,11 @@ export default function BudgetCard({ budget, onEdit, onDelete, muted = false }) 
         <Badge tone="primary">{budget.category_name ?? 'All categories'}</Badge>
         <Badge>{budget.period === 'weekly' ? 'Weekly' : 'Monthly'}</Badge>
         {budget.rollover_mode === 'rollover' && <Badge tone="info">Rollover</Badge>}
+        {shared && (
+          <Badge tone="info">
+            {role === 'owner' ? `Shared · ${budget.member_count} ${budget.member_count === 1 ? 'person' : 'people'}` : `Shared by ${budget.owner_email} · ${role}`}
+          </Badge>
+        )}
       </div>
 
       <div className="budget-card-figure">

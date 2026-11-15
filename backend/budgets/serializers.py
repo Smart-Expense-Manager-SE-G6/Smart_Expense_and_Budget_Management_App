@@ -3,11 +3,18 @@ import calendar
 from datetime import timedelta
 from decimal import Decimal
 
+from django.contrib.auth import get_user_model
 from django.db.models import Q
 from rest_framework import serializers
 
-from expenses.models import Category
-from .models import Budget
+from expenses.models import Category, Expense
+from .models import Budget, BudgetMember
+from .permissions import budget_role
+
+SHARED_CATEGORY_MESSAGE = (
+    "A shared budget can only use a default category, "
+    "because members cannot use your custom categories."
+)
 
 
 class BudgetSerializer(serializers.ModelSerializer):
@@ -16,12 +23,18 @@ class BudgetSerializer(serializers.ModelSerializer):
         read_only=True,
         default=None,
     )
+    owner_email = serializers.EmailField(source="user.email", read_only=True)
+    role = serializers.SerializerMethodField()
+    member_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Budget
         fields = [
             "id",
             "user",
+            "owner_email",
+            "role",
+            "member_count",
             "category",
             "category_name",
             "name",
@@ -54,9 +67,27 @@ class BudgetSerializer(serializers.ModelSerializer):
                 Q(owner__isnull=True) | Q(owner=request.user)
             )
 
+    def get_role(self, budget):
+        """The requesting user's role on this budget: owner, admin or member (FR3)."""
+        request = self.context.get("request")
+        return budget_role(budget, getattr(request, "user", None))
+
+    def get_member_count(self, budget):
+        annotated = getattr(budget, "num_members", None)
+        return annotated if annotated is not None else budget.memberships.count()
+
+    def owner(self):
+        """The budget's owner; admins may edit a budget they do not own."""
+        return self.instance.user if self.instance is not None else self.context["request"].user
+
     def validate_category(self, category):
         if category is not None and not category.is_active:
             raise serializers.ValidationError("The selected category is inactive.")
+        if category is not None and category.owner_id is not None:
+            if category.owner_id != self.owner().pk:
+                raise serializers.ValidationError("Category is invalid or inaccessible.")
+            if self.instance is not None and self.instance.memberships.exists():
+                raise serializers.ValidationError(SHARED_CATEGORY_MESSAGE)
         return category
 
     def validate(self, attrs):
@@ -106,7 +137,7 @@ class BudgetSerializer(serializers.ModelSerializer):
         # The database constraint cannot catch duplicate overall budgets
         # (NULL categories are distinct), so check both cases here.
         duplicates = Budget.objects.filter(
-            user=self.context["request"].user,
+            user=self.owner(),
             category=category,
             start_date=start_date,
             end_date=end_date,
@@ -120,3 +151,77 @@ class BudgetSerializer(serializers.ModelSerializer):
             )
 
         return attrs
+
+
+class BudgetMemberSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source="user.email", read_only=True)
+    name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BudgetMember
+        fields = ["id", "user", "email", "name", "role", "created_at", "updated_at"]
+        read_only_fields = ["id", "user", "email", "name", "created_at", "updated_at"]
+
+    def get_name(self, membership):
+        return membership.user.get_full_name()
+
+
+class BudgetMemberCreateSerializer(serializers.Serializer):
+    """Add an existing user to a budget by email. Needs `budget` in context."""
+
+    email = serializers.EmailField()
+    role = serializers.ChoiceField(
+        choices=BudgetMember.Role.choices,
+        default=BudgetMember.Role.MEMBER,
+    )
+
+    def validate_email(self, value):
+        return value.strip().lower()
+
+    def validate(self, attrs):
+        budget = self.context["budget"]
+
+        if budget.category is not None and budget.category.owner_id is not None:
+            raise serializers.ValidationError(SHARED_CATEGORY_MESSAGE)
+
+        user = get_user_model().objects.filter(email__iexact=attrs["email"]).first()
+        if user is None:
+            raise serializers.ValidationError(
+                {"email": "No account is registered with this email."}
+            )
+        if user.pk == budget.user_id:
+            raise serializers.ValidationError(
+                {"email": "The budget owner is already an admin."}
+            )
+        if budget.memberships.filter(user=user).exists():
+            raise serializers.ValidationError(
+                {"email": "This user is already a member of the budget."}
+            )
+        attrs["user"] = user
+        return attrs
+
+
+class BudgetExpenseSerializer(serializers.ModelSerializer):
+    """An expense counted by a shared budget, as other members see it."""
+
+    owner_email = serializers.EmailField(source="owner.email", read_only=True)
+    category_name = serializers.CharField(
+        source="category.name",
+        read_only=True,
+        default=None,
+    )
+
+    class Meta:
+        model = Expense
+        fields = [
+            "id",
+            "owner",
+            "owner_email",
+            "category",
+            "category_name",
+            "amount",
+            "description",
+            "date",
+            "payment_method",
+        ]
+        read_only_fields = fields

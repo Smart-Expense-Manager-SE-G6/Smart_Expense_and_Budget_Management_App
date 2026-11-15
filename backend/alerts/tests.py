@@ -111,19 +111,21 @@ class SpendingAnomalyAlertTests(TestCase):
             password="test-password-123",
         )
 
-    def add_expense(self, amount, is_deleted=False):
+    def add_expense(self, amount, is_deleted=False, day=date(2026, 10, 15)):
         return Expense.objects.create(
             owner=self.user,
             amount=Decimal(str(amount)),
-            date=date(2026, 10, 15),
+            date=day,
             description="Test expense",
             is_deleted=is_deleted,
         )
 
     def add_previous_expenses(self):
         # Average = (100 + 150 + 200 + 150 + 200) / 5 = 160
-        for amount in [100, 150, 200, 150, 200]:
-            self.add_expense(amount)
+        # Earlier dates, so "previous" never depends on created_at timestamps
+        # that can tie within the clock's resolution.
+        for offset, amount in enumerate([100, 150, 200, 150, 200], start=1):
+            self.add_expense(amount, day=date(2026, 10, 15 - offset))
 
     def test_anomaly_alert_created_for_unusual_expense(self):
         self.add_previous_expenses()
