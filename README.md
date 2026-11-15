@@ -128,6 +128,28 @@ global categories. The endpoint never assigns a category or changes an
 expense; the user must explicitly select a suggestion. Empty or unmatched
 descriptions return `{"suggestions": []}`. Custom categories are not suggested.
 
+### Recurring expenses (FR6)
+
+A recurring rule creates an ordinary expense on each due date (rent every month,
+a subscription every year):
+
+```text
+GET    /api/v1/recurring-rules/        list your rules, with next_run_date
+POST   /api/v1/recurring-rules/        {"amount": "15000.00", "frequency": "monthly", "start_date": "2026-01-31", ...}
+PATCH  /api/v1/recurring-rules/<id>/   edit; {"is_active": false} pauses, {"is_active": true} resumes
+DELETE /api/v1/recurring-rules/<id>/   ends the rule (expenses already created are kept)
+```
+
+- `frequency` is `daily`, `weekly`, `monthly` or `yearly`. Monthly and yearly
+  rules keep the start date's day and clamp to the month end: a rule starting
+  31 Jan runs on 28 Feb, then 31 Mar.
+- The `budget-scheduler` service runs `manage.py materialize_recurring_expenses`
+  daily. It catches up on missed days, never creates the same date twice, and
+  uses each owner's time zone for "today". Creating or editing a rule also
+  creates any expenses already due straight away.
+- Generated expenses link to their rule (`recurring_rule`), count towards
+  budgets, raise alerts and are audited like any other expense.
+
 ## Backups (FR22, NFR10)
 
 Backups cover the database and uploaded receipts (`backend/private_media`).
