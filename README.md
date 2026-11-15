@@ -128,6 +128,26 @@ global categories. The endpoint never assigns a category or changes an
 expense; the user must explicitly select a suggestion. Empty or unmatched
 descriptions return `{"suggestions": []}`. Custom categories are not suggested.
 
+### Audit trail (FR21)
+
+Every create, change and delete of an expense, category, recurring rule, budget,
+budget membership or profile writes an append-only audit entry in the same
+transaction. Read it with:
+
+```text
+GET /api/v1/audit/                                  everything you may see, newest first (paginated)
+GET /api/v1/audit/?entity=expense&entity_id=12      one record's history
+```
+
+- `entity` is `expense`, `category`, `recurring_rule`, `budget`, `budget_member` or `profile`.
+- Each entry has `action`, `actor_email` (null when the system made the change,
+  e.g. the scheduler), `changes` (`field`, `old`, `new`), `request_id` and `created_at`.
+- You see the history of your own records. Owners and admins of a shared budget
+  also see that budget's changes and its membership changes. History stays
+  visible after a record is deleted.
+- Read-only: there is no way to change or delete an entry through the API.
+- In the app, the clock icon on an expense row or a budget card opens its history.
+
 ## Backups (FR22, NFR10)
 
 Backups cover the database and uploaded receipts (`backend/private_media`).
