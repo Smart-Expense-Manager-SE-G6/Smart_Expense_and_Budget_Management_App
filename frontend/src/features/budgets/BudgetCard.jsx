@@ -6,7 +6,7 @@ import { formatCurrency, formatDate, toneForPercent } from '../../lib/format'
 
 const TONE_LABEL = { success: 'On track', warning: 'Nearing limit', danger: 'Limit exceeded' }
 
-export default function BudgetCard({ budget, onEdit, onDelete, onShare, muted = false }) {
+export default function BudgetCard({ budget, onEdit, onDelete, onShare, onHistory, muted = false }) {
   const { util } = budget
   // Roles on shared budgets (FR3): only the owner deletes; owner and admins edit.
   const role = budget.role ?? 'owner'
@@ -28,6 +28,9 @@ export default function BudgetCard({ budget, onEdit, onDelete, onShare, muted = 
         <span className="row-actions">
           {onShare && (
             <Button variant="ghost" size="sm" iconOnly icon="user" aria-label={`Members of ${budget.name}`} onClick={() => onShare(budget)} />
+          )}
+          {canEdit && onHistory && (
+            <Button variant="ghost" size="sm" iconOnly icon="clock" aria-label={`History of ${budget.name}`} onClick={() => onHistory(budget)} />
           )}
           {canEdit && (
             <Button variant="ghost" size="sm" iconOnly icon="pencil" aria-label={`Edit ${budget.name}`} onClick={() => onEdit(budget)} />

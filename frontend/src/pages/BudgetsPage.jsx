@@ -8,6 +8,7 @@ import Skeleton from '../components/ui/Skeleton'
 import BudgetCard from '../features/budgets/BudgetCard'
 import BudgetForm from '../features/budgets/BudgetForm'
 import BudgetMembersDialog from '../features/budgets/BudgetMembersDialog'
+import HistoryDialog from '../features/audit/HistoryDialog'
 import useBudgets from '../hooks/useBudgets'
 import useCategories from '../hooks/useCategories'
 
@@ -19,6 +20,7 @@ export default function BudgetsPage() {
   const [deleting, setDeleting] = useState(false)
   const [flash, setFlash] = useState(null)
   const [sharing, setSharing] = useState(null)
+  const [historyOf, setHistoryOf] = useState(null)
 
   const openEditor = (budget = null) => setEditor((prev) => ({ open: true, budget, key: prev.key + 1 }))
 
@@ -98,7 +100,7 @@ export default function BudgetsPage() {
             ) : (
               <div className="grid grid-3">
                 {active.map((budget) => (
-                  <BudgetCard key={budget.id} budget={budget} onEdit={openEditor} onDelete={setPendingDelete} onShare={setSharing} />
+                  <BudgetCard key={budget.id} budget={budget} onEdit={openEditor} onDelete={setPendingDelete} onShare={setSharing} onHistory={setHistoryOf} />
                 ))}
               </div>
             )}
@@ -111,7 +113,7 @@ export default function BudgetsPage() {
               </h2>
               <div className="grid grid-3">
                 {past.map((budget) => (
-                  <BudgetCard key={budget.id} budget={budget} muted onEdit={openEditor} onDelete={setPendingDelete} onShare={setSharing} />
+                  <BudgetCard key={budget.id} budget={budget} muted onEdit={openEditor} onDelete={setPendingDelete} onShare={setSharing} onHistory={setHistoryOf} />
                 ))}
               </div>
             </section>
@@ -128,6 +130,7 @@ export default function BudgetsPage() {
         onSaved={handleSaved}
       />
 
+      {historyOf && <HistoryDialog entity="budget" entityId={historyOf.id} title={historyOf.name} onClose={() => setHistoryOf(null)} />}
       {sharing && <BudgetMembersDialog budget={sharing} onClose={() => setSharing(null)} onChanged={reload} />}
 
       <ConfirmDialog

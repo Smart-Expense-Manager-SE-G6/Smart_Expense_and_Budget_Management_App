@@ -10,6 +10,7 @@ import './styles/layout.css'
 import './styles/categories.css'
 import './styles/budgets.css'
 import './styles/sharing.css'
+import './styles/history.css'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
