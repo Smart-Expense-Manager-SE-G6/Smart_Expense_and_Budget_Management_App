@@ -1,0 +1,51 @@
+/* Audit history dialog (FR21). */
+
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.history-entry {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.history-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  overflow-wrap: anywhere;
+}
+
+.history-changes {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.history-changes th,
+.history-changes td {
+  padding: 0.3rem 0.5rem;
+  text-align: left;
+  border-top: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+
+.history-changes thead th {
+  border-top: 0;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.history-changes tbody th {
+  font-weight: 500;
+}

@@ -10,6 +10,7 @@ import EmptyState from '../components/ui/EmptyState'
 import Icon from '../components/ui/Icon'
 import Notice from '../components/ui/Notice'
 import Skeleton from '../components/ui/Skeleton'
+import HistoryDialog from '../features/audit/HistoryDialog'
 import ExpenseForm from '../features/expenses/ExpenseForm'
 import useAsync from '../hooks/useAsync'
 import useCategories from '../hooks/useCategories'
@@ -33,6 +34,7 @@ export default function ExpensesPage() {
   const [pendingDelete, setPendingDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
   const [flash, setFlash] = useState(null)
+  const [historyOf, setHistoryOf] = useState(null)
 
   // "+ Add expense" elsewhere in the app deep-links here with ?new=1.
   useEffect(() => {
@@ -215,6 +217,7 @@ export default function ExpensesPage() {
                         <td className="num">{formatCurrency(expense.amount)}</td>
                         <td className="actions">
                           <span className="row-actions">
+                            <Button variant="ghost" size="sm" iconOnly icon="clock" aria-label={`History of ${expense.description || 'expense'}`} onClick={() => setHistoryOf(expense)} />
                             <Button variant="ghost" size="sm" iconOnly icon="pencil" aria-label={`Edit ${expense.description || 'expense'}`} onClick={() => openEdit(expense)} />
                             <Button variant="ghost" size="sm" iconOnly icon="trash" aria-label={`Delete ${expense.description || 'expense'}`} onClick={() => setPendingDelete(expense)} />
                           </span>
@@ -254,6 +257,10 @@ export default function ExpensesPage() {
         onClose={() => setEditor((prev) => ({ ...prev, open: false }))}
         onSaved={handleSaved}
       />
+
+      {historyOf && (
+        <HistoryDialog entity="expense" entityId={historyOf.id} title={historyOf.description || 'Expense'} onClose={() => setHistoryOf(null)} />
+      )}
 
       <ConfirmDialog
         open={Boolean(pendingDelete)}

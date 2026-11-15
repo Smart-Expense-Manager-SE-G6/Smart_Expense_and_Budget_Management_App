@@ -64,6 +64,12 @@ const ICONS = {
       <path d="M10 11v6M14 11v6" />
     </>
   ),
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 6v6l4 2" />
+    </>
+  ),
   pencil: <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />,
   search: (
     <>
