@@ -195,6 +195,10 @@ GET    /api/v1/budgets/<id>/expenses/             expenses counted by the budget
 - In the app, the people icon on a budget card opens the sharing dialog: owners and admins add people by email,
   change roles and remove members; members see who shares the budget and its recent spending, and can leave.
 
+## Deviations from the project documents
+
+The SRS, SASD, STP and other project documents are final. Every place the code knowingly differs from them, and why, is in [`docs/deviations.md`](docs/deviations.md).
+
 ## Rules
 
 - No secrets in code. Everything comes from `.env`, which is git-ignored.
