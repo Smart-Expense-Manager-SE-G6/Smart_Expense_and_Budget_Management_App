@@ -1,5 +1,7 @@
 # Smart Expense and Budget Management Application
 
+[![CI](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/workflows/ci.yml/badge.svg)](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/workflows/ci.yml)
+
 Team 6, PES University. React + Vite frontend, Django REST Framework API (`/api/v1`), PostgreSQL.
 
 ## Run it
@@ -201,6 +203,28 @@ GET    /api/v1/budgets/<id>/expenses/             expenses counted by the budget
 - Money is stored as `Decimal`, never float. Timestamps are UTC.
 
 ## Sprint 1 – Testing & Verification
+
+### Continuous integration (S3-11)
+
+Every pull request and every push to `main` runs `.github/workflows/ci.yml`:
+
+| Job | What it checks |
+|:--|:--|
+| Backend tests and coverage | `manage.py check`, no missing migrations, the full test suite on PostgreSQL 16, line and branch coverage (fails under 80%) |
+| Frontend lint and build | `npm run lint` and `npm run build` |
+| API tests (Postman) | `tests/postman_collection.json` with newman against a running server |
+
+The coverage table is on each run's summary page, and the full HTML report is a
+downloadable artifact (`backend-coverage`). The same coverage settings work
+locally:
+
+```bash
+cd backend
+coverage run manage.py test
+coverage report            # line + branch, fails under 80%
+```
+
+The separate `Backup and Restore Tests` workflow runs TC-Backup-01 on every pull request.
 
 ### Running the checks
 
