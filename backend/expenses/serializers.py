@@ -185,10 +185,14 @@ class ReceiptUploadSerializer(serializers.Serializer):
 
 
 class RecurringRuleSerializer(serializers.ModelSerializer):
+    """FR6. PATCH is_active to pause (false) or resume (true) a rule; DELETE ends it."""
+
+    next_run_date = serializers.SerializerMethodField()
+
     class Meta:
         model = RecurringRule
-        fields = ["id", "owner", "amount", "category", "payment_method", "merchant", "notes", "frequency", "start_date", "end_date", "is_active", "created_at", "updated_at"]
-        read_only_fields = ["id", "owner", "is_active", "created_at", "updated_at"]
+        fields = ["id", "owner", "amount", "category", "payment_method", "merchant", "notes", "frequency", "start_date", "end_date", "is_active", "next_run_date", "created_at", "updated_at"]
+        read_only_fields = ["id", "owner", "created_at", "updated_at"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -198,9 +202,25 @@ class RecurringRuleSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         start_date = attrs.get("start_date", self.instance.start_date if self.instance else None)
-        if attrs.get("end_date") and start_date and attrs["end_date"] < start_date:
+        end_date = attrs.get("end_date", self.instance.end_date if self.instance else None)
+        if end_date and start_date and end_date < start_date:
             raise serializers.ValidationError({"end_date": "End date cannot be before start date."})
         return attrs
+
+    def get_next_run_date(self, rule):
+        """The next date this rule will create an expense on, or null if it is paused or has ended."""
+        from analytics.validators import user_today
+        from expenses.management.commands.materialize_recurring_expenses import next_occurrence
+
+        if not rule.is_active:
+            return None
+        today = user_today(rule.owner)
+        occurrence = rule.start_date
+        while occurrence <= today:
+            occurrence = next_occurrence(occurrence, rule.frequency, rule.start_date.day)
+        if rule.end_date and occurrence > rule.end_date:
+            return None
+        return occurrence.isoformat()
 
     def create(self, validated_data):
         validated_data["owner"] = self.context["request"].user

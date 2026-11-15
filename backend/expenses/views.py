@@ -258,7 +258,22 @@ class RecurringRuleViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
     def get_queryset(self):
-        return RecurringRule.objects.filter(owner=self.request.user).select_related("category")
+        return RecurringRule.objects.filter(owner=self.request.user).select_related("category", "owner")
+
+    def perform_create(self, serializer):
+        super().perform_create(serializer)
+        self._materialize_after_commit(serializer.instance)
+
+    def perform_update(self, serializer):
+        super().perform_update(serializer)
+        self._materialize_after_commit(serializer.instance)
+
+    @staticmethod
+    def _materialize_after_commit(rule):
+        """Create any expenses already due (e.g. a rule starting today) without waiting for the daily run."""
+        from .management.commands.materialize_recurring_expenses import materialize_rule
+
+        transaction.on_commit(lambda: materialize_rule(rule.pk))
 
     def perform_destroy(self, instance):
         with audited(self.request.user, instance):
