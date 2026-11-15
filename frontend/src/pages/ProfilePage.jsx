@@ -5,6 +5,7 @@ import Avatar from '../components/ui/Avatar'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import Notice from '../components/ui/Notice'
+import AccountSettings from '../features/account/AccountSettings'
 import { displayName } from '../lib/format'
 
 const timezones = Intl.supportedValuesOf('timeZone')
@@ -47,7 +48,7 @@ export default function ProfilePage() {
       <header className="page-header">
         <div>
           <h1 className="page-title">Profile</h1>
-          <p className="page-subtitle">Manage your personal details and preferences.</p>
+          <p className="page-subtitle">Your details, notifications, password and data.</p>
         </div>
       </header>
 
@@ -84,6 +85,7 @@ export default function ProfilePage() {
             </div>
           </form>
         </Card>
+        <AccountSettings />
       </div>
     </>
   )

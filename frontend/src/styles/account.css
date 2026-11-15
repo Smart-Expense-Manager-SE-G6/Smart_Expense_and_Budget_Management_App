@@ -1,0 +1,76 @@
+/* Profile page and account settings (FR2, S3-09). */
+
+.profile-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 260px) minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.profile-layout > :not(.profile-summary) {
+  grid-column: 2;
+}
+
+.profile-summary {
+  grid-row: span 4;
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.profile-summary h2 {
+  margin: 0.5rem 0 0;
+  font-size: 1.15rem;
+}
+
+.profile-summary p {
+  margin: 0;
+}
+
+@media (max-width: 860px) {
+  .profile-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-layout > :not(.profile-summary),
+  .profile-summary {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
+.toggle-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+.toggle-row input {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+  accent-color: var(--primary);
+}
+
+.toggle-row .muted {
+  display: block;
+  font-size: 0.9rem;
+}
+
+.data-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.data-actions p {
+  margin: 0 0 0.6rem;
+}
+
+.data-action-title {
+  font-weight: 600;
+}
