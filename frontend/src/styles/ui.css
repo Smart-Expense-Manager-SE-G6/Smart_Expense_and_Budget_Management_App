@@ -659,6 +659,9 @@ select.input {
 
 /* ───────── Data table ───────── */
 .table-wrap {
+  /* Contains absolutely positioned screen-reader text in table headers, so a
+     wide table scrolls inside this box instead of widening the page on phones. */
+  position: relative;
   overflow-x: auto;
 }
 
