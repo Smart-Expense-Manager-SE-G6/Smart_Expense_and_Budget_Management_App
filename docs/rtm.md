@@ -54,5 +54,5 @@ Differences between this matrix, the code and the approved project documents are
 | **NFR10**| Automated backups | Daily scheduled backup | `backup` compose service runs `scripts/schedule_backups.sh` (cron, `BACKUP_SCHEDULE`) calling `scripts/backup.sh`; verified by `TC-Backup-01` | Shriram / Shashwath | Done (#46) |
 | **NFR11**| Modular architecture | MVC pattern; loose coupling | Modular monolith with independent Django apps | Team 6 | Enforced |
 | **NFR12**| Logging with Request ID | Request ID on every log & response | `RequestIdMiddleware` + standard logger | Shriram | Done (#12) |
-| **NFR13**| Containerization | One-command start | `docker compose up --build` (development); `docker-compose.prod.yml` with gunicorn and Caddy for any cloud VM, [deployment runbook](deployment.md) | Shriram | Done (#10, #72); live host pending |
+| **NFR13**| Containerization | One-command start | `docker compose up --build` | Shriram | Done (#10) |
 | **NFR14**| Data privacy compliance | Financial data isolated | Ownership checks on every endpoint; no 3rd-party data leaks | Team 6 | Enforced |
