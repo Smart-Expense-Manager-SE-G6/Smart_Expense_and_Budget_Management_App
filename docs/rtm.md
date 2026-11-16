@@ -18,8 +18,8 @@ Differences between this matrix, the code and the approved project documents are
 | **FR3** | Shared budget and role-based access (admin/member) | Shriram | Sec 3.4, 3.9, 4.3 | `budgets/models.py`, `budgets/permissions.py`, `budgets/services.py`, `budgets/views.py`, `budgets/test_shared.py`, `frontend/src/features/budgets/BudgetMembersDialog.jsx`, `frontend/src/features/budgets/BudgetCard.jsx` | `TC-Shared-01` | Done (#37) |
 | **FR4** | Add, edit, view, delete expense entries (soft delete) | Shreya | Sec 3.4, 4.1 (D1, D4) | `expenses/models.py`, `expenses/views.py` | `TC-Exp-01`, `TC-Exp-02` | In Progress (#1, #2, #3) |
 | **FR5** | Attach receipt/image to expense (secured store) | Shreya | Sec 3.4, 4.1 (D6) | `expenses/models.py`, `expenses/serializers.py`, `expenses/views.py` | `TC-Exp-03` | In Progress (#5) |
-| **FR6** | Recurring expense entries (rules materialization) | Shreya / Shashwath | Sec 3.4, 4.1 (D3) | `expenses/models.py`, `expenses/management/commands/materialize_recurring_expenses.py`, `expenses/test_recurring.py` | `TC-Exp-04` | Done (#6) |
-| **FR7** | Bulk import of expenses via CSV (per-row errors) | Shreya | Sec 4.3, OI-7 | `expenses/importers.py`, `expenses/views.py`, `expenses/test_import.py` | `TC-Import-01` | Done (#7) |
+| **FR6** | Recurring expense entries (rules materialization) | Shreya / Shashwath | Sec 3.4, 4.1 (D3) | `expenses/models.py`, `expenses/management/commands/materialize_recurring_expenses.py`, `expenses/test_recurring.py`, `frontend/src/pages/RecurringRulesPage.jsx` | `TC-Exp-04` | Done (#59) |
+| **FR7** | Bulk import of expenses via CSV (per-row errors) | Shreya | Sec 4.3, OI-7 | `expenses/importers.py`, `expenses/views.py`, `expenses/test_import.py`, `frontend/src/pages/ExpenseImportPage.jsx` | `TC-Import-01` | Done (#58) |
 | **FR8** | Default categories & custom user categories/subcategories | Shreya | Sec 3.4, 4.1 | `expenses/models.py`, `expenses/serializers.py`, `expenses/views.py` | `TC-Cat-01` | In Progress (#4) |
 | **FR9** | Rule-based category auto-suggestion | Shreya | Sec 3.4, 4.1 (D8) | `categories/services.py` | `TC-Cat-02` | Sprint 2 |
 | **FR10** | Set monthly/weekly budgets overall and per category | Shashwath | Sec 3.4, 4.1 (D2) | `budgets/models.py`, `budgets/views.py` | `TC-Bud-01` | Todo (Sprint 1) |
@@ -56,3 +56,5 @@ Differences between this matrix, the code and the approved project documents are
 | **NFR12**| Logging with Request ID | Request ID on every log & response | `RequestIdMiddleware` + standard logger | Shriram | Done (#12) |
 | **NFR13**| Containerization | One-command start | `docker compose up --build` | Shriram | Done (#10) |
 | **NFR14**| Data privacy compliance | Financial data isolated | Ownership checks on every endpoint; no 3rd-party data leaks; data export, account deletion and email-alert consent (`/me/export/`, `DELETE /me/`, `email_alerts`; `TC-Account-01`) | Team 6 | Enforced (#71) |
+
+
