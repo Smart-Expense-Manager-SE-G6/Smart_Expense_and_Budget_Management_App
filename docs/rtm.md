@@ -19,7 +19,7 @@ Differences between this matrix, the code and the approved project documents are
 | **FR4** | Add, edit, view, delete expense entries (soft delete) | Shreya | Sec 3.4, 4.1 (D1, D4) | `expenses/models.py`, `expenses/views.py` | `TC-Exp-01`, `TC-Exp-02` | In Progress (#1, #2, #3) |
 | **FR5** | Attach receipt/image to expense (secured store) | Shreya | Sec 3.4, 4.1 (D6) | `expenses/models.py`, `expenses/serializers.py`, `expenses/views.py` | `TC-Exp-03` | In Progress (#5) |
 | **FR6** | Recurring expense entries (rules materialization) | Shreya / Shashwath | Sec 3.4, 4.1 (D3) | `expenses/models.py`, `expenses/management/commands/materialize_recurring_expenses.py`, `expenses/test_recurring.py` | `TC-Exp-04` | Done (#6) |
-| **FR7** | Bulk import of expenses via CSV (per-row errors) | Shreya | Sec 4.3, OI-7 | `expenses/importers.py`, `expenses/views.py`, `expenses/test_import.py` | `TC-Import-01` | Done (#7) |
+| **FR7** | Bulk import of expenses via CSV (per-row errors) | Shreya | Sec 4.3, OI-7 | `expenses/importers.py`, `expenses/views.py`, `expenses/test_import.py`, `frontend/src/pages/ExpenseImportPage.jsx` | `TC-Import-01` | Done (#58) |
 | **FR8** | Default categories & custom user categories/subcategories | Shreya | Sec 3.4, 4.1 | `expenses/models.py`, `expenses/serializers.py`, `expenses/views.py` | `TC-Cat-01` | In Progress (#4) |
 | **FR9** | Rule-based category auto-suggestion | Shreya | Sec 3.4, 4.1 (D8) | `categories/services.py` | `TC-Cat-02` | Sprint 2 |
 | **FR10** | Set monthly/weekly budgets overall and per category | Shashwath | Sec 3.4, 4.1 (D2) | `budgets/models.py`, `budgets/views.py` | `TC-Bud-01` | Todo (Sprint 1) |
