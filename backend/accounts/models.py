@@ -44,6 +44,9 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)
     # Budget periods are computed in the user's own time zone (D7).
     timezone = models.CharField(max_length=64, default="Asia/Kolkata", validators=[validate_timezone])
+    # Consent to alert emails through the external email provider (NFR14, S3-09).
+    # In-app alerts are always created.
+    email_alerts = models.BooleanField(default=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []

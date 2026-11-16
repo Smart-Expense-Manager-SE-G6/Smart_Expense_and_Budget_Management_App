@@ -11,6 +11,7 @@ import './styles/categories.css'
 import './styles/budgets.css'
 import './styles/sharing.css'
 import './styles/history.css'
+import './styles/account.css'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

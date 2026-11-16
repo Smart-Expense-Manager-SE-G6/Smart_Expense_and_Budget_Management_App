@@ -14,7 +14,7 @@ Differences between this matrix, the code and the approved project documents are
 | Req ID | Requirement Description | Module Owner | Design Reference (SASD) | Target Code / Files | Test Case ID (STP) | Sprint 1 Status |
 |:---|:---|:---|:---|:---|:---|:---|
 | **FR1** | User registration and login (email/pwd, bcrypt) | Shriram | Sec 3.4, 4.3, Fig 4.1 | `accounts/views.py`, `accounts/serializers.py` | `TC-Auth-01`, `TC-Auth-02` | In Progress (#13) |
-| **FR2** | Profile update and account settings | Shriram | Sec 3.4, 4.3 | `accounts/views.py` | `TC-Auth-03` | In Progress (#13) |
+| **FR2** | Profile update and account settings | Shriram | Sec 3.4, 4.3 | `accounts/views.py`, `accounts/account_data.py`, `accounts/test_account_settings.py`, `frontend/src/features/account/AccountSettings.jsx` | `TC-Auth-03`, `TC-Account-01` | Done (#13, #71) |
 | **FR3** | Shared budget and role-based access (admin/member) | Shriram | Sec 3.4, 3.9, 4.3 | `budgets/models.py`, `budgets/permissions.py`, `budgets/services.py`, `budgets/views.py`, `budgets/test_shared.py`, `frontend/src/features/budgets/BudgetMembersDialog.jsx`, `frontend/src/features/budgets/BudgetCard.jsx` | `TC-Shared-01` | Done (#37) |
 | **FR4** | Add, edit, view, delete expense entries (soft delete) | Shreya | Sec 3.4, 4.1 (D1, D4) | `expenses/models.py`, `expenses/views.py` | `TC-Exp-01`, `TC-Exp-02` | In Progress (#1, #2, #3) |
 | **FR5** | Attach receipt/image to expense (secured store) | Shreya | Sec 3.4, 4.1 (D6) | `expenses/models.py`, `expenses/serializers.py`, `expenses/views.py` | `TC-Exp-03` | In Progress (#5) |
@@ -55,4 +55,4 @@ Differences between this matrix, the code and the approved project documents are
 | **NFR11**| Modular architecture | MVC pattern; loose coupling | Modular monolith with independent Django apps | Team 6 | Enforced |
 | **NFR12**| Logging with Request ID | Request ID on every log & response | `RequestIdMiddleware` + standard logger | Shriram | Done (#12) |
 | **NFR13**| Containerization | One-command start | `docker compose up --build` | Shriram | Done (#10) |
-| **NFR14**| Data privacy compliance | Financial data isolated | Ownership checks on every endpoint; no 3rd-party data leaks | Team 6 | Enforced |
+| **NFR14**| Data privacy compliance | Financial data isolated | Ownership checks on every endpoint; no 3rd-party data leaks; data export, account deletion and email-alert consent (`/me/export/`, `DELETE /me/`, `email_alerts`; `TC-Account-01`) | Team 6 | Enforced (#71) |

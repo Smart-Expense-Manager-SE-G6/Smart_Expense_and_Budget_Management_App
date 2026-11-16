@@ -130,6 +130,29 @@ global categories. The endpoint never assigns a category or changes an
 expense; the user must explicitly select a suggestion. Empty or unmatched
 descriptions return `{"suggestions": []}`. Custom categories are not suggested.
 
+### Account settings (FR2, NFR14)
+
+```text
+PATCH  /api/v1/me/            {"email_alerts": false}  stop alert emails (in-app alerts continue)
+POST   /api/v1/me/password/   {"current_password": "...", "new_password": "..."}
+GET    /api/v1/me/export/     ZIP of everything stored about you, receipts included
+DELETE /api/v1/me/            {"password": "..."}  delete the account and all its data
+```
+
+- Changing the password keeps the current session and signs out every other
+  device (their sessions carry the old password hash). It is audited without
+  the password.
+- The export contains `profile.json`, `expenses.csv` (deleted expenses marked),
+  your categories, recurring rules, budgets (owned and shared with you), alerts,
+  your audit history and your receipt files.
+- Deleting an account removes the user's expenses, receipt files, categories,
+  recurring rules, budgets (shared budgets they own disappear for members too),
+  memberships, alerts and their own audit history, then records one anonymous
+  "account deleted" audit entry. The email can be registered again.
+- `email_alerts` is the user's consent to sending alert emails through the
+  external email provider (NFR14); it defaults to on.
+- In the app, all of this is on the Profile page.
+
 ### Audit trail (FR21)
 
 Every create, change and delete of an expense, category, recurring rule, budget,

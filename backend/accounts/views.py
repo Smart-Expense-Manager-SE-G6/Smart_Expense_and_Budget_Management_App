@@ -1,4 +1,5 @@
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
+from django.http import HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from rest_framework import status
@@ -9,7 +10,14 @@ from rest_framework.views import APIView
 
 from audit.services import audited
 
-from .serializers import LoginSerializer, RegisterSerializer, UserSerializer
+from .account_data import delete_account, export_zip
+from .serializers import (
+    AccountDeleteSerializer,
+    LoginSerializer,
+    PasswordChangeSerializer,
+    RegisterSerializer,
+    UserSerializer,
+)
 from .throttles import ClientIpScopedThrottle, LoginFailureGuard, is_trusted_device, mark_trusted_device
 
 
@@ -80,3 +88,39 @@ class MeView(APIView):
         with audited(request.user, request.user):
             serializer.save()
         return Response(serializer.data)
+
+    def delete(self, request):
+        """Delete the account and all its data (S3-09). Needs the password in the body."""
+        serializer = AccountDeleteSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        delete_account(request.user)
+        request.session.flush()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class PasswordChangeView(APIView):
+    """POST /api/v1/me/password/ — signs out every other session, keeps this one (ADR-0001)."""
+
+    throttle_scope = "login"
+    throttle_classes = [ClientIpScopedThrottle]
+
+    def post(self, request):
+        serializer = PasswordChangeSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        user = request.user
+        with audited(user, user):
+            user.set_password(serializer.validated_data["new_password"])
+            user.save()
+        # Other sessions carry the old password hash and are rejected from now on.
+        update_session_auth_hash(request, user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class AccountExportView(APIView):
+    """GET /api/v1/me/export/ — a ZIP of everything stored about the user (NFR14)."""
+
+    def get(self, request):
+        filename, data = export_zip(request.user)
+        response = HttpResponse(data, content_type="application/zip")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
