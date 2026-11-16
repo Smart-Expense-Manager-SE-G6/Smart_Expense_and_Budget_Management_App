@@ -1,0 +1,56 @@
+# Production web server (S3-10, NFR4, NFR13).
+#
+# SITE_ADDRESS is the public domain, e.g. smartexpense.example.com. Caddy then gets
+# and renews a Let's Encrypt certificate by itself and redirects HTTP to HTTPS.
+# With SITE_ADDRESS=localhost it uses its own local certificate (for testing).
+{
+	email {$ACME_EMAIL:admin@localhost}
+	# Certificate for clients that send no server name (SNI), e.g. some scanners and old clients.
+	default_sni {$SITE_ADDRESS:localhost}
+}
+
+{$SITE_ADDRESS:localhost} {
+	encode zstd gzip
+
+	# Security headers for every response (the API adds its own stricter set).
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "same-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+		Cross-Origin-Opener-Policy "same-origin"
+		-Server
+	}
+
+	# API and Django admin: forwarded to gunicorn.
+	@django path /api/* /admin/*
+	handle @django {
+		reverse_proxy backend:8000 {
+			header_down -Server
+		}
+	}
+
+	# Django admin's CSS and JavaScript (collected by the backend at start-up).
+	handle_path /static/* {
+		root * /srv/django-static
+		file_server
+	}
+
+	# The React app: every unknown path loads index.html (client-side routing).
+	handle {
+		root * /srv/app
+		header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		@html not path /assets/*
+		header @html Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}

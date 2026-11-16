@@ -1,3 +1,4 @@
+
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
@@ -113,11 +114,15 @@ class TCAuth02LoginLogoutTests(AuthApiTestCase):
     def test_forged_forwarded_for_does_not_bypass_ip_limit(self):
         with patch.object(ScopedRateThrottle, "THROTTLE_RATES", {"login": "2/min"}):
             statuses = [
-                self.post("/api/v1/auth/login/", {"email": f"u{i}@example.com", "password": "x"},
-                          HTTP_X_FORWARDED_FOR=f"10.0.0.{i}").status_code
+                self.post(
+                    "/api/v1/auth/login/",
+                    {"email": f"u{i}@example.com", "password": "x"},
+                    HTTP_X_FORWARDED_FOR=f"10.0.0.{i}",
+                ).status_code
                 for i in range(3)
             ]
         self.assertEqual(statuses, [401, 401, 429])
+
 
 @override_settings(LOGIN_FAILURES_PER_ACCOUNT_AND_IP=3, LOGIN_FAILURES_PER_ACCOUNT=5)
 class LoginFailureGuardTests(AuthApiTestCase):
@@ -128,8 +133,11 @@ class LoginFailureGuardTests(AuthApiTestCase):
         User.objects.create_user("alice@example.com", password=PASSWORD)
 
     def attempt(self, ip, password="nope"):
-        return self.post("/api/v1/auth/login/", {"email": "alice@example.com", "password": password},
-                         REMOTE_ADDR=ip).status_code
+        return self.post(
+            "/api/v1/auth/login/",
+            {"email": "alice@example.com", "password": password},
+            REMOTE_ADDR=ip,
+        ).status_code
 
     def test_repeated_failures_block_that_ip_even_with_right_password(self):
         statuses = [self.attempt("10.0.0.1") for _ in range(3)]
@@ -157,13 +165,21 @@ class LoginFailureGuardTests(AuthApiTestCase):
 
     def test_trusted_device_gets_in_after_account_wide_cap(self):
         owner = Client()
-        self.post("/api/v1/auth/login/", {"email": "alice@example.com", "password": PASSWORD},
-                  client=owner, REMOTE_ADDR="192.168.1.10")
+        self.post(
+            "/api/v1/auth/login/",
+            {"email": "alice@example.com", "password": PASSWORD},
+            client=owner,
+            REMOTE_ADDR="192.168.1.10",
+        )
         owner.post("/api/v1/auth/logout/")
         for i in range(10):
             self.attempt(f"10.2.0.{i}")
-        response = self.post("/api/v1/auth/login/", {"email": "alice@example.com", "password": PASSWORD},
-                             client=owner, REMOTE_ADDR="192.168.1.10")
+        response = self.post(
+            "/api/v1/auth/login/",
+            {"email": "alice@example.com", "password": PASSWORD},
+            client=owner,
+            REMOTE_ADDR="192.168.1.10",
+        )
         self.assertEqual(response.status_code, 200)
 
     def test_new_device_waits_out_the_window_during_an_attack(self):
@@ -173,25 +189,41 @@ class LoginFailureGuardTests(AuthApiTestCase):
 
     def test_password_change_revokes_trusted_device(self):
         owner = Client()
-        self.post("/api/v1/auth/login/", {"email": "alice@example.com", "password": PASSWORD},
-                  client=owner, REMOTE_ADDR="192.168.1.10")
+        self.post(
+            "/api/v1/auth/login/",
+            {"email": "alice@example.com", "password": PASSWORD},
+            client=owner,
+            REMOTE_ADDR="192.168.1.10",
+        )
         user = User.objects.get(email="alice@example.com")
         user.set_password("An0ther-Passw0rd!")
         user.save()
         for i in range(10):
             self.attempt(f"10.5.0.{i}")
-        response = self.post("/api/v1/auth/login/", {"email": "alice@example.com", "password": "An0ther-Passw0rd!"},
-                             client=owner, REMOTE_ADDR="192.168.1.10")
+        response = self.post(
+            "/api/v1/auth/login/",
+            {"email": "alice@example.com", "password": "An0ther-Passw0rd!"},
+            client=owner,
+            REMOTE_ADDR="192.168.1.10",
+        )
         self.assertEqual(response.status_code, 429)
 
     def test_trusted_cookie_is_bound_to_its_email(self):
         User.objects.create_user("bob@example.com", password=PASSWORD)
         device = Client()
-        self.post("/api/v1/auth/login/", {"email": "bob@example.com", "password": PASSWORD}, client=device)
+        self.post(
+            "/api/v1/auth/login/",
+            {"email": "bob@example.com", "password": PASSWORD},
+            client=device,
+        )
         for i in range(10):
             self.attempt(f"10.4.0.{i}")
-        response = self.post("/api/v1/auth/login/", {"email": "alice@example.com", "password": PASSWORD},
-                             client=device, REMOTE_ADDR="10.9.9.9")
+        response = self.post(
+            "/api/v1/auth/login/",
+            {"email": "alice@example.com", "password": PASSWORD},
+            client=device,
+            REMOTE_ADDR="10.9.9.9",
+        )
         self.assertEqual(response.status_code, 429)
 
     def test_parallel_attempts_cannot_exceed_limit(self):
@@ -211,21 +243,32 @@ class CsrfTests(AuthApiTestCase):
         self.csrf_client = Client(enforce_csrf_checks=True)
 
     def test_login_without_csrf_token_is_refused(self):
-        response = self.post("/api/v1/auth/login/", {"email": "alice@example.com", "password": PASSWORD},
-                             client=self.csrf_client)
+        response = self.post(
+            "/api/v1/auth/login/",
+            {"email": "alice@example.com", "password": PASSWORD},
+            client=self.csrf_client,
+        )
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.json()["error"]["code"], "csrf_failed")
 
     def test_login_with_csrf_token_from_csrf_endpoint(self):
         self.assertEqual(self.csrf_client.get("/api/v1/auth/csrf/").status_code, 204)
         token = self.csrf_client.cookies["csrftoken"].value
-        response = self.post("/api/v1/auth/login/", {"email": "alice@example.com", "password": PASSWORD},
-                             client=self.csrf_client, HTTP_X_CSRFTOKEN=token)
+        response = self.post(
+            "/api/v1/auth/login/",
+            {"email": "alice@example.com", "password": PASSWORD},
+            client=self.csrf_client,
+            HTTP_X_CSRFTOKEN=token,
+        )
         self.assertEqual(response.status_code, 200)
 
     def test_signed_in_write_without_csrf_token_uses_same_error_code(self):
         self.csrf_client.force_login(User.objects.get(email="alice@example.com"))
-        response = self.csrf_client.patch("/api/v1/me/", {"first_name": "X"}, content_type="application/json")
+        response = self.csrf_client.patch(
+            "/api/v1/me/",
+            {"first_name": "X"},
+            content_type="application/json",
+        )
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.json()["error"]["code"], "csrf_failed")
         self.assertEqual(User.objects.get(email="alice@example.com").first_name, "")
@@ -241,12 +284,24 @@ class ProfileTests(AuthApiTestCase):
         body = self.client.get("/api/v1/me/").json()
         self.assertEqual(
             set(body),
-            {"id", "email", "first_name", "last_name", "timezone", "date_joined", "is_staff"},
+            {
+                "id",
+                "email",
+                "first_name",
+                "last_name",
+                "timezone",
+                "email_alerts",
+                "date_joined",
+                "is_staff",
+            },
         )
 
     def test_edit_profile_persists_and_is_audited(self):
-        response = self.client.patch("/api/v1/me/", {"first_name": "Alicia", "timezone": "Asia/Tokyo"},
-                                     content_type="application/json")
+        response = self.client.patch(
+            "/api/v1/me/",
+            {"first_name": "Alicia", "timezone": "Asia/Tokyo"},
+            content_type="application/json",
+        )
         self.assertEqual(response.status_code, 200)
         self.user.refresh_from_db()
         self.assertEqual((self.user.first_name, self.user.timezone), ("Alicia", "Asia/Tokyo"))

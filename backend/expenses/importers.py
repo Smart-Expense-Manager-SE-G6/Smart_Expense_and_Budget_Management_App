@@ -92,6 +92,13 @@ def import_expenses(upload, user, dry_run=False):
             row_errors.append({"row_number": number, "field": field, "error_code": code,
                                "message": message, "raw_value": value[field]})
 
+        # PostgreSQL cannot store NUL bytes; without this check one such cell
+        # would crash the whole import (found by the S3-15 fuzz tests).
+        for field, cell in value.items():
+            if "\x00" in cell:
+                error(field, "INVALID_CHARACTER", "Remove the NUL (0x00) character from this cell.")
+                value[field] = cell.replace("\x00", "")
+
         parsed_date = None
         if not value["date"]:
             error("date", "MISSING_FIELD", "Date is required.")

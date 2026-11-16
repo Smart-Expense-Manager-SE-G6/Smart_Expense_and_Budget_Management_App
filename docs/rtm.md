@@ -14,7 +14,7 @@ Differences between this matrix, the code and the approved project documents are
 | Req ID | Requirement Description | Module Owner | Design Reference (SASD) | Target Code / Files | Test Case ID (STP) | Sprint 1 Status |
 |:---|:---|:---|:---|:---|:---|:---|
 | **FR1** | User registration and login (email/pwd, bcrypt) | Shriram | Sec 3.4, 4.3, Fig 4.1 | `accounts/views.py`, `accounts/serializers.py` | `TC-Auth-01`, `TC-Auth-02` | In Progress (#13) |
-| **FR2** | Profile update and account settings | Shriram | Sec 3.4, 4.3 | `accounts/views.py` | `TC-Auth-03` | In Progress (#13) |
+| **FR2** | Profile update and account settings | Shriram | Sec 3.4, 4.3 | `accounts/views.py`, `accounts/account_data.py`, `accounts/test_account_settings.py`, `frontend/src/features/account/AccountSettings.jsx` | `TC-Auth-03`, `TC-Account-01` | Done (#13, #71) |
 | **FR3** | Shared budget and role-based access (admin/member) | Shriram | Sec 3.4, 3.9, 4.3 | `budgets/models.py`, `budgets/permissions.py`, `budgets/services.py`, `budgets/views.py`, `budgets/test_shared.py`, `frontend/src/features/budgets/BudgetMembersDialog.jsx`, `frontend/src/features/budgets/BudgetCard.jsx` | `TC-Shared-01` | Done (#37) |
 | **FR4** | Add, edit, view, delete expense entries (soft delete) | Shreya | Sec 3.4, 4.1 (D1, D4) | `expenses/models.py`, `expenses/views.py` | `TC-Exp-01`, `TC-Exp-02` | In Progress (#1, #2, #3) |
 | **FR5** | Attach receipt/image to expense (secured store) | Shreya | Sec 3.4, 4.1 (D6) | `expenses/models.py`, `expenses/serializers.py`, `expenses/views.py` | `TC-Exp-03` | In Progress (#5) |
@@ -45,14 +45,14 @@ Differences between this matrix, the code and the approved project documents are
 | **NFR1** | Dashboard & analytics load speed | <= 2–3s for 10,000 transactions | Composite DB indexes on `(user, date)`, `(user, category)`; seed script verification (`TC-Perf-01`) | Shashank | Done (#20, #21) |
 | **NFR2** | Report generation completion speed | <= 5s for 1-year date range | Date-range cap (OI-3); SQL aggregations | Shashank | Sprint 2 |
 | **NFR3** | Horizontal scalability | Stateless app tier | Shared PostgreSQL session store; stateless REST API | Team 6 | Design verified |
-| **NFR4** | Sensitive data encryption | Passwords hashed; TLS | `bcrypt` hashing; TLS/HTTPS; secure file root | Shriram | Verified (ADR 0001) |
-| **NFR5** | Authentication & token expiry | Session expiry on logout & 30m idle | Django sessions in HttpOnly cookies; 401 on expired session | Shriram | Verified (ADR 0001, #12) |
-| **NFR6** | Protection against SQLi, XSS, CSRF | Zero high/critical vulnerabilities | Django ORM parameterized queries; React auto-escaping; CSRF header | Shriram | Active in middleware |
+| **NFR4** | Sensitive data encryption | Passwords hashed; TLS | `bcrypt` hashing; TLS/HTTPS; secure file root; `TC-Sec-01`; [security report](security-report.md) | Shriram | Verified (ADR 0001, #77) |
+| **NFR5** | Authentication & token expiry | Session expiry on logout & 30m idle | Django sessions in HttpOnly cookies; 401 on expired session; `TC-Sec-01`, `TC-Sec-04` | Shriram | Verified (ADR 0001, #12, #77) |
+| **NFR6** | Protection against SQLi, XSS, CSRF | Zero high/critical vulnerabilities | Django ORM parameterized queries; React auto-escaping; CSRF header; security headers; fuzzing and penetration tests `TC-Sec-03`, `TC-Sec-04`; OWASP ZAP and dependency audits in the [security report](security-report.md) | Shriram | Verified (#77) |
 | **NFR7** | Responsive UI | Mobile, tablet, desktop | Responsive CSS layouts without frameworks | Team 6 | Active in frontend |
 | **NFR8** | Accessibility | WCAG basics (labels, contrast) | Form labels, keyboard focus, table fallbacks for charts | Team 6 | Enforced in UI |
-| **NFR9** | Uptime | 99% uptime target | Health endpoint `/api/v1/health/` | Shriram | Done (#10) |
+| **NFR9** | Uptime | 99% uptime target | Health endpoint `/api/v1/health/`; services restart automatically (`restart: unless-stopped`); smoke test `deploy/smoke_test.sh` | Shriram | Done (#10, #72); uptime monitor in #79 |
 | **NFR10**| Automated backups | Daily scheduled backup | `backup` compose service runs `scripts/schedule_backups.sh` (cron, `BACKUP_SCHEDULE`) calling `scripts/backup.sh`; verified by `TC-Backup-01` | Shriram / Shashwath | Done (#46) |
 | **NFR11**| Modular architecture | MVC pattern; loose coupling | Modular monolith with independent Django apps | Team 6 | Enforced |
 | **NFR12**| Logging with Request ID | Request ID on every log & response | `RequestIdMiddleware` + standard logger | Shriram | Done (#12) |
 | **NFR13**| Containerization | One-command start | `docker compose up --build` | Shriram | Done (#10) |
-| **NFR14**| Data privacy compliance | Financial data isolated | Ownership checks on every endpoint; no 3rd-party data leaks | Team 6 | Enforced |
+| **NFR14**| Data privacy compliance | Financial data isolated | Ownership checks on every endpoint; no 3rd-party data leaks; data export, account deletion and email-alert consent (`/me/export/`, `DELETE /me/`, `email_alerts`; `TC-Account-01`) | Team 6 | Enforced (#71) |

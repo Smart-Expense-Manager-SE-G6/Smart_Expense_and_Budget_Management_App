@@ -60,6 +60,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "core.request_id.RequestIdMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "core.security_headers.SecurityHeadersMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -174,9 +175,27 @@ CSRF_FAILURE_VIEW = "core.exceptions.csrf_failure"
 SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", not DEBUG)
 SECURE_HSTS_SECONDS = int(env("DJANGO_SECURE_HSTS_SECONDS", "0" if DEBUG else "31536000"))
 SECURE_HSTS_INCLUDE_SUBDOMAINS = SECURE_HSTS_SECONDS > 0
+# Preloading tells every browser to use HTTPS for the domain for months and needs a
+# domain the team owns and submits to hstspreload.org. Off by default (the deployment
+# runs on a hosting provider's subdomain), so check --deploy's W021 is expected.
+SECURE_HSTS_PRELOAD = env_bool("DJANGO_SECURE_HSTS_PRELOAD", False)
+SILENCED_SYSTEM_CHECKS = [] if SECURE_HSTS_PRELOAD else ["security.W021"]
 # Trust X-Forwarded-Proto only when a reverse proxy we control sets it.
 if int(env("NUM_PROXIES", "0")) > 0:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Shared cache (S3-15). Rate limits and failed-login lockouts are counted here, so
+# every worker process and every backend replica (NFR3) sees the same counts. The
+# table is created by migration core 0001. A local in-memory cache would give each
+# process its own allowance and multiply the number of guesses an attacker gets.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "django_cache",
+        "TIMEOUT": 3600,
+        "OPTIONS": {"MAX_ENTRIES": 50000},
+    }
+}
 
 # Failed-login limits (accounts.throttles.LoginFailureGuard).
 LOGIN_FAILURE_WINDOW_SECONDS = int(env("LOGIN_FAILURE_WINDOW_SECONDS", "300"))

@@ -1,3 +1,4 @@
+
 #!/bin/sh
 # Back up the database and receipt files (FR22).
 #
@@ -18,10 +19,22 @@ set -eu
 
 . "$(dirname "$0")/common.sh"
 
-stamp="$(date -u +%Y%m%dT%H%M%SZ)"
-name="$stamp${BACKUP_LABEL:+-$BACKUP_LABEL}"
-target="$BACKUP_DIR/$name"
-partial="$BACKUP_DIR/.partial-$name"
+[ -d "$MEDIA_DIR" ] || die "Media directory $MEDIA_DIR does not exist"
+
+# Backups are named by the UTC second. Two backups started in the same second
+# (e.g. a backup followed straight away by a rehearsal) would clash, so wait for
+# the next second instead of failing. Names stay unique and in time order.
+attempt=0
+while :; do
+    stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+    name="$stamp${BACKUP_LABEL:+-$BACKUP_LABEL}"
+    target="$BACKUP_DIR/$name"
+    partial="$BACKUP_DIR/.partial-$name"
+    [ -e "$target" ] || [ -e "$partial" ] || break
+    attempt=$((attempt + 1))
+    [ "$attempt" -lt 5 ] || die "$target already exists"
+    sleep 1
+done
 
 record_backup_status "running" "Backup is running."
 finish_backup() {
@@ -33,8 +46,6 @@ finish_backup() {
 }
 trap finish_backup EXIT
 
-[ -d "$MEDIA_DIR" ] || die "Media directory $MEDIA_DIR does not exist"
-[ ! -e "$target" ] || die "$target already exists"
 mkdir -p "$partial"
 
 log "Backing up database $PGDATABASE on $PGHOST to $target"
@@ -56,7 +67,12 @@ media_files="$(find "$MEDIA_DIR" -type f | wc -l | tr -d ' ')"
 (cd "$partial" && sha256sum db.dump media.tar.gz counts.tsv info.txt > SHA256SUMS)
 
 mv "$partial" "$target"
-printf '%s\n' "$name" > "$BACKUP_DIR/LATEST"
+
+# LATEST names the newest regular backup. Labelled ones (e.g. the pre-restore safety
+# backup, which may be of an empty database) must not become what the weekly rehearsal
+# and the off-site copy use.
+[ -n "${BACKUP_LABEL:-}" ] || printf '%s\n' "$name" > "$BACKUP_DIR/LATEST"
+
 log "Backup complete: $name ($(du -sh "$target" | cut -f1), $media_files receipt files)"
 
 if [ -z "${BACKUP_LABEL:-}" ]; then
