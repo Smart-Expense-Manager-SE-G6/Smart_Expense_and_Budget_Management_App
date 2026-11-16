@@ -118,6 +118,12 @@ class CsvImportTests(TestCase):
         self.upload(HEADER + "2026-01-15,5,food,,Mine,\n")
         self.assertEqual(Expense.objects.get(merchant="Mine").category, mine)
 
+    def test_nul_character_rejects_only_that_row(self):
+        response = self.upload(HEADER + "2026-01-15,5,,,Fine,\n" + '2026-01-16,6,,,"Bad\x00cell",\n')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.errors_for(response, 3), [("merchant", "INVALID_CHARACTER")])
+        self.assertEqual(list(Expense.objects.values_list("merchant", flat=True)), ["Fine"])
+
     def test_long_text_fields_are_rejected(self):
         response = self.upload(HEADER + f"2026-01-15,5,,,{'m' * 256},\n")
         self.assertEqual(self.errors_for(response, 2), [("merchant", "FIELD_TOO_LONG")])

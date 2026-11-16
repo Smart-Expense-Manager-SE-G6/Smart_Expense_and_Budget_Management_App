@@ -45,9 +45,9 @@ Differences between this matrix, the code and the approved project documents are
 | **NFR1** | Dashboard & analytics load speed | <= 2–3s for 10,000 transactions | Composite DB indexes on `(user, date)`, `(user, category)`; seed script verification (`TC-Perf-01`) | Shashank | Done (#20, #21) |
 | **NFR2** | Report generation completion speed | <= 5s for 1-year date range | Date-range cap (OI-3); SQL aggregations | Shashank | Sprint 2 |
 | **NFR3** | Horizontal scalability | Stateless app tier | Shared PostgreSQL session store; stateless REST API | Team 6 | Design verified |
-| **NFR4** | Sensitive data encryption | Passwords hashed; TLS | `bcrypt` hashing; TLS/HTTPS; secure file root | Shriram | Verified (ADR 0001) |
-| **NFR5** | Authentication & token expiry | Session expiry on logout & 30m idle | Django sessions in HttpOnly cookies; 401 on expired session | Shriram | Verified (ADR 0001, #12) |
-| **NFR6** | Protection against SQLi, XSS, CSRF | Zero high/critical vulnerabilities | Django ORM parameterized queries; React auto-escaping; CSRF header | Shriram | Active in middleware |
+| **NFR4** | Sensitive data encryption | Passwords hashed; TLS | `bcrypt` hashing; TLS/HTTPS; secure file root; `TC-Sec-01`; [security report](security-report.md) | Shriram | Verified (ADR 0001, #77) |
+| **NFR5** | Authentication & token expiry | Session expiry on logout & 30m idle | Django sessions in HttpOnly cookies; 401 on expired session; `TC-Sec-01`, `TC-Sec-04` | Shriram | Verified (ADR 0001, #12, #77) |
+| **NFR6** | Protection against SQLi, XSS, CSRF | Zero high/critical vulnerabilities | Django ORM parameterized queries; React auto-escaping; CSRF header; security headers; fuzzing and penetration tests `TC-Sec-03`, `TC-Sec-04`; OWASP ZAP and dependency audits in the [security report](security-report.md) | Shriram | Verified (#77) |
 | **NFR7** | Responsive UI | Mobile, tablet, desktop | Responsive CSS layouts without frameworks | Team 6 | Active in frontend |
 | **NFR8** | Accessibility | WCAG basics (labels, contrast) | Form labels, keyboard focus, table fallbacks for charts | Team 6 | Enforced in UI |
 | **NFR9** | Uptime | 99% uptime target | Health endpoint `/api/v1/health/` | Shriram | Done (#10) |
