@@ -7,9 +7,11 @@ on:
   pull_request:
     branches: [main]
 
+# On a pull request only the newest push matters, so older runs are cancelled.
+# On main every merge commit runs to the end, so its checks are never shown as cancelled.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   DJANGO_SECRET_KEY: ci-only-not-a-secret
