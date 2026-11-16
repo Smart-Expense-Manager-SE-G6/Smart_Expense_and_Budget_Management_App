@@ -8,9 +8,10 @@ on:
     branches: [main]
 
 # On a pull request only the newest push matters, so older runs are cancelled.
-# On main every merge commit runs to the end, so its checks are never shown as cancelled.
+# On main every merge commit gets its own group (its run id), so no run is ever
+# cancelled or dropped from the queue, even when several PRs are merged at once.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
