@@ -6,10 +6,12 @@ import BudgetsPage from './pages/BudgetsPage'
 import CategoriesPage from './pages/CategoriesPage'
 import DashboardPage from './pages/DashboardPage'
 import ExpensesPage from './pages/ExpensesPage'
+import ExpenseImportPage from './pages/ExpenseImportPage'
 import LoginPage from './pages/LoginPage'
 import ProfilePage from './pages/ProfilePage'
 import RegisterPage from './pages/RegisterPage'
 import ReportsPage from './pages/ReportsPage'
+import RecurringRulesPage from './pages/RecurringRulesPage'
 
 export default function App() {
   return (
@@ -22,6 +24,8 @@ export default function App() {
         <Route element={<AppShell />}>
           <Route index element={<DashboardPage />} />
           <Route path="/expenses" element={<ExpensesPage />} />
+          <Route path="/expenses/import" element={<ExpenseImportPage />} />
+          <Route path="/recurring" element={<RecurringRulesPage />} />
           <Route path="/budgets" element={<BudgetsPage />} />
           <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/reports" element={<ReportsPage />} />
