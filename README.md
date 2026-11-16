@@ -239,6 +239,13 @@ GET    /api/v1/budgets/<id>/expenses/             expenses counted by the budget
 - In the app, the people icon on a budget card opens the sharing dialog: owners and admins add people by email,
   change roles and remove members; members see who shares the budget and its recent spending, and can leave.
 
+## Security (NFR4–NFR6, STP 5.1)
+
+The security checks the test plan asks for, how each was done and the results
+(including the OWASP ZAP scan and dependency audits) are in
+[`docs/security-report.md`](docs/security-report.md). The automated part runs in CI:
+`python manage.py test core.test_security`.
+
 ## Deviations from the project documents
 
 The SRS, SASD, STP and other project documents are final. Every place the code knowingly differs from them, and why, is in [`docs/deviations.md`](docs/deviations.md).
