@@ -126,10 +126,12 @@ def detect_spending_anomaly(expense):
         defaults={
             "message": message,
             "period_start": expense.date,
+            "expense": expense,
         },
     )
 
     if created:
+        transaction.on_commit(lambda alert=alert: send_alert_email(alert))
         return alert
 
     return None
