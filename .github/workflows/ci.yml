@@ -3,7 +3,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, cd-pipeline]
   pull_request:
     branches: [main]
 
@@ -176,7 +176,7 @@ jobs:
         run: docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail 200
 
       - name: Log in to GitHub Container Registry
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -184,11 +184,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish the tested images
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push'
         run: |
           sha="${GITHUB_SHA::7}"
           for image in backend web backup; do
-            for tag in "$sha" main; do
+            for tag in "$sha"; do
               docker tag "smart-expense-$image:prod" "$REGISTRY/smart-expense-$image:$tag"
               docker push -q "$REGISTRY/smart-expense-$image:$tag"
             done
