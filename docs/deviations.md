@@ -48,6 +48,7 @@ decision.
 | R-10 | NFR4 | Encrypted at rest and in transit; bcrypt | bcrypt password hashing; HTTPS enforced outside development | **Closing in Sprint 3:** the production database and receipt storage use the hosting provider's at-rest encryption, recorded in the runbook. | #72 |
 | R-11 | SRS 4 | Use case and entity-relationship diagrams "in a future revision" | Use case diagram delivered; entities documented in `docs/data-dictionary.md` | The data dictionary gives each entity's fields, types, keys and relationships, which is the information an ER diagram carries. | #18 |
 | R-12 | FR4, Proposal | Field "payment mode" | Field `payment_method` (API and database) | Same meaning; the name follows the data dictionary. | #1 |
+| R-13 | NFR13 | Deployable on AWS, Azure, Heroku or Render | A Docker Compose stack for any Linux VM (Azure or AWS recommended); Render not used | Render's free tier has no persistent disk, so receipts and backups would be lost on restart. One VM runs the exact stack that was tested, including the backup service. | #72, [deployment.md](deployment.md) |
 
 ## 3. SASD v1.0
 

@@ -239,6 +239,14 @@ GET    /api/v1/budgets/<id>/expenses/             expenses counted by the budget
 - In the app, the people icon on a budget card opens the sharing dialog: owners and admins add people by email,
   change roles and remove members; members see who shares the budget and its recent spending, and can leave.
 
+## Deploying to production (NFR13)
+
+`docker-compose.prod.yml` runs the app on any Linux VM: gunicorn for the API, the
+built React app behind Caddy (automatic HTTPS, security headers), PostgreSQL,
+the scheduler and daily backups. Step-by-step guide, encryption at rest and
+verification: [`docs/deployment.md`](docs/deployment.md). Check a deployment with
+`deploy/smoke_test.sh https://<domain>`.
+
 ## Deviations from the project documents
 
 The SRS, SASD, STP and other project documents are final. Every place the code knowingly differs from them, and why, is in [`docs/deviations.md`](docs/deviations.md).

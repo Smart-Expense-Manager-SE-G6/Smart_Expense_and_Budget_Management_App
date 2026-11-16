@@ -50,9 +50,9 @@ Differences between this matrix, the code and the approved project documents are
 | **NFR6** | Protection against SQLi, XSS, CSRF | Zero high/critical vulnerabilities | Django ORM parameterized queries; React auto-escaping; CSRF header | Shriram | Active in middleware |
 | **NFR7** | Responsive UI | Mobile, tablet, desktop | Responsive CSS layouts without frameworks | Team 6 | Active in frontend |
 | **NFR8** | Accessibility | WCAG basics (labels, contrast) | Form labels, keyboard focus, table fallbacks for charts | Team 6 | Enforced in UI |
-| **NFR9** | Uptime | 99% uptime target | Health endpoint `/api/v1/health/` | Shriram | Done (#10) |
+| **NFR9** | Uptime | 99% uptime target | Health endpoint `/api/v1/health/`; services restart automatically (`restart: unless-stopped`); smoke test `deploy/smoke_test.sh` | Shriram | Done (#10, #72); uptime monitor in #79 |
 | **NFR10**| Automated backups | Daily scheduled backup | `backup` compose service runs `scripts/schedule_backups.sh` (cron, `BACKUP_SCHEDULE`) calling `scripts/backup.sh`; verified by `TC-Backup-01` | Shriram / Shashwath | Done (#46) |
 | **NFR11**| Modular architecture | MVC pattern; loose coupling | Modular monolith with independent Django apps | Team 6 | Enforced |
 | **NFR12**| Logging with Request ID | Request ID on every log & response | `RequestIdMiddleware` + standard logger | Shriram | Done (#12) |
-| **NFR13**| Containerization | One-command start | `docker compose up --build` | Shriram | Done (#10) |
+| **NFR13**| Containerization | One-command start | `docker compose up --build` (development); `docker-compose.prod.yml` with gunicorn and Caddy for any cloud VM, [deployment runbook](deployment.md) | Shriram | Done (#10, #72); live host pending |
 | **NFR14**| Data privacy compliance | Financial data isolated | Ownership checks on every endpoint; no 3rd-party data leaks | Team 6 | Enforced |
