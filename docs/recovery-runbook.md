@@ -109,4 +109,4 @@ Issues found by the drill and fixed:
 - After a restore, `LATEST` pointed at the pre-restore safety backup, which in a disaster is a backup of an empty database. The weekly rehearsal and the next off-site copy would have used it. `LATEST` now only names regular backups.
 - Two backups started within the same second clashed (fixed in #91).
 
-The real off-site storage, the production VM and the timing on it remain to be recorded once the VM exists.
+For the demo (on localhost) the off-site folder is `./offsite` on the same laptop. In a real deployment it must be mounted cloud storage, as described above; the scripts do not change.

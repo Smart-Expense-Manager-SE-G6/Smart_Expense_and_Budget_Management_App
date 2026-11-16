@@ -250,7 +250,8 @@ built React app behind Caddy (automatic HTTPS, security headers), PostgreSQL,
 the scheduler and daily backups. Step-by-step guide, encryption at rest and
 verification: [`docs/deployment.md`](docs/deployment.md). Encrypted off-site backups and
 how to recover from losing the server: [`docs/recovery-runbook.md`](docs/recovery-runbook.md). Check a deployment with
-`deploy/smoke_test.sh https://<domain>`.
+`deploy/smoke_test.sh https://<domain>`. For the demo, `deploy/local-demo.sh` runs the same
+production stack on https://localhost.
 
 ## Rules
 

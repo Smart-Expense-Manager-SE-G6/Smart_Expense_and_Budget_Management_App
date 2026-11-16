@@ -3,6 +3,27 @@
 - **Covers:** NFR4 (encryption in transit and at rest), NFR9 (uptime), NFR10 (backups), NFR13 (cloud and Docker), FR18 (email)
 - **Files:** `docker-compose.prod.yml`, `deploy/` (Dockerfiles, `Caddyfile`, `smoke_test.sh`), `.env.prod.example`
 
+## Demo on this machine (localhost)
+
+The team runs the demo on a laptop, with the same production stack a server would run (R-13 in the [deviation log](deviations.md)). In WSL or Linux with Docker, from the repository root:
+
+```bash
+deploy/local-demo.sh            # first run creates .env.prod with random secrets, then starts everything
+```
+
+Open **https://localhost**. To avoid the browser's certificate warning, trust Caddy's local certificate once (Windows PowerShell, repository folder):
+
+```powershell
+certutil -user -addstore Root caddy-local-root.crt
+```
+
+Restart the browser after that. Other commands:
+- Check the stack: `deploy/smoke_test.sh https://localhost --insecure`
+- Stop, keeping the data: `deploy/local-demo.sh stop`
+- Delete all demo data: `deploy/local-demo.sh reset`
+
+Encrypted backup copies go to `./offsite`. The rest of this document is for putting the same stack on a cloud VM.
+
 ## What runs
 
 ```text
