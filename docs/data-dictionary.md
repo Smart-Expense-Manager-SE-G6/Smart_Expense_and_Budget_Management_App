@@ -171,11 +171,13 @@ Managed by **Shashwath K R** (FR16, FR17, FR18, D5).
 | `budget_id` | `BIGINT` | Yes | `NULL` | FK -> `budgets_budget.id` (ON DELETE CASCADE) |
 | `threshold_percentage`| `INTEGER` | Yes | `NULL` | Threshold reached: 80 or 100 (FR16) |
 | `period_start` | `DATE` | Yes | `NULL` | Period start date for the budget |
+| `expense_id` | `BIGINT` | Yes | `NULL` | Related expense for anomaly alerts |
 | `alert_type` | `VARCHAR(20)` | No | `'threshold'`| Type: `threshold` (FR16), `anomaly` (FR17) |
 | `title` | `VARCHAR(255)` | No | - | Alert title (e.g., 'Budget reached 80%') |
 | `message` | `TEXT` | No | - | Notification body text |
 | `is_read` | `BOOLEAN` | No | `False` | In-app read status |
 | `email_sent` | `BOOLEAN` | No | `False` | FR18: Delivery status via email adapter |
+| `email_error` | `TEXT` | No | `''` | Email adapter failure detail when delivery fails |
 | `created_at` | `TIMESTAMPTZ` | No | `CURRENT_TIMESTAMP` | Alert timestamp |
 
 **Indexes & Constraints (D5, R2):**

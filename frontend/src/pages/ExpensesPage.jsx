@@ -36,11 +36,31 @@ export default function ExpensesPage() {
   const [flash, setFlash] = useState(null)
   const [historyOf, setHistoryOf] = useState(null)
 
-  // "+ Add expense" elsewhere in the app deep-links here with ?new=1.
+  // Expense and creation links elsewhere in the app deep-link here.
   useEffect(() => {
     if (searchParams.get('new') === '1') {
       setEditor((prev) => ({ open: true, expense: null, key: prev.key + 1 }))
       setSearchParams({}, { replace: true })
+      return
+    }
+
+    const expenseId = searchParams.get('expense_id')
+    if (!expenseId) return
+
+    let active = true
+    api(`/expenses/${expenseId}/`)
+      .then((expense) => {
+        if (active) setEditor((prev) => ({ open: true, expense, key: prev.key + 1 }))
+      })
+      .catch((err) => {
+        if (active) setFlash({ tone: 'danger', text: err.message })
+      })
+      .finally(() => {
+        if (active) setSearchParams({}, { replace: true })
+      })
+
+    return () => {
+      active = false
     }
   }, [searchParams, setSearchParams])
 
@@ -273,4 +293,3 @@ export default function ExpensesPage() {
     </>
   )
 }
-

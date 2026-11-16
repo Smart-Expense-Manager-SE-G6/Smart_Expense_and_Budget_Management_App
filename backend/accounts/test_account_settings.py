@@ -18,6 +18,7 @@ from accounts.models import User
 from alerts.models import Alert
 from audit.models import AuditLog
 from budgets.models import Budget, BudgetMember
+from core.adapters.email import EmailResult
 from expenses.models import Category, Expense, RecurringRule
 
 PW = "Tr1cky-Passw0rd!"
@@ -239,11 +240,13 @@ class EmailAlertConsentTests(AccountSettingsBase):
 
     @patch("alerts.adapters.get_email_adapter")
     def test_alert_email_sent_when_allowed(self, adapter):
+        adapter.return_value.send_email.return_value = EmailResult(success=True, message="")
         self.add_budget(limit="100.00")
         with self.captureOnCommitCallbacks(execute=True):
             self.add_expense(amount="90.00")
-        self.assertTrue(Alert.objects.filter(user=self.user).exists())
+        alert = Alert.objects.get(user=self.user)
         self.assertTrue(adapter.return_value.send_email.called)
+        self.assertTrue(alert.email_sent)  # delivery is recorded on the alert (#68)
 
     @patch("alerts.adapters.get_email_adapter")
     def test_no_email_when_turned_off_but_alert_still_shown(self, adapter):
@@ -251,5 +254,7 @@ class EmailAlertConsentTests(AccountSettingsBase):
         self.add_budget(limit="100.00")
         with self.captureOnCommitCallbacks(execute=True):
             self.add_expense(amount="90.00")
-        self.assertTrue(Alert.objects.filter(user=self.user).exists())
+        alert = Alert.objects.get(user=self.user)
         self.assertFalse(adapter.return_value.send_email.called)
+        self.assertFalse(alert.email_sent)
+        self.assertEqual(alert.email_error, "")  # not a failure: the user chose no emails

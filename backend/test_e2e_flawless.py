@@ -206,7 +206,7 @@ def run_flawless_e2e_verification():
     # Verify Alert retrieval
     res = client1.get("/api/v1/alerts/")
     assert res.status_code == 200
-    alerts_list = res.json()
+    alerts_list = res.json()["results"]
     assert len(alerts_list) >= 1
     target_alert = alerts_list[0]
     assert target_alert["title"] == "Budget reached 80%"

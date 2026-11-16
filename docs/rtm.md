@@ -28,7 +28,7 @@ Differences between this matrix, the code and the approved project documents are
 | **FR13** | Visual analytics (category, period, trend charts) | Shashank | Sec 3.4, 4.3 | `analytics/views.py`, `frontend/src/components/Dashboard.jsx` | `TC-Analytics-01` | Done (#21, #22) |
 | **FR14** | Predictive insights (projected month-end spend) | Shashank | Sec 3.4, 4.3 | `analytics/services.py` | `TC-Analytics-02` | Sprint 2 |
 | **FR15** | Spending comparison across months/years | Shashank | Sec 3.4, 4.3 | `analytics/views.py` | `TC-Analytics-03` | Sprint 2 |
-| **FR16** | Threshold alerts at 80% and 100% (de-duplicated) | Shashwath | Sec 3.4, 4.1 (D5) | `alerts/models.py`, `alerts/services.py` | `TC-Alert-01` | Todo (Sprint 1) |
+| **FR16** | Threshold alerts at 80% and 100% (de-duplicated) | Shashwath | Sec 3.4, 4.1 (D5) | `alerts/models.py`, `alerts/services.py`, `alerts/views.py`, `frontend/src/pages/AlertsPage.jsx` | `TC-Alert-01` | Sprint 3 |
 | **FR17** | Anomaly notification (spike detection) | Shashwath | Sec 3.4, 4.3, OI-6 | `alerts/services.py` | `TC-Alert-02` | Sprint 2 |
 | **FR18** | In-app and email alert delivery (adapter) | Shashwath | Sec 3.4, 4.3, R4 | `alerts/adapters.py`, `alerts/views.py` | `TC-Alert-03` | Sprint 2 |
 | **FR19** | Custom date range reports (1-year cap) | Shashank | Sec 3.4, 4.3, OI-3 | `reports/views.py`, `reports/validators.py` | `TC-Report-01` | Sprint 2 |

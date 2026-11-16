@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { api } from '../api'
 import Button from '../components/ui/Button'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
@@ -13,6 +14,7 @@ import useBudgets from '../hooks/useBudgets'
 import useCategories from '../hooks/useCategories'
 
 export default function BudgetsPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const { categories } = useCategories()
   const { active, past, loading, error, reload } = useBudgets()
   const [editor, setEditor] = useState({ open: false, budget: null, key: 0 })
@@ -21,6 +23,19 @@ export default function BudgetsPage() {
   const [flash, setFlash] = useState(null)
   const [sharing, setSharing] = useState(null)
   const [historyOf, setHistoryOf] = useState(null)
+
+  useEffect(() => {
+    const budgetId = searchParams.get('budget_id')
+    if (!budgetId || loading || error) return
+
+    const budget = [...active, ...past].find((item) => String(item.id) === budgetId)
+    if (budget) {
+      setEditor((prev) => ({ open: true, budget, key: prev.key + 1 }))
+    } else {
+      setFlash({ tone: 'danger', text: 'The linked budget could not be found.' })
+    }
+    setSearchParams({}, { replace: true })
+  }, [active, error, loading, past, searchParams, setSearchParams])
 
   const openEditor = (budget = null) => setEditor((prev) => ({ open: true, budget, key: prev.key + 1 }))
 
@@ -144,4 +159,3 @@ export default function BudgetsPage() {
     </>
   )
 }
-
