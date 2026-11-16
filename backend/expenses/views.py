@@ -81,6 +81,18 @@ class ExpenseViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
         if end_date:
             queryset = queryset.filter(date__lte=end_date)
 
+        search = self.request.query_params.get("search", "").strip()
+        if search:
+            queryset = queryset.filter(
+                Q(description__icontains=search)
+                | Q(merchant__icontains=search)
+                | Q(notes__icontains=search)
+            )
+
+        payment_method = self.request.query_params.get("payment_method")
+        if payment_method:
+            queryset = queryset.filter(payment_method__iexact=payment_method)
+
         ordering = self.request.query_params.get("ordering", "-date")
         allowed_ordering = {"date", "-date", "amount", "-amount", "created_at", "-created_at"}
         if ordering not in allowed_ordering:

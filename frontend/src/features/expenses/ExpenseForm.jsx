@@ -15,6 +15,8 @@ function initialState(expense) {
     date: expense?.date ?? toISODate(new Date()),
     category: expense?.category ? String(expense.category) : '',
     description: expense?.description ?? '',
+    merchant: expense?.merchant ?? '',
+    notes: expense?.notes ?? '',
     payment_method: expense?.payment_method ?? 'upi',
   }
 }
@@ -56,6 +58,8 @@ export default function ExpenseForm({ open, expense, categories, onClose, onSave
       date: form.date,
       category: form.category ? Number(form.category) : null,
       description: form.description.trim(),
+      merchant: form.merchant.trim(),
+      notes: form.notes.trim(),
       payment_method: form.payment_method,
     }
 
@@ -103,7 +107,7 @@ export default function ExpenseForm({ open, expense, categories, onClose, onSave
       }
     >
       <form id={FORM_ID} className="modal-body form" onSubmit={handleSubmit} noValidate>
-        {error && !['amount', 'date', 'category', 'description', 'payment_method', 'receipt'].includes(error.field) && (
+        {error && !['amount', 'date', 'category', 'description', 'merchant', 'notes', 'payment_method', 'receipt'].includes(error.field) && (
           <Notice tone="danger">{error.message}</Notice>
         )}
         <div className="field-row">
@@ -131,6 +135,12 @@ export default function ExpenseForm({ open, expense, categories, onClose, onSave
         </div>
         <FormField label="Description" name="description" maxLength={255} placeholder="e.g. Dinner with the team"
           value={form.description} onChange={update} error={fieldError('description')} />
+        <div className="field-row">
+          <FormField label="Merchant" name="merchant" maxLength={255} placeholder="e.g. Acme Cafe"
+            value={form.merchant} onChange={update} error={fieldError('merchant')} />
+          <FormField label="Notes" name="notes" maxLength={255} placeholder="Optional details"
+            value={form.notes} onChange={update} error={fieldError('notes')} />
+        </div>
 
         {editing && hasReceipt ? (
           <div className="receipt-row">

@@ -110,6 +110,48 @@ class ExpenseApiTests(TestCase):
         self.assertNotIn(before.pk, ids)
         self.assertNotIn(after.pk, ids)
 
+    def test_TC_Exp_01_searches_merchant_and_notes_and_filters_payment_method(self):
+        matching = self.create_expense(
+            description="Lunch",
+            merchant="Corner Cafe",
+            notes="Client meeting",
+            payment_method="upi",
+        )
+        self.create_expense(
+            description="Lunch",
+            merchant="Home",
+            notes="Personal",
+            payment_method="cash",
+        )
+
+        response = self.client.get(
+            "/expenses/?search=client&payment_method=UPI"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([item["id"] for item in response.json()["results"]], [matching.pk])
+
+    def test_TC_Exp_02_saves_and_updates_merchant_and_notes(self):
+        response = self.client.post(
+            "/expenses/",
+            self.payload(merchant="Corner Cafe", notes="Team lunch"),
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        expense = Expense.objects.get(pk=response.json()["id"])
+        self.assertEqual((expense.merchant, expense.notes), ("Corner Cafe", "Team lunch"))
+
+        patch = self.client.patch(
+            f"/expenses/{expense.pk}/",
+            {"merchant": "Updated Cafe", "notes": "Updated note"},
+            content_type="application/json",
+        )
+
+        self.assertEqual(patch.status_code, 200)
+        expense.refresh_from_db()
+        self.assertEqual((expense.merchant, expense.notes), ("Updated Cafe", "Updated note"))
+
     def test_list_sorts_by_date_and_amount(self):
         oldest = self.create_expense(date=date(2026, 1, 1), amount=Decimal("30.00"))
         newest = self.create_expense(date=date(2026, 12, 1), amount=Decimal("10.00"))
