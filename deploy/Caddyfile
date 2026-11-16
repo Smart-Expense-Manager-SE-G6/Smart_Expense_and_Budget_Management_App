@@ -5,6 +5,8 @@
 # With SITE_ADDRESS=localhost it uses its own local certificate (for testing).
 {
 	email {$ACME_EMAIL:admin@localhost}
+	# Certificate for clients that send no server name (SNI), e.g. some scanners and old clients.
+	default_sni {$SITE_ADDRESS:localhost}
 }
 
 {$SITE_ADDRESS:localhost} {
