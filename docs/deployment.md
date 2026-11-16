@@ -22,7 +22,16 @@ Restart the browser after that. Other commands:
 - Stop, keeping the data: `deploy/local-demo.sh stop`
 - Delete all demo data: `deploy/local-demo.sh reset`
 
-Encrypted backup copies go to `./offsite`. The rest of this document is for putting the same stack on a cloud VM.
+Encrypted backup copies go to `./offsite`.
+
+**Run a release instead of building.** Every commit on `main` is deployed and smoke-tested by the CI/CD pipeline, and its images are published to GitHub Container Registry. To run exactly what was tested:
+
+```bash
+deploy/local-demo.sh release          # newest commit on main
+deploy/local-demo.sh release v1.0     # a tagged release
+```
+
+The rest of this document is for putting the same stack on a cloud VM.
 
 ## What runs
 
