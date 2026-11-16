@@ -12,11 +12,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Run as an unprivileged user; it owns only the folders the app writes to.
+# The app runs as an unprivileged user that may write only receipts and static
+# files. The entrypoint starts as root just long enough to set that ownership,
+# because shared volumes (receipts, also used by backups) can arrive owned by root.
 RUN useradd --create-home --uid 10001 app \
     && mkdir -p /app/private_media /app/staticfiles \
-    && chown -R app:app /app/private_media /app/staticfiles
-USER app
+    && chown -R app:app /app/private_media /app/staticfiles \
+    && chmod +x /app/scripts/docker-entrypoint.sh
+ENTRYPOINT ["/app/scripts/docker-entrypoint.sh"]
 
 EXPOSE 8000
 
