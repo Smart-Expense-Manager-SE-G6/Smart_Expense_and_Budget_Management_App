@@ -744,6 +744,48 @@ select.input {
   height: 40px;
 }
 
+.import-card {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.import-dropzone {
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+  padding: 2rem 1rem;
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.import-dropzone.is-dragging {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.import-file {
+  margin: 0;
+  font-weight: 600;
+}
+
+.import-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.import-results {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.import-results h2,
+.import-results p {
+  margin: 0;
+}
+
+
 .pagination {
   display: flex;
   align-items: center;
