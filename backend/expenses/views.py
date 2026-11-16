@@ -82,6 +82,8 @@ class ExpenseViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
             queryset = queryset.filter(date__lte=end_date)
 
         search = self.request.query_params.get("search", "").strip()
+        if "\x00" in search:
+            raise ValidationError({"search": "Search cannot contain NUL characters."})
         if search:
             queryset = queryset.filter(
                 Q(description__icontains=search)
@@ -250,15 +252,30 @@ class CategoryViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
     @action(detail=False, methods=["get"], url_path="suggestions")
     def suggestions(self, request):
         description = request.query_params.get("description", "")
+        merchant = request.query_params.get("merchant", "")
+        if "\x00" in description:
+            raise ValidationError(
+                {"description": "Description cannot contain NUL characters."}
+            )
+        if "\x00" in merchant:
+            raise ValidationError(
+                {"merchant": "Merchant cannot contain NUL characters."}
+            )
         if len(description) > 255:
             raise ValidationError(
                 {"description": "Description must not exceed 255 characters."}
+            )
+        if len(merchant) > 255:
+            raise ValidationError(
+                {"merchant": "Merchant must not exceed 255 characters."}
             )
         return Response(
             {
                 "suggestions": [
                     {"id": category.pk, "name": category.name}
-                    for category in suggest_categories(description)
+                    for category in suggest_categories(
+                        description, user=request.user, merchant=merchant
+                    )
                 ]
             }
         )
