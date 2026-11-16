@@ -27,3 +27,5 @@ backups/
 .DS_Store
 # User-uploaded receipt files
 backend/private_media/
+# Local off-site test folder (production uses mounted cloud storage)
+offsite/

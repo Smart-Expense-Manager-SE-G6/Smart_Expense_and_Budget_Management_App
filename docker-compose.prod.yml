@@ -48,17 +48,24 @@ services:
     volumes:
       - receipts:/app/private_media
 
-  # Daily backups (NFR10) and the restore tools (FR22), as in development.
+  # Daily backups (NFR10), encrypted off-site copies and a weekly restore
+  # rehearsal (S3-18), and the restore tools (FR22). See docs/recovery-runbook.md.
   backup:
-    image: postgres:16-alpine
+    build:
+      context: ./deploy
+      dockerfile: backup.Dockerfile
+    image: smart-expense-backup:prod
     env_file: .env.prod
     environment:
       PGHOST: db
       BACKUP_DIR: /backups
       MEDIA_DIR: /media
+      OFFSITE_DIR: /offsite
+      REHEARSAL_SCHEDULE: ${REHEARSAL_SCHEDULE:-30 3 * * 0}
     volumes:
       - ./scripts:/scripts:ro
       - ./backups:/backups
+      - ${OFFSITE_PATH:-./offsite}:/offsite
       - receipts:/media
     entrypoint: ["sh"]
     command: ["/scripts/schedule_backups.sh"]
