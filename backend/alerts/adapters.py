@@ -1,4 +1,3 @@
-
 import logging
 
 from core.adapters.email import EmailResult
@@ -9,7 +8,10 @@ logger = logging.getLogger(__name__)
 
 
 def send_alert_email(alert):
-    """Deliver an alert email through the configured email adapter."""
+    """Deliver an alert email through the configured email adapter, if the user allows alert emails."""
+    if not alert.user.email_alerts:
+        return None
+
     try:
         email_adapter = get_email_adapter()
         result = email_adapter.send_email(
@@ -27,6 +29,12 @@ def send_alert_email(alert):
     alert.email_sent = result.success
     alert.email_error = "" if result.success else result.message
     alert.save(update_fields=["email_sent", "email_error"])
+
     if not result.success:
-        logger.error("Alert email delivery failed for alert %s: %s", alert.pk, result.message)
+        logger.error(
+            "Alert email delivery failed for alert %s: %s",
+            alert.pk,
+            result.message,
+        )
+
     return result

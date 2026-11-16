@@ -130,6 +130,29 @@ global categories. The endpoint never assigns a category or changes an
 expense; the user must explicitly select a suggestion. Empty or unmatched
 descriptions return `{"suggestions": []}`. Custom categories are not suggested.
 
+### Account settings (FR2, NFR14)
+
+```text
+PATCH  /api/v1/me/            {"email_alerts": false}  stop alert emails (in-app alerts continue)
+POST   /api/v1/me/password/   {"current_password": "...", "new_password": "..."}
+GET    /api/v1/me/export/     ZIP of everything stored about you, receipts included
+DELETE /api/v1/me/            {"password": "..."}  delete the account and all its data
+```
+
+- Changing the password keeps the current session and signs out every other
+  device (their sessions carry the old password hash). It is audited without
+  the password.
+- The export contains `profile.json`, `expenses.csv` (deleted expenses marked),
+  your categories, recurring rules, budgets (owned and shared with you), alerts,
+  your audit history and your receipt files.
+- Deleting an account removes the user's expenses, receipt files, categories,
+  recurring rules, budgets (shared budgets they own disappear for members too),
+  memberships, alerts and their own audit history, then records one anonymous
+  "account deleted" audit entry. The email can be registered again.
+- `email_alerts` is the user's consent to sending alert emails through the
+  external email provider (NFR14); it defaults to on.
+- In the app, all of this is on the Profile page.
+
 ### Audit trail (FR21)
 
 Every create, change and delete of an expense, category, recurring rule, budget,
@@ -178,8 +201,8 @@ docker compose start backend
 
 - Each backup is a folder in `backups/` (git-ignored) named by its UTC time, e.g.
   `20261031T020000Z/`, holding `db.dump`, `media.tar.gz`, table row counts and
-  `SHA256SUMS`. `backups/LATEST` names the newest one. The newest
-  `BACKUP_KEEP` (default 7) are kept.
+  `SHA256SUMS`. `backups/LATEST` names the newest regular backup (never a
+  `*-pre-restore` safety copy). The newest `BACKUP_KEEP` (default 7) are kept.
 - **Rehearsal (TC-Backup-01)** restores into a scratch database, never the live
   one, then checks checksums, every table's row count and every receipt file.
   It exits non-zero on any mismatch.
@@ -239,9 +262,26 @@ GET    /api/v1/budgets/<id>/expenses/             expenses counted by the budget
 - In the app, the people icon on a budget card opens the sharing dialog: owners and admins add people by email,
   change roles and remove members; members see who shares the budget and its recent spending, and can leave.
 
+## Security (NFR4–NFR6, STP 5.1)
+
+The security checks the test plan asks for, how each was done and the results
+(including the OWASP ZAP scan and dependency audits) are in
+[`docs/security-report.md`](docs/security-report.md). The automated part runs in CI:
+`python manage.py test core.test_security`.
+
 ## Deviations from the project documents
 
 The SRS, SASD, STP and other project documents are final. Every place the code knowingly differs from them, and why, is in [`docs/deviations.md`](docs/deviations.md).
+
+## Deploying to production (NFR13)
+
+`docker-compose.prod.yml` runs the app on any Linux VM: gunicorn for the API, the
+built React app behind Caddy (automatic HTTPS, security headers), PostgreSQL,
+the scheduler and daily backups. Step-by-step guide, encryption at rest and
+verification: [`docs/deployment.md`](docs/deployment.md). Encrypted off-site backups and
+how to recover from losing the server: [`docs/recovery-runbook.md`](docs/recovery-runbook.md). Check a deployment with
+`deploy/smoke_test.sh https://<domain>`. For the demo, `deploy/local-demo.sh` runs the same
+production stack on https://localhost.
 
 ## Rules
 

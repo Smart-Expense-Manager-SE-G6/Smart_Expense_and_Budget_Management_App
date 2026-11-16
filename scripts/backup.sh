@@ -18,13 +18,22 @@ set -eu
 
 . "$(dirname "$0")/common.sh"
 
-stamp="$(date -u +%Y%m%dT%H%M%SZ)"
-name="$stamp${BACKUP_LABEL:+-$BACKUP_LABEL}"
-target="$BACKUP_DIR/$name"
-partial="$BACKUP_DIR/.partial-$name"
-
 [ -d "$MEDIA_DIR" ] || die "Media directory $MEDIA_DIR does not exist"
-[ ! -e "$target" ] || die "$target already exists"
+
+# Backups are named by the UTC second. Two backups started in the same second
+# (e.g. a backup followed straight away by a rehearsal) would clash, so wait for
+# the next second instead of failing. Names stay unique and in time order.
+attempt=0
+while :; do
+    stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+    name="$stamp${BACKUP_LABEL:+-$BACKUP_LABEL}"
+    target="$BACKUP_DIR/$name"
+    partial="$BACKUP_DIR/.partial-$name"
+    [ -e "$target" ] || [ -e "$partial" ] || break
+    attempt=$((attempt + 1))
+    [ "$attempt" -lt 5 ] || die "$target already exists"
+    sleep 1
+done
 mkdir -p "$partial"
 trap 'rm -rf "$partial"' EXIT
 
@@ -48,7 +57,10 @@ media_files="$(find "$MEDIA_DIR" -type f | wc -l | tr -d ' ')"
 
 mv "$partial" "$target"
 trap - EXIT
-printf '%s\n' "$name" > "$BACKUP_DIR/LATEST"
+# LATEST names the newest regular backup. Labelled ones (e.g. the pre-restore safety
+# backup, which may be of an empty database) must not become what the weekly rehearsal
+# and the off-site copy use.
+[ -n "${BACKUP_LABEL:-}" ] || printf '%s\n' "$name" > "$BACKUP_DIR/LATEST"
 log "Backup complete: $name ($(du -sh "$target" | cut -f1), $media_files receipt files)"
 
 if [ -z "${BACKUP_LABEL:-}" ]; then

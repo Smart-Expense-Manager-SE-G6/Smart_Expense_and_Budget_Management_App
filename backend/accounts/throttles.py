@@ -30,8 +30,8 @@ class LoginFailureGuard:
 
     Each attempt is reserved atomically before the password is checked (no
     check-then-record race); a successful login gives the reservation back.
-    Counters use fixed windows of LOGIN_FAILURE_WINDOW_SECONDS. Production with
-    several workers needs a shared cache backend (e.g. Redis) for this to hold.
+    Counters use fixed windows of LOGIN_FAILURE_WINDOW_SECONDS and live in the
+    shared database cache, so all workers and replicas count together.
     """
 
     def __init__(self, email, client_ip, trusted_device=False):

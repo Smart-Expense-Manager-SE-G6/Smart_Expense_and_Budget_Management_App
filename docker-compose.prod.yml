@@ -1,0 +1,106 @@
+# Production deployment (S3-10, NFR13). See docs/deployment.md.
+#
+#   cp .env.prod.example .env.prod      # then fill it in
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+#
+# Only the web service is reachable from outside (ports 80 and 443). The database,
+# API, scheduler and backups talk to each other on Docker's private network.
+name: smart-expense-prod
+
+x-backend: &backend
+  build:
+    context: ./backend
+    dockerfile: ../deploy/backend.Dockerfile
+  image: smart-expense-backend:prod
+  env_file: .env.prod
+  environment:
+    POSTGRES_HOST: db
+    DJANGO_DEBUG: "false"
+    NUM_PROXIES: "1"
+  restart: unless-stopped
+  depends_on:
+    db:
+      condition: service_healthy
+
+services:
+  db:
+    image: postgres:16-alpine
+    env_file: .env.prod
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    <<: *backend
+    volumes:
+      - receipts:/app/private_media
+      - static:/app/staticfiles
+
+  # FR12 budget rollover and FR6 recurring expenses, daily.
+  scheduler:
+    <<: *backend
+    command: ["sh", "scripts/run_budget_scheduler.sh"]
+    volumes:
+      - receipts:/app/private_media
+
+  # Daily backups (NFR10), encrypted off-site copies and a weekly restore
+  # rehearsal (S3-18), and the restore tools (FR22). See docs/recovery-runbook.md.
+  backup:
+    build:
+      context: ./deploy
+      dockerfile: backup.Dockerfile
+    image: smart-expense-backup:prod
+    env_file: .env.prod
+    environment:
+      PGHOST: db
+      BACKUP_DIR: /backups
+      MEDIA_DIR: /media
+      OFFSITE_DIR: /offsite
+      REHEARSAL_SCHEDULE: ${REHEARSAL_SCHEDULE:-30 3 * * 0}
+    volumes:
+      - ./scripts:/scripts:ro
+      - ./backups:/backups
+      - ${OFFSITE_PATH:-./offsite}:/offsite
+      - receipts:/media
+    entrypoint: ["sh"]
+    command: ["/scripts/schedule_backups.sh"]
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "find /backups/LATEST -mmin -1500 | grep -q ."]
+      interval: 1h
+      start_period: 10m
+
+  # HTTPS, security headers, the built React app, and the reverse proxy.
+  web:
+    build:
+      context: ./frontend
+      dockerfile: ../deploy/web.Dockerfile
+    image: smart-expense-web:prod
+    env_file: .env.prod
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - static:/srv/django-static:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+  receipts:
+  static:
+  caddy_data:
+  caddy_config:

@@ -15,8 +15,37 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "email", "first_name", "last_name", "timezone", "date_joined"]
+        fields = ["id", "email", "first_name", "last_name", "timezone", "email_alerts", "date_joined"]
         read_only_fields = ["id", "email", "date_joined"]
+
+
+class PasswordChangeSerializer(serializers.Serializer):
+    current_password = serializers.CharField(trim_whitespace=False)
+    new_password = serializers.CharField(trim_whitespace=False)
+
+    def validate_current_password(self, value):
+        if not self.context["request"].user.check_password(value):
+            raise serializers.ValidationError("Current password is incorrect.", code="wrong_password")
+        return value
+
+    def validate(self, attrs):
+        user = self.context["request"].user
+        try:
+            validate_password(attrs["new_password"], user)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError({"new_password": list(exc.messages)}, code="weak_password")
+        if attrs["new_password"] == attrs["current_password"]:
+            raise serializers.ValidationError({"new_password": "Choose a password you have not used here."}, code="same_password")
+        return attrs
+
+
+class AccountDeleteSerializer(serializers.Serializer):
+    password = serializers.CharField(trim_whitespace=False)
+
+    def validate_password(self, value):
+        if not self.context["request"].user.check_password(value):
+            raise serializers.ValidationError("Password is incorrect.", code="wrong_password")
+        return value
 
 
 class RegisterSerializer(serializers.ModelSerializer):
