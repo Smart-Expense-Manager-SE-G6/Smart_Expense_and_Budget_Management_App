@@ -131,6 +131,14 @@ class ExpenseApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual([item["id"] for item in response.json()["results"]], [matching.pk])
 
+    def test_TC_Exp_01_text_filters_refuse_nul_character(self):
+        # PostgreSQL cannot compare NUL; without the check this was a 500 (found by core.test_security fuzzing).
+        for parameter in ("search", "payment_method"):
+            with self.subTest(parameter=parameter):
+                response = self.client.get("/expenses/", {parameter: "cli\x00ent"})
+                self.assertEqual(response.status_code, 400)
+                self.assertEqual(response.json()["error"]["field"], parameter)
+
     def test_TC_Exp_02_saves_and_updates_merchant_and_notes(self):
         response = self.client.post(
             "/expenses/",

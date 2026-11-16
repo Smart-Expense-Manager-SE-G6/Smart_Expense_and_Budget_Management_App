@@ -81,7 +81,7 @@ class ExpenseViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
         if end_date:
             queryset = queryset.filter(date__lte=end_date)
 
-        search = self.request.query_params.get("search", "").strip()
+        search = self._text_param("search").strip()
         if search:
             queryset = queryset.filter(
                 Q(description__icontains=search)
@@ -89,7 +89,7 @@ class ExpenseViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
                 | Q(notes__icontains=search)
             )
 
-        payment_method = self.request.query_params.get("payment_method")
+        payment_method = self._text_param("payment_method")
         if payment_method:
             queryset = queryset.filter(payment_method__iexact=payment_method)
 
@@ -98,6 +98,17 @@ class ExpenseViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
         if ordering not in allowed_ordering:
             raise ValidationError({"ordering": "Unsupported ordering field."})
         return queryset.order_by(ordering, "-id")
+
+    def _text_param(self, parameter):
+        """
+        A text filter from the query string. PostgreSQL cannot store or compare the
+        NUL character, so a value containing it would crash the query with a 500;
+        it can never match stored text, so it is refused with a 400 instead.
+        """
+        value = self.request.query_params.get(parameter, "")
+        if "\x00" in value:
+            raise ValidationError({parameter: "Remove the NUL (0x00) character from this value."})
+        return value
 
     def _parse_date(self, parameter):
         value = self.request.query_params.get(parameter)
