@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+!.env.prod.example
 
 # Python
 __pycache__/
@@ -26,3 +27,7 @@ backups/
 .DS_Store
 # User-uploaded receipt files
 backend/private_media/
+# Local off-site test folder (production uses mounted cloud storage)
+offsite/
+# Caddy's local CA certificate exported by deploy/local-demo.sh
+caddy-local-root.crt

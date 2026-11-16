@@ -201,8 +201,8 @@ docker compose start backend
 
 - Each backup is a folder in `backups/` (git-ignored) named by its UTC time, e.g.
   `20261031T020000Z/`, holding `db.dump`, `media.tar.gz`, table row counts and
-  `SHA256SUMS`. `backups/LATEST` names the newest one. The newest
-  `BACKUP_KEEP` (default 7) are kept.
+  `SHA256SUMS`. `backups/LATEST` names the newest regular backup (never a
+  `*-pre-restore` safety copy). The newest `BACKUP_KEEP` (default 7) are kept.
 - **Rehearsal (TC-Backup-01)** restores into a scratch database, never the live
   one, then checks checksums, every table's row count and every receipt file.
   It exits non-zero on any mismatch.
@@ -272,6 +272,16 @@ The security checks the test plan asks for, how each was done and the results
 ## Deviations from the project documents
 
 The SRS, SASD, STP and other project documents are final. Every place the code knowingly differs from them, and why, is in [`docs/deviations.md`](docs/deviations.md).
+
+## Deploying to production (NFR13)
+
+`docker-compose.prod.yml` runs the app on any Linux VM: gunicorn for the API, the
+built React app behind Caddy (automatic HTTPS, security headers), PostgreSQL,
+the scheduler and daily backups. Step-by-step guide, encryption at rest and
+verification: [`docs/deployment.md`](docs/deployment.md). Encrypted off-site backups and
+how to recover from losing the server: [`docs/recovery-runbook.md`](docs/recovery-runbook.md). Check a deployment with
+`deploy/smoke_test.sh https://<domain>`. For the demo, `deploy/local-demo.sh` runs the same
+production stack on https://localhost.
 
 ## Rules
 
