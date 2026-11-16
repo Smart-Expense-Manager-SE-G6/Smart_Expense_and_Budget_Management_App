@@ -24,6 +24,7 @@ class HealthCheckTests(TestCase):
         response = self.client.get(reverse("health"))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"status": "ok"})
+        self.assertRegex(response["X-Request-ID"], r"^[0-9a-f]{32}$")
 
 
 @override_settings(ROOT_URLCONF=__name__)

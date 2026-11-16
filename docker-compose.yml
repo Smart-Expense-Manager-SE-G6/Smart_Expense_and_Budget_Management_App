@@ -19,12 +19,17 @@ services:
   backend:
     build: ./backend
     env_file: .env
-    environment:
-      POSTGRES_HOST: db
     volumes:
       - ./backend:/app
+      - ./logs:/var/log/app
+      - ./backups:/backups:ro
+      - monitoring-state:/monitoring:ro
     ports:
       - "8001:8000"
+    environment:
+      POSTGRES_HOST: db
+      APP_LOG_DIR: /var/log/app
+      MONITORING_STATE_DIR: /monitoring
     depends_on:
       db:
         condition: service_healthy
@@ -52,10 +57,12 @@ services:
       PGHOST: db
       BACKUP_DIR: /backups
       MEDIA_DIR: /media
+      MONITORING_STATE_DIR: /monitoring
     volumes:
       - ./scripts:/scripts:ro
       - ./backups:/backups
       - ./backend/private_media:/media
+      - monitoring-state:/monitoring
     entrypoint: ["sh"]
     command: ["/scripts/schedule_backups.sh"]
     depends_on:
@@ -72,8 +79,10 @@ services:
     env_file: .env
     environment:
       POSTGRES_HOST: db
+      MONITORING_STATE_DIR: /monitoring
     volumes:
       - ./backend:/app
+      - monitoring-state:/monitoring
     command: ["sh", "scripts/run_budget_scheduler.sh"]
     depends_on:
       db:
@@ -81,3 +90,4 @@ services:
 
 volumes:
   pgdata:
+  monitoring-state:

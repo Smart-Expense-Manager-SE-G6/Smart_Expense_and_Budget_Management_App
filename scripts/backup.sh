@@ -23,10 +23,19 @@ name="$stamp${BACKUP_LABEL:+-$BACKUP_LABEL}"
 target="$BACKUP_DIR/$name"
 partial="$BACKUP_DIR/.partial-$name"
 
+record_backup_status "running" "Backup is running."
+finish_backup() {
+    exit_code=$?
+    if [ "$exit_code" -ne 0 ]; then
+        [ -z "${partial:-}" ] || rm -rf "$partial"
+        record_backup_status "failed" "The most recent backup attempt failed."
+    fi
+}
+trap finish_backup EXIT
+
 [ -d "$MEDIA_DIR" ] || die "Media directory $MEDIA_DIR does not exist"
 [ ! -e "$target" ] || die "$target already exists"
 mkdir -p "$partial"
-trap 'rm -rf "$partial"' EXIT
 
 log "Backing up database $PGDATABASE on $PGHOST to $target"
 pg_dump --format=custom --no-owner --file="$partial/db.dump" "$PGDATABASE"
@@ -47,7 +56,6 @@ media_files="$(find "$MEDIA_DIR" -type f | wc -l | tr -d ' ')"
 (cd "$partial" && sha256sum db.dump media.tar.gz counts.tsv info.txt > SHA256SUMS)
 
 mv "$partial" "$target"
-trap - EXIT
 printf '%s\n' "$name" > "$BACKUP_DIR/LATEST"
 log "Backup complete: $name ($(du -sh "$target" | cut -f1), $media_files receipt files)"
 
@@ -59,3 +67,6 @@ if [ -z "${BACKUP_LABEL:-}" ]; then
             rm -rf "${BACKUP_DIR:?}/$old"
         done
 fi
+
+record_backup_status "healthy" "The latest backup completed."
+trap - EXIT

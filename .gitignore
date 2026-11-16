@@ -19,6 +19,7 @@ dist/
 
 # Backups (scripts/backup.sh)
 backups/
+logs/
 
 # Editors / OS
 .vscode/
