@@ -536,3 +536,22 @@
   }
 }
 
+@media (max-width: 360px) {
+  .page {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .topbar {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .page-header .btn,
+  .page-header > a {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+}
+
