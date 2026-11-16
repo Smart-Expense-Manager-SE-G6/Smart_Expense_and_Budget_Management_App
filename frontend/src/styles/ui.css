@@ -752,6 +752,17 @@ select.input {
   overflow-wrap: anywhere;
 }
 
+.category-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  background: var(--primary-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
 .pagination {
   display: flex;
   align-items: center;

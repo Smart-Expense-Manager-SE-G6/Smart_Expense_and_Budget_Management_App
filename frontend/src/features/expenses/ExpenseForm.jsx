@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { api } from '../../api'
+import { useEffect, useState } from 'react'
+import { api, query } from '../../api'
 import FormField from '../../components/FormField'
 import Button from '../../components/ui/Button'
 import Modal from '../../components/ui/Modal'
@@ -30,9 +30,49 @@ export default function ExpenseForm({ open, expense, categories, onClose, onSave
   const [error, setError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [hasReceipt, setHasReceipt] = useState(Boolean(expense?.has_receipt))
+  const [suggestions, setSuggestions] = useState([])
+  const [suggestionError, setSuggestionError] = useState(null)
 
   const update = (event) => setForm({ ...form, [event.target.name]: event.target.value })
   const fieldError = (name) => (error?.field === name ? error.message : null)
+
+  useEffect(() => {
+    const description = form.description.trim()
+    const merchant = form.merchant.trim()
+    if (!description && !merchant) {
+      setSuggestions([])
+      setSuggestionError(null)
+      return undefined
+    }
+
+    let active = true
+    setSuggestionError(null)
+    const timer = setTimeout(() => {
+      api(`/categories/suggestions/${query({ description, merchant })}`)
+        .then((data) => {
+          if (active) {
+            setSuggestions(data.suggestions ?? [])
+            setSuggestionError(null)
+          }
+        })
+        .catch((err) => {
+          if (active) {
+            setSuggestions([])
+            setSuggestionError(err)
+          }
+        })
+    }, 300)
+
+    return () => {
+      active = false
+      clearTimeout(timer)
+    }
+  }, [form.description, form.merchant])
+
+  function acceptSuggestion(categoryId) {
+    setForm((current) => ({ ...current, category: String(categoryId) }))
+    setSuggestions([])
+  }
 
   async function removeReceipt() {
     try {
@@ -141,6 +181,17 @@ export default function ExpenseForm({ open, expense, categories, onClose, onSave
           <FormField label="Notes" name="notes" maxLength={255} placeholder="Optional details"
             value={form.notes} onChange={update} error={fieldError('notes')} />
         </div>
+        {suggestions.length > 0 && (
+          <div className="category-suggestions" role="status" aria-label="Category suggestions">
+            <span className="muted">Suggestions (choose one):</span>
+            {suggestions.map((suggestion) => (
+              <Button key={suggestion.id} type="button" size="sm" variant="ghost" onClick={() => acceptSuggestion(suggestion.id)}>
+                {suggestion.name}
+              </Button>
+            ))}
+          </div>
+        )}
+        {suggestionError && <Notice tone="warning">Category suggestions unavailable: {suggestionError.message}</Notice>}
 
         {editing && hasReceipt ? (
           <div className="receipt-row">
