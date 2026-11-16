@@ -101,7 +101,7 @@ Set the `EMAIL_*` values in `.env.prod`. Brevo's free SMTP relay (300 emails a d
 
 ## 6. Backups and restore
 
-The `backup` service backs up the database and receipts daily into `./backups/` on the VM. See README "Backups" for restore. Copying them off the VM and the production restore drill are S3-18 (#80).
+The `backup` service backs up the database and receipts daily into `./backups/` on the VM, copies each backup encrypted to off-site storage (`OFFSITE_PATH`), and rehearses a restore every Sunday. Setting up the off-site storage, the passphrase and every restore scenario: [recovery-runbook.md](recovery-runbook.md).
 
 ## 7. Updating
 
