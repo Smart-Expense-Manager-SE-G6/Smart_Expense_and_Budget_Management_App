@@ -48,7 +48,10 @@ media_files="$(find "$MEDIA_DIR" -type f | wc -l | tr -d ' ')"
 
 mv "$partial" "$target"
 trap - EXIT
-printf '%s\n' "$name" > "$BACKUP_DIR/LATEST"
+# LATEST names the newest regular backup. Labelled ones (e.g. the pre-restore safety
+# backup, which may be of an empty database) must not become what the weekly rehearsal
+# and the off-site copy use.
+[ -n "${BACKUP_LABEL:-}" ] || printf '%s\n' "$name" > "$BACKUP_DIR/LATEST"
 log "Backup complete: $name ($(du -sh "$target" | cut -f1), $media_files receipt files)"
 
 if [ -z "${BACKUP_LABEL:-}" ]; then
