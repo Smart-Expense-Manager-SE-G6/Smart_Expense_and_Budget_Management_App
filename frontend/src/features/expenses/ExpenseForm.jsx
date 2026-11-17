@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { api } from '../../api'
+import { useEffect, useState } from 'react'
+import { api, query } from '../../api'
 import FormField from '../../components/FormField'
 import Button from '../../components/ui/Button'
 import Modal from '../../components/ui/Modal'
@@ -15,6 +15,8 @@ function initialState(expense) {
     date: expense?.date ?? toISODate(new Date()),
     category: expense?.category ? String(expense.category) : '',
     description: expense?.description ?? '',
+    merchant: expense?.merchant ?? '',
+    notes: expense?.notes ?? '',
     payment_method: expense?.payment_method ?? 'upi',
   }
 }
@@ -28,9 +30,49 @@ export default function ExpenseForm({ open, expense, categories, onClose, onSave
   const [error, setError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [hasReceipt, setHasReceipt] = useState(Boolean(expense?.has_receipt))
+  const [suggestions, setSuggestions] = useState([])
+  const [suggestionError, setSuggestionError] = useState(null)
 
   const update = (event) => setForm({ ...form, [event.target.name]: event.target.value })
   const fieldError = (name) => (error?.field === name ? error.message : null)
+
+  useEffect(() => {
+    const description = form.description.trim()
+    const merchant = form.merchant.trim()
+    if (!description && !merchant) {
+      setSuggestions([])
+      setSuggestionError(null)
+      return undefined
+    }
+
+    let active = true
+    setSuggestionError(null)
+    const timer = setTimeout(() => {
+      api(`/categories/suggestions/${query({ description, merchant })}`)
+        .then((data) => {
+          if (active) {
+            setSuggestions(data.suggestions ?? [])
+            setSuggestionError(null)
+          }
+        })
+        .catch((err) => {
+          if (active) {
+            setSuggestions([])
+            setSuggestionError(err)
+          }
+        })
+    }, 300)
+
+    return () => {
+      active = false
+      clearTimeout(timer)
+    }
+  }, [form.description, form.merchant])
+
+  function acceptSuggestion(categoryId) {
+    setForm((current) => ({ ...current, category: String(categoryId) }))
+    setSuggestions([])
+  }
 
   async function removeReceipt() {
     try {
@@ -56,6 +98,8 @@ export default function ExpenseForm({ open, expense, categories, onClose, onSave
       date: form.date,
       category: form.category ? Number(form.category) : null,
       description: form.description.trim(),
+      merchant: form.merchant.trim(),
+      notes: form.notes.trim(),
       payment_method: form.payment_method,
     }
 
@@ -103,7 +147,7 @@ export default function ExpenseForm({ open, expense, categories, onClose, onSave
       }
     >
       <form id={FORM_ID} className="modal-body form" onSubmit={handleSubmit} noValidate>
-        {error && !['amount', 'date', 'category', 'description', 'payment_method', 'receipt'].includes(error.field) && (
+        {error && !['amount', 'date', 'category', 'description', 'merchant', 'notes', 'payment_method', 'receipt'].includes(error.field) && (
           <Notice tone="danger">{error.message}</Notice>
         )}
         <div className="field-row">
@@ -131,6 +175,23 @@ export default function ExpenseForm({ open, expense, categories, onClose, onSave
         </div>
         <FormField label="Description" name="description" maxLength={255} placeholder="e.g. Dinner with the team"
           value={form.description} onChange={update} error={fieldError('description')} />
+        <div className="field-row">
+          <FormField label="Merchant" name="merchant" maxLength={255} placeholder="e.g. Acme Cafe"
+            value={form.merchant} onChange={update} error={fieldError('merchant')} />
+          <FormField label="Notes" name="notes" maxLength={255} placeholder="Optional details"
+            value={form.notes} onChange={update} error={fieldError('notes')} />
+        </div>
+        {suggestions.length > 0 && (
+          <div className="category-suggestions" role="status" aria-label="Category suggestions">
+            <span className="muted">Suggestions (choose one):</span>
+            {suggestions.map((suggestion) => (
+              <Button key={suggestion.id} type="button" size="sm" variant="ghost" onClick={() => acceptSuggestion(suggestion.id)}>
+                {suggestion.name}
+              </Button>
+            ))}
+          </div>
+        )}
+        {suggestionError && <Notice tone="warning">Category suggestions unavailable: {suggestionError.message}</Notice>}
 
         {editing && hasReceipt ? (
           <div className="receipt-row">

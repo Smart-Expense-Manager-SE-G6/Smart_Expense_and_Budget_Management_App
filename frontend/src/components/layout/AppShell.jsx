@@ -13,19 +13,25 @@ import ThemeToggle from './ThemeToggle'
 const NAV = [
   { to: '/', label: 'Dashboard', icon: 'grid', end: true },
   { to: '/expenses', label: 'Expenses', icon: 'wallet' },
+  { to: '/expenses/import', label: 'Import CSV', icon: 'file' },
+  { to: '/recurring', label: 'Recurring', icon: 'clock' },
   { to: '/budgets', label: 'Budgets', icon: 'target' },
   { to: '/categories', label: 'Categories', icon: 'tag' },
   { to: '/reports', label: 'Reports', icon: 'file' },
   { to: '/alerts', label: 'Alerts', icon: 'bell', badge: true },
+  { to: '/monitoring', label: 'Monitoring', icon: 'grid', admin: true },
 ]
 
 const TITLES = {
   '/': 'Dashboard',
   '/expenses': 'Expenses',
+  '/expenses/import': 'Import expenses',
+  '/recurring': 'Recurring expenses',
   '/budgets': 'Budgets',
   '/categories': 'Categories',
   '/reports': 'Reports',
   '/alerts': 'Alerts',
+  '/monitoring': 'Monitoring',
   '/profile': 'Profile',
 }
 
@@ -63,7 +69,7 @@ function Shell() {
 
         <p className="nav-label">Menu</p>
         <nav className="nav" aria-label="Main">
-          {NAV.map((item) => (
+          {NAV.filter((item) => !item.admin || user?.is_staff).map((item) => (
             <NavLink key={item.to} to={item.to} end={item.end} className="nav-link">
               <Icon name={item.icon} size={19} />
               {item.label}

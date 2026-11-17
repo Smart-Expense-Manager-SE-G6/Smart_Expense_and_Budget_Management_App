@@ -1,10 +1,18 @@
 import io
+from decimal import Decimal
 from openpyxl import Workbook
 from openpyxl.styles import Font
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+
+
+def _excel_number(value):
+    """Convert API-formatted decimal strings to numeric Excel cell values."""
+    if value in (None, ""):
+        return None
+    return Decimal(str(value))
 
 
 def export_report_pdf(report_data: dict) -> bytes:
@@ -127,7 +135,7 @@ def export_report_excel(report_data: dict) -> bytes:
     for cell in ws_summary[4]:
         cell.font = Font(bold=True)
     summary = report_data["summary"]
-    ws_summary.append([summary["total_spend"], summary["transaction_count"], summary["average_spend"]])
+    ws_summary.append([_excel_number(summary["total_spend"]), summary["transaction_count"], _excel_number(summary["average_spend"])])
 
     # Sheet 2: Category Breakdown
     ws_cat = wb.create_sheet(title="Category Breakdown")
@@ -136,7 +144,7 @@ def export_report_excel(report_data: dict) -> bytes:
         cell.font = Font(bold=True)
     for cat in report_data["category_breakdown"]:
         ws_cat.append(
-            [cat["category_name"], cat["total_amount"], cat["transaction_count"], cat["percentage"]]
+            [cat["category_name"], _excel_number(cat["total_amount"]), cat["transaction_count"], cat["percentage"]]
         )
 
     # Sheet 3: Budget vs Actual
@@ -150,9 +158,9 @@ def export_report_excel(report_data: dict) -> bytes:
                 item["name"],
                 item["category_name"],
                 item["period"],
-                item["limit_amount"],
-                item["actual_spent"],
-                item["remaining_amount"],
+                _excel_number(item["limit_amount"]),
+                _excel_number(item["actual_spent"]),
+                _excel_number(item["remaining_amount"]),
                 item["utilization_percentage"],
             ]
         )

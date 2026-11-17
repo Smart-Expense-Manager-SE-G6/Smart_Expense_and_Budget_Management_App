@@ -20,6 +20,7 @@ dist/
 
 # Backups (scripts/backup.sh)
 backups/
+logs/
 
 # Editors / OS
 .vscode/
@@ -31,3 +32,6 @@ backend/private_media/
 offsite/
 # Caddy's local CA certificate exported by deploy/local-demo.sh
 caddy-local-root.crt
+
+# Selenium screenshots and HTML report
+tests/e2e/artifacts/

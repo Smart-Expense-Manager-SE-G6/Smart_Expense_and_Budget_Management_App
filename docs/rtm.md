@@ -13,13 +13,13 @@ Differences between this matrix, the code and the approved project documents are
 
 | Req ID | Requirement Description | Module Owner | Design Reference (SASD) | Target Code / Files | Test Case ID (STP) | Sprint 1 Status |
 |:---|:---|:---|:---|:---|:---|:---|
-| **FR1** | User registration and login (email/pwd, bcrypt) | Shriram | Sec 3.4, 4.3, Fig 4.1 | `accounts/views.py`, `accounts/serializers.py` | `TC-Auth-01`, `TC-Auth-02` | In Progress (#13) |
-| **FR2** | Profile update and account settings | Shriram | Sec 3.4, 4.3 | `accounts/views.py`, `accounts/account_data.py`, `accounts/test_account_settings.py`, `frontend/src/features/account/AccountSettings.jsx` | `TC-Auth-03`, `TC-Account-01` | Done (#13, #71) |
+| **FR1** | User registration and login (email/pwd, bcrypt) | Shriram | Sec 3.4, 4.3, Fig 4.1 | `accounts/views.py`, `accounts/serializers.py`, `tests/e2e/test_journeys.py` | `TC-Auth-01`, `TC-Auth-02` | In Progress (#13, #74) |
+| **FR2** | Profile update and account settings | Shriram | Sec 3.4, 4.3 | `accounts/views.py`, `accounts/account_data.py`, `accounts/test_account_settings.py`, `frontend/src/features/account/AccountSettings.jsx`, `tests/e2e/test_journeys.py` | `TC-Auth-03`, `TC-Account-01` | Done (#13, #71, #74) |
 | **FR3** | Shared budget and role-based access (admin/member) | Shriram | Sec 3.4, 3.9, 4.3 | `budgets/models.py`, `budgets/permissions.py`, `budgets/services.py`, `budgets/views.py`, `budgets/test_shared.py`, `frontend/src/features/budgets/BudgetMembersDialog.jsx`, `frontend/src/features/budgets/BudgetCard.jsx` | `TC-Shared-01` | Done (#37) |
-| **FR4** | Add, edit, view, delete expense entries (soft delete) | Shreya | Sec 3.4, 4.1 (D1, D4) | `expenses/models.py`, `expenses/views.py` | `TC-Exp-01`, `TC-Exp-02` | In Progress (#1, #2, #3) |
-| **FR5** | Attach receipt/image to expense (secured store) | Shreya | Sec 3.4, 4.1 (D6) | `expenses/models.py`, `expenses/serializers.py`, `expenses/views.py` | `TC-Exp-03` | In Progress (#5) |
-| **FR6** | Recurring expense entries (rules materialization) | Shreya / Shashwath | Sec 3.4, 4.1 (D3) | `expenses/models.py`, `expenses/management/commands/materialize_recurring_expenses.py`, `expenses/test_recurring.py` | `TC-Exp-04` | Done (#6) |
-| **FR7** | Bulk import of expenses via CSV (per-row errors) | Shreya | Sec 4.3, OI-7 | `expenses/importers.py`, `expenses/views.py`, `expenses/test_import.py` | `TC-Import-01` | Done (#7) |
+| **FR4** | Add, edit, view, delete expense entries (soft delete) | Shreya | Sec 3.4, 4.1 (D1, D4) | `expenses/models.py`, `expenses/views.py`, `frontend/src/pages/ExpensesPage.jsx`, `frontend/src/features/expenses/ExpenseForm.jsx`, `tests/e2e/test_journeys.py` | `TC-Exp-01`, `TC-Exp-02` | Done (#56, #74) |
+| **FR5** | Attach receipt/image to expense (secured store) | Shreya | Sec 3.4, 4.1 (D6) | `expenses/models.py`, `expenses/serializers.py`, `expenses/views.py`, `frontend/src/features/expenses/ExpenseForm.jsx`, `tests/e2e/test_journeys.py` | `TC-Exp-03` | Done (#56, #74) |
+| **FR6** | Recurring expense entries (rules materialization) | Shreya / Shashwath | Sec 3.4, 4.1 (D3) | `expenses/models.py`, `expenses/management/commands/materialize_recurring_expenses.py`, `expenses/test_recurring.py`, `frontend/src/pages/RecurringRulesPage.jsx`, `tests/e2e/test_journeys.py` | `TC-Exp-04` | Done (#6, #59, #74) |
+| **FR7** | Bulk import of expenses via CSV (per-row errors) | Shreya | Sec 4.3, OI-7 | `expenses/importers.py`, `expenses/views.py`, `expenses/test_import.py`, `frontend/src/pages/ExpenseImportPage.jsx`, `tests/e2e/test_journeys.py` | `TC-Import-01` | Done (#58, #74) |
 | **FR8** | Default categories & custom user categories/subcategories | Shreya | Sec 3.4, 4.1 | `expenses/models.py`, `expenses/serializers.py`, `expenses/views.py` | `TC-Cat-01` | In Progress (#4) |
 | **FR9** | Rule-based category auto-suggestion | Shreya | Sec 3.4, 4.1 (D8) | `categories/services.py` | `TC-Cat-02` | Sprint 2 |
 | **FR10** | Set monthly/weekly budgets overall and per category | Shashwath | Sec 3.4, 4.1 (D2) | `budgets/models.py`, `budgets/views.py` | `TC-Bud-01` | Todo (Sprint 1) |
@@ -31,8 +31,8 @@ Differences between this matrix, the code and the approved project documents are
 | **FR16** | Threshold alerts at 80% and 100% (de-duplicated) | Shashwath | Sec 3.4, 4.1 (D5) | `alerts/models.py`, `alerts/services.py`, `alerts/views.py`, `frontend/src/pages/AlertsPage.jsx` | `TC-Alert-01` | Sprint 3 |
 | **FR17** | Anomaly notification (spike detection) | Shashwath | Sec 3.4, 4.3, OI-6 | `alerts/services.py` | `TC-Alert-02` | Sprint 2 |
 | **FR18** | In-app and email alert delivery (adapter) | Shashwath | Sec 3.4, 4.3, R4 | `alerts/adapters.py`, `alerts/views.py` | `TC-Alert-03` | Sprint 2 |
-| **FR19** | Custom date range reports (1-year cap) | Shashank | Sec 3.4, 4.3, OI-3 | `reports/views.py`, `reports/validators.py` | `TC-Report-01` | Sprint 2 |
-| **FR20** | PDF & Excel report export with summary/breakdowns | Shashank | Sec 3.4, 4.3, R4 | `reports/services.py`, `reports/adapters.py` | `TC-Report-02` | Sprint 2 |
+| **FR19** | Custom date range reports (1-year cap) | Shashank | Sec 3.4, 4.3, OI-3 | `analytics/views.py`, `analytics/validators.py`, `analytics/tests.py`, `frontend/src/pages/ReportsPage.jsx` | `TC-Report-01` | Verified (#70) |
+| **FR20** | PDF & Excel report export with summary/breakdowns | Shashank | Sec 3.4, 4.3, R4 | `analytics/views.py`, `analytics/exporters.py`, `analytics/tests.py`, `frontend/src/pages/ReportsPage.jsx` | `TC-Report-02` | Verified (#70) |
 | **FR21** | Audit trail of edits (written in same transaction) | Shriram | Sec 3.4, 3.5, 4.1 | `audit/models.py`, `audit/services.py`, `audit/views.py`, `audit/test_api.py`, `frontend/src/features/audit/HistoryDialog.jsx` | `TC-Audit-01` | Done (#14, #83) |
 | **FR22** | Data backup and restore rehearsal | Shriram / Shashwath | Sec 3.4, 3.6, R6 | `scripts/backup.sh`, `scripts/restore.sh`, `scripts/rehearse_restore.sh`, `scripts/common.sh` | `TC-Backup-01` (`scripts/rehearse_restore.sh`) | Done (#45) |
 
@@ -54,5 +54,7 @@ Differences between this matrix, the code and the approved project documents are
 | **NFR10**| Automated backups | Daily scheduled backup | `backup` compose service runs `scripts/schedule_backups.sh` (cron, `BACKUP_SCHEDULE`) calling `scripts/backup.sh`; verified by `TC-Backup-01` | Shriram / Shashwath | Done (#46) |
 | **NFR11**| Modular architecture | MVC pattern; loose coupling | Modular monolith with independent Django apps | Team 6 | Enforced |
 | **NFR12**| Logging with Request ID | Request ID on every log & response | `RequestIdMiddleware` + standard logger | Shriram | Done (#12) |
-| **NFR13**| Containerization | One-command start | `docker compose up --build` | Shriram | Done (#10) |
+| **NFR13**| Containerization | One-command start | `docker compose up --build` (development); production stack `docker-compose.prod.yml` (gunicorn, Caddy HTTPS, backups), demo with `deploy/local-demo.sh`, smoke test `deploy/smoke_test.sh`; [deployment guide](deployment.md); localhost demo per deviation R-13 | Shriram | Done (#10, #72) |
 | **NFR14**| Data privacy compliance | Financial data isolated | Ownership checks on every endpoint; no 3rd-party data leaks; data export, account deletion and email-alert consent (`/me/export/`, `DELETE /me/`, `email_alerts`; `TC-Account-01`) | Team 6 | Enforced (#71) |
+
+

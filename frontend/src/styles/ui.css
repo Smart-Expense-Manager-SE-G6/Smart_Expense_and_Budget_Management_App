@@ -744,6 +744,84 @@ select.input {
   height: 40px;
 }
 
+.import-card {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.import-dropzone {
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+  padding: 2rem 1rem;
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.import-dropzone.is-dragging {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.import-file {
+  margin: 0;
+  font-weight: 600;
+}
+
+.import-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.import-results {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.import-results h2,
+.import-results p {
+  margin: 0;
+}
+
+.recurring-form-card,
+.recurring-list {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.recurring-form-card h2,
+.recurring-list h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.recurring-form-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.cell-meta {
+  display: block;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.category-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  background: var(--primary-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
 .pagination {
   display: flex;
   align-items: center;

@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "drf_spectacular",
     "core",
     "accounts",
     "audit",
@@ -54,6 +55,7 @@ INSTALLED_APPS = [
     "budgets",
     "alerts.apps.AlertsConfig",
     "analytics",
+    "monitoring",
 ]
 
 MIDDLEWARE = [
@@ -145,6 +147,18 @@ EMAIL_HOST_USER = env("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", "")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "krshashwath2@gmail.com")
 
+# Operational monitoring. The state directory is shared with the scheduler and
+# backup containers; log files are kept in a separate mounted directory.
+MONITORING_STATE_DIR = Path(env("MONITORING_STATE_DIR", "/monitoring"))
+MONITORING_SCHEDULER_MAX_AGE_SECONDS = int(env("MONITORING_SCHEDULER_MAX_AGE_SECONDS", str(30 * 60 * 60)))
+MONITORING_BACKUP_MAX_AGE_SECONDS = int(env("MONITORING_BACKUP_MAX_AGE_SECONDS", str(26 * 60 * 60)))
+MONITORING_ALERT_EMAIL = env("MONITORING_ALERT_EMAIL", "")
+ERROR_RATE_WINDOW_SECONDS = int(env("ERROR_RATE_WINDOW_SECONDS", "300"))
+ERROR_RATE_MIN_REQUESTS = int(env("ERROR_RATE_MIN_REQUESTS", "10"))
+ERROR_RATE_THRESHOLD_PERCENT = float(env("ERROR_RATE_THRESHOLD_PERCENT", "5"))
+ERROR_ALERT_COOLDOWN_SECONDS = int(env("ERROR_ALERT_COOLDOWN_SECONDS", "900"))
+SLOW_REQUEST_THRESHOLD_MS = int(env("SLOW_REQUEST_THRESHOLD_MS", "2000"))
+
 # Authentication: server-side sessions (docs/adr/0001-authentication-sessions.md).
 # Idle timeout: the session expires after this many seconds without a request.
 SESSION_COOKIE_AGE = int(env("SESSION_IDLE_TIMEOUT_SECONDS", "1800"))
@@ -194,6 +208,7 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_AUTHENTICATION_CLASSES": ["core.authentication.SessionAuthentication401"],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "EXCEPTION_HANDLER": "core.exceptions.api_exception_handler",
     "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.ScopedRateThrottle"],
     "DEFAULT_THROTTLE_RATES": {
@@ -205,18 +220,68 @@ REST_FRAMEWORK = {
     "NUM_PROXIES": int(env("NUM_PROXIES", "0")),
 }
 
-# Every log line carries the request id (NFR12).
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Smart Expense and Budget Management API",
+    "DESCRIPTION": "Session-authenticated API for expenses, budgets, analytics and alerts.",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+}
+
+LOG_DIR = Path(env("APP_LOG_DIR", str(BASE_DIR / "logs")))
+LOG_MAX_BYTES = int(env("APP_LOG_MAX_BYTES", str(10 * 1024 * 1024)))
+LOG_BACKUP_COUNT = int(env("APP_LOG_BACKUP_COUNT", "5"))
+
+LOG_HANDLERS = {
+    "console": {
+        "class": "logging.StreamHandler",
+        "filters": ["request_id"],
+        "formatter": "json",
+    },
+}
+try:
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    for log_name in ("application.log", "error.log"):
+        with (LOG_DIR / log_name).open("a", encoding="utf-8"):
+            pass
+except OSError:
+    # Console logging still works when the deployment cannot write local logs.
+    LOG_DIR = None
+if LOG_DIR is not None:
+    LOG_HANDLERS.update(
+        {
+            "application_file": {
+                "class": "logging.handlers.RotatingFileHandler",
+                "filename": str(LOG_DIR / "application.log"),
+                "maxBytes": LOG_MAX_BYTES,
+                "backupCount": LOG_BACKUP_COUNT,
+                "encoding": "utf-8",
+                "filters": ["request_id"],
+                "formatter": "json",
+            },
+            "error_file": {
+                "class": "logging.handlers.RotatingFileHandler",
+                "filename": str(LOG_DIR / "error.log"),
+                "maxBytes": LOG_MAX_BYTES,
+                "backupCount": LOG_BACKUP_COUNT,
+                "encoding": "utf-8",
+                "level": "ERROR",
+                "filters": ["request_id"],
+                "formatter": "json",
+            },
+        }
+    )
+
+# Every log line is structured JSON and carries the current request id.
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "filters": {"request_id": {"()": "core.request_id.RequestIdLogFilter"}},
-    "formatters": {
-        "default": {"format": "%(asctime)s %(levelname)s %(name)s request_id=%(request_id)s %(message)s"},
+    "formatters": {"json": {"()": "monitoring.logging.JsonFormatter"}},
+    "handlers": LOG_HANDLERS,
+    "root": {
+        "handlers": list(LOG_HANDLERS),
+        "level": env("LOG_LEVEL", "INFO"),
     },
-    "handlers": {
-        "console": {"class": "logging.StreamHandler", "filters": ["request_id"], "formatter": "default"},
-    },
-    "root": {"handlers": ["console"], "level": env("LOG_LEVEL", "INFO")},
     "loggers": {
         # Django's own per-request line duplicates api.request; keep only warnings from it.
         "django.server": {"level": "WARNING"},

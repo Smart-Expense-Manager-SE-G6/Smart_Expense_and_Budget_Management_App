@@ -1,5 +1,7 @@
 import re
 
+from django.db.models import Q
+
 from .models import Category
 
 
@@ -15,7 +17,10 @@ CATEGORY_RULES = (
     ),
     (
         "Travel",
-        ("travel", "train", "flight", "hotel", "trip", "vacation", "cab", "taxi"),
+        (
+            "travel", "train", "flight", "hotel", "trip", "vacation",
+            "cab", "taxi", "uber", "ola", "rapido",
+        ),
     ),
     (
         "Bills",
@@ -28,7 +33,7 @@ CATEGORY_RULES = (
         "Shopping",
         (
             "shopping", "shop", "amazon", "clothing", "clothes",
-            "electronics", "purchase", "retail",
+            "electronics", "purchase", "retail", "blinkit", "zepto",
         ),
     ),
     (
@@ -37,6 +42,10 @@ CATEGORY_RULES = (
             "healthcare", "health", "pharmacy", "medicine", "doctor",
             "hospital", "medical",
         ),
+    ),
+    (
+        "Entertainment",
+        ("entertainment", "netflix", "movie", "concert", "streaming"),
     ),
 )
 
@@ -57,25 +66,54 @@ def _contains_keyword(tokens, keyword):
     )
 
 
-def suggest_categories(description):
-    """Return matching active global categories in the configured rule order."""
-    tokens = _tokens(description)
-    if not tokens:
-        return []
+def suggest_categories(description, user=None, merchant=""):
+    """Return history matches first, followed by matching global rule categories."""
+    suggestions = []
+    seen_ids = set()
 
-    category_names = [
-        name
-        for name, keywords in CATEGORY_RULES
-        if any(_contains_keyword(tokens, keyword) for keyword in keywords)
-    ]
-    categories = Category.objects.filter(
-        owner__isnull=True,
-        is_active=True,
-        name__in=category_names,
-    )
-    categories_by_name = {category.name: category for category in categories}
-    return [
-        categories_by_name[name]
-        for name in category_names
-        if name in categories_by_name
-    ]
+    description = description.strip() if isinstance(description, str) else ""
+    merchant = merchant.strip() if isinstance(merchant, str) else ""
+    tokens = _tokens(" ".join(value for value in (description, merchant) if value))
+    if user is not None and (description or merchant):
+        history_conditions = []
+        if description:
+            history_conditions.append(Q(expenses__description__iexact=description))
+        if merchant:
+            history_conditions.append(Q(expenses__merchant__iexact=merchant))
+        history_match = history_conditions[0]
+        for condition in history_conditions[1:]:
+            history_match |= condition
+        history = (
+            Category.objects.filter(
+                expenses__owner=user,
+                expenses__is_deleted=False,
+                expenses__category__is_active=True,
+            )
+            .filter(history_match)
+            .distinct()
+        )
+        history = history.order_by("-expenses__updated_at", "-id")
+        for category in history:
+            if category.pk not in seen_ids:
+                suggestions.append(category)
+                seen_ids.add(category.pk)
+
+    if tokens:
+        category_names = [
+            name
+            for name, keywords in CATEGORY_RULES
+            if any(_contains_keyword(tokens, keyword) for keyword in keywords)
+        ]
+        categories = Category.objects.filter(
+            owner__isnull=True,
+            is_active=True,
+            name__in=category_names,
+        )
+        categories_by_name = {category.name: category for category in categories}
+        for name in category_names:
+            category = categories_by_name.get(name)
+            if category is not None and category.pk not in seen_ids:
+                suggestions.append(category)
+                seen_ids.add(category.pk)
+
+    return suggestions

@@ -1,0 +1,56 @@
+# Release (CD). Tagging a commit on main, e.g.
+#   git tag v1.0 && git push origin v1.0
+# gives the images that the CI/CD pipeline already deployed and smoke-tested for
+# that commit a version tag, and creates a GitHub Release with notes. Nothing is
+# rebuilt, so the release is exactly what was tested.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  REGISTRY: ghcr.io/smart-expense-manager-se-g6
+
+jobs:
+  release:
+    name: Tag the tested images and publish a release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag the tested images with the version
+        run: |
+          sha="${GITHUB_SHA::7}"
+          for image in backend web backup; do
+            source="$REGISTRY/smart-expense-$image:$sha"
+            docker buildx imagetools inspect "$source" > /dev/null \
+              || { echo "::error::$source was not published. Tag a commit on main whose CI/CD run passed."; exit 1; }
+            docker buildx imagetools create -t "$REGISTRY/smart-expense-$image:$GITHUB_REF_NAME" -t "$REGISTRY/smart-expense-$image:latest" "$source"
+          done
+
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          {
+            echo "Run this release on any machine with Docker (from the repository at this tag):"
+            echo
+            echo '```bash'
+            echo "deploy/local-demo.sh release $GITHUB_REF_NAME"
+            echo '```'
+            echo
+            echo "Images (deployed and smoke-tested by the CI/CD pipeline before release):"
+            for image in backend web backup; do echo "- \`$REGISTRY/smart-expense-$image:$GITHUB_REF_NAME\`"; done
+          } > notes.md
+          gh release create "$GITHUB_REF_NAME" --title "Smart Expense $GITHUB_REF_NAME" --notes-file notes.md --generate-notes --verify-tag
