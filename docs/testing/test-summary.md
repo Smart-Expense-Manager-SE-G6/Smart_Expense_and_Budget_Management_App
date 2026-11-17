@@ -27,7 +27,7 @@ Selenium and JMeter are **Not yet executed**. UAT remains **Pending session**. C
 | Defect aging | calendar days from defect opened to report/closure | See defect log | [`defect-log.md`](defect-log.md) |
 | Requirement coverage | requirements with ≥1 executed test ÷ planned requirements × 100 | Pending run | RTM plus execution artifact links |
 
-The issue acceptance calls out five metrics; pass and fail percentages are shown separately because they are independently required for sign-off.
+The issue acceptance calls out five metrics; the recorded values are 35/39 executed (89.7%), 35/35 passed (100%), 0/35 failed (0%), 0.00 defects per 100 executed cases, and 35/39 requirements covered (89.7%). Pass and fail percentages are shown separately because they are independently required for sign-off.
 
 ## Test-level roll-up
 

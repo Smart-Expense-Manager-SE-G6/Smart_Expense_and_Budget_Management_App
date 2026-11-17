@@ -58,6 +58,7 @@ function Shell() {
 
   return (
     <div className="app" data-nav-open={navOpen}>
+      <a className="skip-link" href="#main-content">Skip to content</a>
       <aside className="sidebar" aria-label="Primary">
         <Link to="/" className="brand">
           <BrandMark />
@@ -107,7 +108,7 @@ function Shell() {
             {unreadCount > 0 && <span className="pip" />}
           </Link>
         </header>
-        <main className="page" key={pathname}>
+        <main id="main-content" className="page" key={pathname} tabIndex="-1">
           <Outlet />
         </main>
       </div>
