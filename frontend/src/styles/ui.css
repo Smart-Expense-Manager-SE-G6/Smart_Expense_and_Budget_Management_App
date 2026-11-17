@@ -744,6 +744,14 @@ select.input {
   height: 40px;
 }
 
+.cell-meta {
+  display: block;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
 .pagination {
   display: flex;
   align-items: center;
