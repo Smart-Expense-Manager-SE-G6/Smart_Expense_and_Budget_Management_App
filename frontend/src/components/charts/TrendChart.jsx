@@ -110,9 +110,6 @@ export default function TrendChart({ points, ariaLabel = 'Spending trend' }) {
           <strong>{formatCurrency(active.value)}</strong>
         </div>
       )}
-      <ul className="sr-only">
-        {points.map((p) => <li key={p.label}>{p.label}: {formatCurrency(p.value)}</li>)}
-      </ul>
     </div>
   )
 }

@@ -1,57 +1,69 @@
 # Test Summary Report
 
 **Release:** Smart Expense and Budget Management Application 1.0  
-**Report date:** 2026-11-17  
+**Report date:** 2026-11-18  
 **Prepared for:** Product owner Sudeepa Roy Dey  
 **Prepared by:** QA lead Shashank / Team 6  
 **Scope:** STP sections 5, 8, 13 and 14; issue #84
 
+## Evidence this report is based on
+
+| Source | Run | Commit | Date |
+|:--|:--|:--|:--|
+| CI (backend, frontend, Postman, Selenium, staging deploy) | [#44128122506](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44128122506) | `4298b89` on `main` | 2026-11-17 |
+| Backup and restore workflow | [#44128122213](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44128122213) | `4298b89` on `main` | 2026-11-17 |
+| Accessibility and responsive audit | [`accessibility-audit.md`](accessibility-audit.md) | PR #105 | 2026-11-18 |
+| Security checks | [`../security-report.md`](../security-report.md) | PR #92 | 2026-11-16 |
+
+Cancelled workflow runs are not counted. Every number below comes from these runs.
+
 ## Executive result
 
-The report template and evidence index are complete. Final sign-off is **pending execution evidence** for the dependency suites and a product-owner UAT session. Cancelled GitHub Actions runs are excluded from the metrics.
-
-### Recorded CI evidence update
-
-Evidence is tied to merge commit `102c8959e00d07b37a20ff1ae9cf33a824b04973` for PR #109. The green [CI run #44036741974](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44036741974) recorded 362 backend tests with 362 passing, 2,434/2,588 lines (94.1%), 508/576 branches (88.2%), and 92% combined coverage; Newman recorded 9/9 requests and 17/17 assertions; frontend lint/build and the 16-check staging smoke test passed. The [backup run #44036741922](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44036741922) recorded TC-Backup-01 passing with all 19 table row counts matching. These figures supersede the placeholder suite values below.
-
-Selenium and JMeter are **Not yet executed**. UAT remains **Pending session**. Case-level executed/pass percentages, defect density, and requirement coverage remain pending until their denominators can be supported by linked evidence; no estimates are claimed.
+36 of the 39 planned test cases were executed and all 36 passed. 21 defects were found during Sprints 2 and 3 and
+all of them are fixed (four close with PR #105). Three test cases have no recorded run (TC-Perf-03, TC-Backup-02
+retention, TC-Arch-01), and product-owner UAT has not happened yet, so **final sign-off is pending** those items.
 
 ## STP section 14 metrics
 
-| Metric | Definition | Result | Evidence / calculation |
+| Metric | Definition | Result | Calculation |
 |:--|:--|:--|:--|
-| Test cases executed | executed planned cases ÷ planned cases × 100 | Pending run | Count from [`test-cases.md`](test-cases.md) and completed run artifacts |
-| Test cases passed | passed executed cases ÷ executed cases × 100 | Pending run | CI/Selenium/Postman/JMeter/security result summaries |
-| Test cases failed | failed executed cases ÷ executed cases × 100 | Pending run | Failed test names and linked defects |
-| Defect density | confirmed defects ÷ executed test cases, reported per 100 cases | Pending run | [`defect-log.md`](defect-log.md) and final execution count |
-| Defect aging | calendar days from defect opened to report/closure | See defect log | [`defect-log.md`](defect-log.md) |
-| Requirement coverage | requirements with ≥1 executed test ÷ planned requirements × 100 | Pending run | RTM plus execution artifact links |
+| Test cases executed | executed ÷ planned × 100 | **92.3%** | 36 ÷ 39 × 100 ([`test-cases.md`](test-cases.md)) |
+| Test cases passed | passed ÷ executed × 100 | **100%** | 36 ÷ 36 × 100 |
+| Test cases failed | failed ÷ executed × 100 | **0%** | 0 ÷ 36 × 100 |
+| Defect density | defects ÷ executed cases × 100 | **58.3 per 100 cases** | 21 ÷ 36 × 100 ([`defect-log.md`](defect-log.md)) |
+| Defect aging | days from found to fix merged, averaged | **0.06 days** (max 1 day) | 1 day ÷ 17 merged fixes; DEF-18 to 21 pending PR #105 |
+| Requirement coverage | requirements with ≥1 executed test ÷ requirements × 100 | **91.7%** | 33 ÷ 36 (FR1–FR22, NFR1–NFR14); not yet covered: NFR3, NFR10, NFR11 |
 
-The issue acceptance calls out five metrics; the recorded values are 35/39 executed (89.7%), 35/35 passed (100%), 0/35 failed (0%), 0.00 defects per 100 executed cases, and 35/39 requirements covered (89.7%). Pass and fail percentages are shown separately because they are independently required for sign-off.
+Defect density counts every confirmed defect, including the three in the Selenium test setup (DEF-15 to DEF-17).
+Without those, it is 18 ÷ 36 × 100 = 50.0 per 100 cases.
 
 ## Test-level roll-up
 
-| Suite | Planned | Executed | Passed | Failed | Cancelled / excluded | Run URL / artifact |
-|:--|--:|--:|--:|--:|--:|:--|
-| Backend unit/API | — | — | — | — | — | Add CI run URL |
-| Frontend lint/build | 1 | — | — | — | — | Add CI run URL |
-| Postman/Newman | — | — | — | — | — | Add CI run URL |
-| Selenium E2E | — | — | — | — | Cancelled runs excluded | Add issue #74 run URL |
-| JMeter performance | 3 | — | — | — | Dependency removed | No run claimed |
-| Security | — | — | — | — | — | Add CI/report evidence |
-| Backup/restore | 1 | — | — | — | — | Add CI run URL |
+| Suite | Executed | Passed | Failed | Evidence |
+|:--|--:|--:|--:|:--|
+| Backend unit, integration and API tests (Django) | 366 tests | 366 | 0 | CI #44128122506, backend job |
+| Backend coverage | 2,454 / 2,605 lines (**94.2%**); 491 / 578 branches (**84.9%**); combined **92.5%** | | | CI coverage artifact; gate fails under 80% |
+| Frontend lint and production build | 2 checks | 2 | 0 | CI frontend job |
+| Postman / Newman API | 9 requests, 17 assertions | 17 | 0 | CI API job |
+| Selenium end-to-end journeys | 14 tests | 14 | 0 | CI end-to-end job |
+| Performance (NFR1, NFR2) | 2 timed tests on 10,000 expenses | 2 | 0 | `analytics/test_performance.py`, in the backend job |
+| Staging deployment smoke test (HTTPS) | 16 checks | 16 | 0 | CI deploy job |
+| Restore rehearsal (TC-Backup-01) | 19 tables | 19 match | 0 | CI deploy job and backup run #44128122213 |
+| Accessibility (axe-core, 3 widths) and keyboard | all pages; 5 keyboard checks | 0 violations; 5 | 0 | [`accessibility-audit.md`](accessibility-audit.md) |
+| Security (STP 5.1) | 5 checks | 5 | 0 | [`../security-report.md`](../security-report.md): OWASP ZAP 0 FAIL, pip-audit and npm audit 0 vulnerabilities |
+| JMeter load test | not run | — | — | The STP names JMeter; NFR1/NFR2 timings were verified by the timed tests above instead, and no JMeter plan exists. TC-Perf-03 (two replicas, NFR3) is not executed. |
 
 ## Exit criteria
 
-- [ ] 100% of planned test cases executed, with a linked artifact for each suite.
-- [ ] 0 critical defects open; verify with the GitHub `bug` issue search at sign-off.
-- [ ] Product owner UAT is completed and recorded in [`uat-record.md`](uat-record.md).
-- [ ] All RTM requirements have at least one executed test case; see [`test-cases.md`](test-cases.md).
-- [ ] Test evidence is tied to the release commit SHA and workflow run URL.
+- [ ] 100% of planned test cases executed: 36/39; TC-Perf-03, TC-Backup-02 (retention) and TC-Arch-01 have no run.
+- [x] 0 critical defects open: none found; all 21 defects fixed or fixed in PR #105.
+- [ ] Product owner UAT completed and recorded in [`uat-record.md`](uat-record.md).
+- [ ] All requirements have at least one executed test: 33/36; NFR3, NFR10, NFR11 outstanding.
+- [x] Evidence tied to a commit SHA and workflow run URL: `4298b89`, runs listed above.
 
 ## Sign-off
 
 | Role | Name | Decision | Date | Signature / link |
 |:--|:--|:--|:--|:--|
-| QA lead | Shashank A | Pending evidence | — | — |
+| QA lead | Shashank A | Pending | — | — |
 | Product owner | Sudeepa Roy Dey | Pending UAT | — | — |

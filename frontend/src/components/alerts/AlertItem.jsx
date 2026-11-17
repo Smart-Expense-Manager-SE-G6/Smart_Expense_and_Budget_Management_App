@@ -20,7 +20,7 @@ export default function AlertItem({ alert, onMarkRead }) {
       <div className="alert-main">
         <div className="alert-title">
           <strong>{alert.title}</strong>
-          {!alert.is_read && <span className="unread-dot" role="img" aria-label="Unread" />}
+          {!alert.is_read && <span className="unread-dot" aria-label="Unread" />}
         </div>
         <p className="alert-message">{alert.message}</p>
         <span className="cell-sub">{timeAgo(alert.created_at)}</span>
