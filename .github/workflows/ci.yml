@@ -152,7 +152,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Prepare environment
-        run: cp .env.example .env
+        run: |
+          cp .env.example .env
+          # Compose interpolation uses the workflow-level ci-password for db,
+          # so the backend env_file must use the same password.
+          sed -i 's/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=ci-password/' .env
       - name: Start application
         run: docker compose up -d --build
       - name: Wait for frontend and API
