@@ -56,7 +56,7 @@ def login(driver, user):
     field(driver, "Email").send_keys(user["email"])
     field(driver, "Password").send_keys(user["password"])
     click_button(driver, "Sign in")
-    WebDriverWait(driver, 10).until(EC.url_not_contains("/login"))
+    WebDriverWait(driver, 10).until(lambda current: "/login" not in current.current_url)
 
 
 @pytest.fixture(autouse=True)
