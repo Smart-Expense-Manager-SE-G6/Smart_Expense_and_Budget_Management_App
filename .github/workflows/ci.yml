@@ -55,6 +55,9 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt coverage==7.6.10
 
+      - name: Audit Python dependencies
+        run: pip install -q pip-audit && pip-audit -r requirements.txt
+
       - name: System check
         run: python manage.py check
 
@@ -106,6 +109,10 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - run: npm ci
+      # Audits the packages that ship in the app; build tooling (Vite and its
+      # dependencies) never reaches users. See docs/deviations.md T-10.
+      - name: Audit JavaScript dependencies
+        run: npm audit --omit=dev --audit-level=high
       - run: npm run lint
       - run: npm run build
 

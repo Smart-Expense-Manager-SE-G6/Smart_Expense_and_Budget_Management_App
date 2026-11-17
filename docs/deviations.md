@@ -88,6 +88,7 @@ decision.
 | T-07 | 5.1 | "JWT/session token expiry" | Session idle expiry (30 minutes) | See D-02. | ADR-0001 |
 | T-08 | 1 Definitions | JWT | Not used | See D-02. | ADR-0001 |
 | T-09 | 4 | ML classifier accuracy excluded beyond a functional check | No ML classifier | See D-06. | — |
+| T-10 | 5 Types (security) | Dependency vulnerability scanning | `pip-audit` on all backend packages and `npm audit --omit=dev --audit-level=high` on the frontend, in CI on every pull request | The frontend audit covers the packages that ship to users. Build tooling is excluded because on 17 Nov 2026 a new advisory (GHSA-fc5q-39xc-vjpf, picomatch ReDoS, used by Vite) has no patched release; it affects only the developer's build machine, never the deployed app. `npm audit` without `--omit=dev` is still run by hand before each release, and the step will include dev packages once a fix is published. | #73 |
 
 ## 5. Use Case Diagram v1.0
 
