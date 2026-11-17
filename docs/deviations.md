@@ -80,7 +80,7 @@ decision.
 | # | Section | Says | Built | Reason | Ref |
 |:--|:--|:--|:--|:--|:--|
 | T-01 | 6 Tools | Jira for defect tracking | GitHub Issues with the `bug` label, on the team's GitHub project board | Code, pull requests, reviews and defects live in one place, and a defect links directly to the pull request that fixes it. | #84 |
-| T-02 | 6 Tools | Selenium or Cypress for UI automation | Selenium (Python), under S3-12 | Matches the STP. The Playwright scripts used for interim checks in Sprints 1 and 2 are being ported. | #74 |
+| T-02 | 6 Tools | Selenium or Cypress for UI automation | Selenium (Python) suite in `tests/e2e/` with CI job and failure screenshots | Matches the STP; the official browser suite now covers the core journeys. | #74 |
 | T-03 | 6 Tools | Postman for API testing | Postman collection run with newman in CI on every pull request | Matches the STP. | #86 |
 | T-04 | 6 Tools | JMeter for performance | JMeter test plan under S3-13 | Matches the STP. | #75 |
 | T-05 | 5 Types | Regression testing | The full backend suite, lint, build and Postman run on every pull request (GitHub Actions) | Every change is regression-tested before merge. | #86 |
