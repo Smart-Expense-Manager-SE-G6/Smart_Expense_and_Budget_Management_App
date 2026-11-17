@@ -119,11 +119,12 @@ class ExpenseSerializer(serializers.ModelSerializer):
             "date",
             "payment_method",
             "has_receipt",
+            "recurring_rule",
             "is_deleted",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "owner", "is_deleted", "created_at", "updated_at"]
+        read_only_fields = ["id", "owner", "recurring_rule", "is_deleted", "created_at", "updated_at"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
