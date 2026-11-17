@@ -290,7 +290,7 @@ production stack on https://localhost.
 
 ## Sprint 1 – Testing & Verification
 
-### Continuous integration (S3-11)
+### CI/CD pipeline (S3-11)
 
 Every pull request and every push to `main` runs `.github/workflows/ci.yml`:
 
@@ -299,6 +299,7 @@ Every pull request and every push to `main` runs `.github/workflows/ci.yml`:
 | Backend tests and coverage | `manage.py check`, no missing migrations, the full test suite on PostgreSQL 16, line and branch coverage (fails under 80%) |
 | Frontend lint and build | `npm run lint` and `npm run build` |
 | API tests (Postman) | `tests/postman_collection.json` with newman against a running server |
+| Deploy to staging and smoke test (CD) | After all three pass: builds the production images, deploys the full production stack (gunicorn, Caddy HTTPS, PostgreSQL, scheduler, backups) on the runner, runs `deploy/smoke_test.sh` and a restore rehearsal against it. On `main` the tested images are then published to GitHub Container Registry |
 
 The coverage table is on each run's summary page, and the full HTML report is a
 downloadable artifact (`backend-coverage`). The same coverage settings work
@@ -311,6 +312,16 @@ coverage report            # line + branch, fails under 80%
 ```
 
 The separate `Backup and Restore Tests` workflow runs TC-Backup-01 on every pull request.
+
+So every commit on `main` is a deployed, smoke-tested release (continuous delivery):
+
+```text
+test (backend, frontend, API) -> deploy to staging on the runner -> smoke test -> publish images
+```
+
+Run the newest tested release with `deploy/local-demo.sh release`. Tagging a commit
+(`git tag v1.0 && git push origin v1.0`) runs `.github/workflows/release.yml`, which gives that
+commit's tested images the version tag and creates a GitHub Release. Nothing is rebuilt.
 
 ### Running the checks
 
