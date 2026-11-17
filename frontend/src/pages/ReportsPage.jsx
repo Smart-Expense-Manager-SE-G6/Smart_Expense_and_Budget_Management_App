@@ -76,6 +76,7 @@ export default function ReportsPage() {
     [applied],
   )
   const { data, loading, error, reload } = useAsync(load)
+  const rangeError = validation || (error?.field === 'date_range' ? error.message : null)
 
   function choosePreset(key) {
     const range = presetRange(key)
@@ -123,10 +124,10 @@ export default function ReportsPage() {
           <p className="page-subtitle">Summary, category breakdown and budget vs. actual for any date range.</p>
         </div>
         <div className="page-actions">
-          <Button icon="file" loading={exporting === 'pdf'} disabled={Boolean(exporting) || loading || Boolean(error)} onClick={() => exportReport('pdf')}>
+          <Button aria-label="Export report as PDF" icon="file" loading={exporting === 'pdf'} disabled={Boolean(exporting) || loading || Boolean(error)} onClick={() => exportReport('pdf')}>
             Export PDF
           </Button>
-          <Button icon="sheet" loading={exporting === 'xlsx'} disabled={Boolean(exporting) || loading || Boolean(error)} onClick={() => exportReport('xlsx')}>
+          <Button aria-label="Export report as Excel" icon="sheet" loading={exporting === 'xlsx'} disabled={Boolean(exporting) || loading || Boolean(error)} onClick={() => exportReport('xlsx')}>
             Export Excel
           </Button>
         </div>
@@ -147,7 +148,7 @@ export default function ReportsPage() {
           ))}
         </div>
         <form className="toolbar toolbar-inline" onSubmit={apply}>
-          <FormField label="From" name="start" type="date" value={draft.start} max={draft.end || undefined} onChange={updateDate} />
+          <FormField label="From" name="start" type="date" value={draft.start} max={draft.end || undefined} error={rangeError} onChange={updateDate} />
           <FormField label="To" name="end" type="date" value={draft.end} min={draft.start || undefined} onChange={updateDate} />
           <Button type="submit" variant="primary">
             Generate report
