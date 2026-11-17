@@ -44,6 +44,9 @@ export default function DonutChart({ data, total, centerLabel = 'Total spent' })
         <span className="donut-center-label">{centerLabel}</span>
         <strong className="donut-center-value">{formatCurrency(total, { whole: true })}</strong>
       </div>
+      <ul className="sr-only">
+        {data.map((d) => <li key={d.label}>{d.label}: {formatCurrency(d.value)}</li>)}
+      </ul>
     </div>
   )
 }

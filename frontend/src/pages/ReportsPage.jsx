@@ -124,10 +124,10 @@ export default function ReportsPage() {
           <p className="page-subtitle">Summary, category breakdown and budget vs. actual for any date range.</p>
         </div>
         <div className="page-actions">
-          <Button aria-label="Export report as PDF" icon="file" loading={exporting === 'pdf'} disabled={Boolean(exporting) || loading || Boolean(error)} onClick={() => exportReport('pdf')}>
+          <Button aria-label="Export PDF report" icon="file" loading={exporting === 'pdf'} disabled={Boolean(exporting) || loading || Boolean(error)} onClick={() => exportReport('pdf')}>
             Export PDF
           </Button>
-          <Button aria-label="Export report as Excel" icon="sheet" loading={exporting === 'xlsx'} disabled={Boolean(exporting) || loading || Boolean(error)} onClick={() => exportReport('xlsx')}>
+          <Button aria-label="Export Excel report" icon="sheet" loading={exporting === 'xlsx'} disabled={Boolean(exporting) || loading || Boolean(error)} onClick={() => exportReport('xlsx')}>
             Export Excel
           </Button>
         </div>
@@ -181,7 +181,7 @@ export default function ReportsPage() {
                 {categoryBreakdown.length === 0 ? (
                   <p className="muted pad">No expenses in this range.</p>
                 ) : (
-                  <div className="table-wrap">
+                  <div className="table-wrap" tabIndex={0} role="region" aria-label="Category breakdown table">
                     <table className="table">
                       <thead>
                         <tr>
@@ -210,7 +210,7 @@ export default function ReportsPage() {
                 {budgetVsActual.length === 0 ? (
                   <p className="muted pad">No budgets overlap this range.</p>
                 ) : (
-                  <div className="table-wrap">
+                  <div className="table-wrap" tabIndex={0} role="region" aria-label="Budget vs. actual table">
                     <table className="table">
                       <thead>
                         <tr>

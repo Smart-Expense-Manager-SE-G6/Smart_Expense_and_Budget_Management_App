@@ -44,19 +44,19 @@
 
   --text: #0e1120;
   --text-2: #444a64;
-  --muted: #777d98;
+  --muted: #62687f;
 
-  --primary: #5a5eed;
-  --primary-hover: #4a4ee0;
-  --primary-soft: rgba(90, 94, 237, 0.1);
+  --primary: #4f52e0;
+  --primary-hover: #4044cc;
+  --primary-soft: rgba(79, 82, 224, 0.1);
   --on-primary: #ffffff;
 
-  --success: #059669;
+  --success: #047857;
   --success-soft: rgba(5, 150, 105, 0.12);
   --warning: #c26a05;
   --warning-soft: rgba(217, 119, 6, 0.13);
-  --danger: #e11d48;
-  --danger-soft: rgba(225, 29, 72, 0.1);
+  --danger: #be123c;
+  --danger-soft: rgba(190, 18, 60, 0.1);
   --info: #0e7490;
   --info-soft: rgba(8, 145, 178, 0.12);
 
