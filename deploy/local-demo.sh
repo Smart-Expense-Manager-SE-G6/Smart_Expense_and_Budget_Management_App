@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Run the production stack on this machine for the demo (S3-10).
 #
-#   deploy/local-demo.sh          # start (creates .env.prod with random secrets the first time)
-#   deploy/local-demo.sh stop     # stop, keeping the data
-#   deploy/local-demo.sh reset    # stop and delete all demo data
+#   deploy/local-demo.sh                  # build from this checkout and start (creates .env.prod the first time)
+#   deploy/local-demo.sh release [tag]    # run a release the CI/CD pipeline built and tested (default: latest main)
+#   deploy/local-demo.sh stop             # stop, keeping the data
+#   deploy/local-demo.sh reset            # stop and delete all demo data
 #
 # Same images and settings as a server: gunicorn, Caddy with HTTPS and security
 # headers, PostgreSQL, the scheduler, daily backups with encrypted copies in ./offsite.
@@ -11,6 +12,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 compose=(docker compose -f docker-compose.prod.yml --env-file .env.prod)
+registry="ghcr.io/smart-expense-manager-se-g6"
+up_args=(up -d --build)
 
 secret() { head -c 48 /dev/urandom | base64 | tr -d '/+=\n' | head -c 50; }
 
@@ -18,7 +21,16 @@ case "${1:-start}" in
   stop)  "${compose[@]}" down; exit 0 ;;
   reset) "${compose[@]}" down -v; rm -rf backups offsite; echo "Demo data deleted."; exit 0 ;;
   start) ;;
-  *) echo "usage: $0 [start|stop|reset]" >&2; exit 2 ;;
+  release)
+    tag="${2:-main}"
+    export BACKEND_IMAGE="$registry/smart-expense-backend:$tag" \
+           WEB_IMAGE="$registry/smart-expense-web:$tag" \
+           BACKUP_IMAGE="$registry/smart-expense-backup:$tag"
+    echo "Running release '$tag' from $registry (built and smoke-tested by the CI/CD pipeline)."
+    up_args=(up -d --no-build)
+    pull_release=1
+    ;;
+  *) echo "usage: $0 [start | release [tag] | stop | reset]" >&2; exit 2 ;;
 esac
 
 if [ ! -f .env.prod ]; then
@@ -36,13 +48,33 @@ if [ ! -f .env.prod ]; then
 fi
 mkdir -p offsite
 
-"${compose[@]}" up -d --build
+if [ "${pull_release:-0}" = 1 ] && ! "${compose[@]}" pull -q backend web backup; then
+  cat >&2 <<EOF
+
+Could not download release '$tag'. Either the tag does not exist (use a commit on main
+whose CI/CD run passed, or a v* release), or the images are private. To fix the latter:
+  - an organisation admin makes the three smart-expense-* packages public
+    (GitHub > organisation > Packages > package > Package settings > Change visibility), or
+  - sign in to the registry first:
+      gh auth refresh -s read:packages
+      gh auth token | docker login ghcr.io -u <your GitHub username> --password-stdin
+EOF
+  exit 1
+fi
+
+"${compose[@]}" "${up_args[@]}"
 printf 'Waiting for https://localhost '
+healthy=0
 for _ in $(seq 1 60); do
-  if curl -sk -o /dev/null -w '%{http_code}' https://localhost/api/v1/health/ | grep -q 200; then break; fi
+  if curl -sk -o /dev/null -w '%{http_code}' https://localhost/api/v1/health/ | grep -q 200; then healthy=1; break; fi
   printf '.'; sleep 2
 done
 echo
+if [ "$healthy" != 1 ]; then
+  echo "The app did not become healthy within 2 minutes. Logs:" >&2
+  "${compose[@]}" logs --tail 50 >&2
+  exit 1
+fi
 "${compose[@]}" ps --format '{{.Service}}: {{.Status}}'
 
 # Caddy's local certificate authority, so the browser can be told to trust https://localhost.
