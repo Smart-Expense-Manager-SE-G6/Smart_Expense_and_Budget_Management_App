@@ -20,7 +20,7 @@ Cancelled workflow runs are not counted. Every number below comes from these run
 ## Executive result
 
 36 of the 39 planned test cases were executed and all 36 passed. 21 defects were found during Sprints 2 and 3 and
-all of them are fixed (four close with PR #105). Three test cases have no recorded run (TC-Perf-03, TC-Backup-02
+all of them are fixed on `main`. Three test cases have no recorded run (TC-Perf-03, TC-Backup-02
 retention, TC-Arch-01), and product-owner UAT has not happened yet, so **final sign-off is pending** those items.
 
 ## STP section 14 metrics
@@ -31,7 +31,7 @@ retention, TC-Arch-01), and product-owner UAT has not happened yet, so **final s
 | Test cases passed | passed ÷ executed × 100 | **100%** | 36 ÷ 36 × 100 |
 | Test cases failed | failed ÷ executed × 100 | **0%** | 0 ÷ 36 × 100 |
 | Defect density | defects ÷ executed cases × 100 | **58.3 per 100 cases** | 21 ÷ 36 × 100 ([`defect-log.md`](defect-log.md)) |
-| Defect aging | days from found to fix merged, averaged | **0.06 days** (max 1 day) | 1 day ÷ 17 merged fixes; DEF-18 to 21 pending PR #105 |
+| Defect aging | days from found to fix merged, averaged | **0.24 days** (max 1 day) | 5 defect-days ÷ 21 defects |
 | Requirement coverage | requirements with ≥1 executed test ÷ requirements × 100 | **91.7%** | 33 ÷ 36 (FR1–FR22, NFR1–NFR14); not yet covered: NFR3, NFR10, NFR11 |
 
 Defect density counts every confirmed defect, including the three in the Selenium test setup (DEF-15 to DEF-17).
@@ -56,7 +56,7 @@ Without those, it is 18 ÷ 36 × 100 = 50.0 per 100 cases.
 ## Exit criteria
 
 - [ ] 100% of planned test cases executed: 36/39; TC-Perf-03, TC-Backup-02 (retention) and TC-Arch-01 have no run.
-- [x] 0 critical defects open: none found; all 21 defects fixed or fixed in PR #105.
+- [x] 0 critical defects open: none found; all 21 defects fixed.
 - [ ] Product owner UAT completed and recorded in [`uat-record.md`](uat-record.md).
 - [ ] All requirements have at least one executed test: 33/36; NFR3, NFR10, NFR11 outstanding.
 - [x] Evidence tied to a commit SHA and workflow run URL: `4298b89`, runs listed above.

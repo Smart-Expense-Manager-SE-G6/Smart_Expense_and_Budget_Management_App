@@ -26,10 +26,10 @@ audit/run that found it) to the day the fix was merged into `main`.
 | DEF-15 | Selenium CI | E2E stack used different PostgreSQL passwords for the database and the backend | High | 2026-11-17 | 2026-11-17 | 0 | PR #107 |
 | DEF-16 | Selenium CI | Suite used `url_not_contains`, which Selenium does not have, and a report hook that stored the wrong object | Medium | 2026-11-17 | 2026-11-17 | 0 | PR #107 |
 | DEF-17 | Selenium CI | Sign-up rate limit (5/min) throttled the suite, which registers a user per test | Medium | 2026-11-17 | 2026-11-17 | 0 | PR #107 (test stack limits) |
-| DEF-18 | Accessibility audit | Text colour contrast below 4.5:1 (muted, success, danger and primary text) | Medium | 2026-11-17 | see PR #105 | — | PR #105 |
-| DEF-19 | Accessibility audit | Alerts page 382 px wide on a 360 px screen | Medium | 2026-11-17 | see PR #105 | — | PR #105 |
-| DEF-20 | Accessibility audit | No skip link; scrollable report tables not keyboard reachable | Low | 2026-11-17 | see PR #105 | — | PR #105 |
-| DEF-21 | Accessibility audit | ARIA problems: chart points and unread dot without a role; export button labels not matching visible text | Low | 2026-11-17 | see PR #105 | — | PR #105 |
+| DEF-18 | Accessibility audit | Text colour contrast below 4.5:1 (muted, success, danger and primary text) | Medium | 2026-11-17 | 2026-11-18 | 1 | PR #105 |
+| DEF-19 | Accessibility audit | Alerts page 382 px wide on a 360 px screen | Medium | 2026-11-17 | 2026-11-18 | 1 | PR #105 |
+| DEF-20 | Accessibility audit | No skip link; scrollable report tables not keyboard reachable | Low | 2026-11-17 | 2026-11-18 | 1 | PR #105 |
+| DEF-21 | Accessibility audit | ARIA problems: chart points and unread dot without a role; export button labels not matching visible text | Low | 2026-11-17 | 2026-11-18 | 1 | PR #105 |
 
 ## Summary
 
@@ -37,12 +37,11 @@ audit/run that found it) to the day the fix was merged into `main`.
 |:--|--:|--:|
 | Critical | 0 | 0 |
 | High | 8 | 0 |
-| Medium | 8 | 0 (DEF-18, 19 close when PR #105 merges) |
-| Low | 5 | 0 (DEF-20, 21 close when PR #105 merges) |
+| Medium | 8 | 0 |
+| Low | 5 | 0 |
 | **Total** | **21** | |
 
-Average aging of the 17 merged fixes: 1 day across 17 defects = **0.06 days**; no defect stayed open longer than 1 day.
-Update DEF-18 to DEF-21 with the PR #105 merge date when it lands.
+Average aging: 5 defect-days across 21 defects = **0.24 days**; no defect stayed open longer than 1 day. All 21 are fixed on `main`.
 
 ## Defect policy
 
