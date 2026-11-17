@@ -32,7 +32,7 @@ export default function Forecast() {
       subtitle="Based on your current daily spend"
       action={data && <Badge tone={status.tone}>{status.label}</Badge>}
     >
-      {loading ? (
+      {loading || !data ? (
         <>
           <Skeleton height={40} width="55%" />
           <Skeleton height={12} style={{ marginTop: 20 }} />
