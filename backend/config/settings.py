@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "drf_spectacular",
     "core",
     "accounts",
     "audit",
@@ -207,6 +208,7 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_AUTHENTICATION_CLASSES": ["core.authentication.SessionAuthentication401"],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "EXCEPTION_HANDLER": "core.exceptions.api_exception_handler",
     "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.ScopedRateThrottle"],
     "DEFAULT_THROTTLE_RATES": {
@@ -216,6 +218,13 @@ REST_FRAMEWORK = {
     # Number of trusted reverse proxies in front of Django. 0 = use the socket
     # address and ignore X-Forwarded-For, which clients can forge.
     "NUM_PROXIES": int(env("NUM_PROXIES", "0")),
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Smart Expense and Budget Management API",
+    "DESCRIPTION": "Session-authenticated API for expenses, budgets, analytics and alerts.",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
 }
 
 LOG_DIR = Path(env("APP_LOG_DIR", str(BASE_DIR / "logs")))
