@@ -48,7 +48,7 @@ def register(driver, user):
     for label, value in (("First name", user["first"]), ("Last name", user["last"]), ("Email", user["email"]), ("Password", user["password"])):
         field(driver, label).send_keys(value)
     click_button(driver, "Create account")
-    WebDriverWait(driver, 10).until(EC.url_not_contains("/register"))
+    WebDriverWait(driver, 10).until(lambda current: "/register" not in current.current_url)
 
 
 def login(driver, user):
@@ -67,7 +67,9 @@ def screenshot_on_failure(request):
         request.node._driver.save_screenshot(str(ARTIFACTS / f"{request.node.name}.png"))
 
 
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
 def pytest_runtest_makereport(item, call):
-    if call.when == "call":
-        item.rep_call = call
+    outcome = yield
+    report = outcome.get_result()
+    setattr(item, "rep_" + report.when, report)
 
