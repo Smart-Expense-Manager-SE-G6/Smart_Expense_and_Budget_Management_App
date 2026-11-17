@@ -214,6 +214,13 @@ class EmailFailureTrackingTests(TestCase):
 
 class MonitoringDashboardTests(TestCase):
     def setUp(self):
+        # An empty status folder of our own: in Docker the real scheduler and backup
+        # services write their status into the shared folder, so these tests must not read it.
+        state_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(state_dir.cleanup)
+        isolated = override_settings(MONITORING_STATE_DIR=Path(state_dir.name))
+        isolated.enable()
+        self.addCleanup(isolated.disable)
         self.admin = get_user_model().objects.create_superuser(
             email="monitor@example.com",
             password="Secure-test-password-2026!",
