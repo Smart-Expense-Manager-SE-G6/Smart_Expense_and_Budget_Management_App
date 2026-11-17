@@ -563,8 +563,13 @@ class CategorySuggestionTests(TestCase):
         }
         self.client.force_login(self.user)
 
-    def names(self, description):
-        return [category.name for category in suggest_categories(description)]
+    def names(self, description, merchant=""):
+        return [
+            category.name
+            for category in suggest_categories(
+                description, user=self.user, merchant=merchant
+            )
+        ]
 
     def test_known_keyword_returns_global_category(self):
         self.assertEqual(self.names("Lunch at a cafe"), ["Food"])
@@ -609,6 +614,18 @@ class CategorySuggestionTests(TestCase):
         self.assertEqual([category.name for category in suggestions], ["Food"])
         self.assertIsNone(suggestions[0].owner_id)
         self.assertNotEqual(suggestions[0].pk, custom.pk)
+
+    def test_TC_Cat_02_history_suggestion_precedes_rules_and_common_merchants_match(self):
+        Expense.objects.create(
+            owner=self.user,
+            category=self.global_categories["Food"],
+            amount=Decimal("10.00"),
+            description="Cafe Mocha",
+            date=date(2026, 10, 26),
+        )
+
+        self.assertEqual(self.names("Cafe Mocha"), ["Food"])
+        self.assertEqual(self.names("", merchant="Uber"), ["Travel"])
 
     def test_api_returns_suggestions_for_authenticated_user(self):
         response = self.client.get("/categories/suggestions/?description=Lunch")
