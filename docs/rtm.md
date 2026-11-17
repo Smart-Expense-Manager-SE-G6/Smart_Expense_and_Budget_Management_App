@@ -50,8 +50,8 @@ Release execution evidence is maintained in [`docs/testing/test-cases.md`](testi
 | **NFR4** | Sensitive data encryption | Passwords hashed; TLS | `bcrypt` hashing; TLS/HTTPS; secure file root; `TC-Sec-01`; [security report](security-report.md) | Shriram | Verified (ADR 0001, #77) |
 | **NFR5** | Authentication & token expiry | Session expiry on logout & 30m idle | Django sessions in HttpOnly cookies; 401 on expired session; `TC-Sec-01`, `TC-Sec-04` | Shriram | Verified (ADR 0001, #12, #77) |
 | **NFR6** | Protection against SQLi, XSS, CSRF | Zero high/critical vulnerabilities | Django ORM parameterized queries; React auto-escaping; CSRF header; security headers; fuzzing and penetration tests `TC-Sec-03`, `TC-Sec-04`; OWASP ZAP and dependency audits in the [security report](security-report.md) | Shriram | Verified (#77) |
-| **NFR7** | Responsive UI | Mobile, tablet, desktop | Responsive CSS layouts without frameworks | Team 6 | Active in frontend |
-| **NFR8** | Accessibility | WCAG basics (labels, contrast) | Form labels, keyboard focus, table fallbacks for charts | Team 6 | Enforced in UI |
+| **NFR7** | Responsive UI | Mobile, tablet, desktop | Responsive CSS layouts; audited at 360, 768 and 1280 px with no overflow ([audit](testing/accessibility-audit.md)) | Team 6 | Verified (#76) |
+| **NFR8** | Accessibility | WCAG basics (labels, contrast) | Form labels, AA contrast tokens, skip link, keyboard focus, screen-reader chart values; axe-core 0 violations ([audit](testing/accessibility-audit.md)) | Team 6 | Verified (#76) |
 | **NFR9** | Uptime | 99% uptime target | Health endpoint `/api/v1/health/`; services restart automatically (`restart: unless-stopped`); smoke test `deploy/smoke_test.sh` | Shriram | Done (#10, #72); uptime monitor in #79 |
 | **NFR10**| Automated backups | Daily scheduled backup | `backup` compose service runs `scripts/schedule_backups.sh` (cron, `BACKUP_SCHEDULE`) calling `scripts/backup.sh`; verified by `TC-Backup-01` | Shriram / Shashwath | Done (#46) |
 | **NFR11**| Modular architecture | MVC pattern; loose coupling | Modular monolith with independent Django apps | Team 6 | Enforced |
