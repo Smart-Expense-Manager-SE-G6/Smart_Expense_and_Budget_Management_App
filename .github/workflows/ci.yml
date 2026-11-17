@@ -157,6 +157,9 @@ jobs:
           # Compose interpolation uses the workflow-level ci-password for db,
           # so the backend env_file must use the same password.
           sed -i 's/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=ci-password/' .env
+          # The suite registers a new user per test; the default sign-up and login limits
+          # (5 and 10 per minute per address, a security feature) would throttle it.
+          sed -i 's#^REGISTER_RATE_LIMIT=.*#REGISTER_RATE_LIMIT=1000/min#; s#^LOGIN_RATE_LIMIT=.*#LOGIN_RATE_LIMIT=1000/min#' .env
       - name: Start application
         run: docker compose up -d --build
       - name: Wait for frontend and API
