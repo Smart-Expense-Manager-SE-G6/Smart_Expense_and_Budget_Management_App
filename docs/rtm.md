@@ -11,6 +11,8 @@
 
 Differences between this matrix, the code and the approved project documents are explained in [deviations.md](deviations.md).
 
+Release execution evidence is maintained in [`docs/testing/test-cases.md`](testing/test-cases.md), with suite artifacts indexed by [`docs/testing/execution-evidence.md`](testing/execution-evidence.md) and final metrics in [`docs/testing/test-summary.md`](testing/test-summary.md).
+
 | Req ID | Requirement Description | Module Owner | Design Reference (SASD) | Target Code / Files | Test Case ID (STP) | Sprint 1 Status |
 |:---|:---|:---|:---|:---|:---|:---|
 | **FR1** | User registration and login (email/pwd, bcrypt) | Shriram | Sec 3.4, 4.3, Fig 4.1 | `accounts/views.py`, `accounts/serializers.py` | `TC-Auth-01`, `TC-Auth-02` | In Progress (#13) |
