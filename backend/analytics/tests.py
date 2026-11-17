@@ -1,9 +1,11 @@
 from datetime import date, datetime, timedelta, timezone as dt_timezone
 from decimal import Decimal
+from io import BytesIO
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from openpyxl import load_workbook
 from rest_framework.test import APIClient
 
 from expenses.models import Category, Expense
@@ -435,8 +437,43 @@ class CustomReportTests(TestCase):
         )
         self.assertTrue(res.content.startswith(b"PK"))
 
+        workbook = load_workbook(BytesIO(res.content), data_only=True)
+        summary = workbook["Summary"]
+        self.assertEqual(summary["A5"].value, Decimal("250.00"))
+        self.assertEqual(summary["A5"].data_type, "n")
+        self.assertEqual(summary["A5"].value + Decimal("50.00"), Decimal("300.00"))
+
     def test_export_invalid_format_returns_400(self):
         res = self.client.get(
             "/api/v1/analytics/reports/export/?start_date=2026-11-01&end_date=2026-11-30&export_format=csv"
         )
         self.assertEqual(res.status_code, 400)
+
+    def test_export_excel_includes_numeric_budget_vs_actual_values(self):
+        from budgets.models import Budget
+
+        Expense.objects.create(
+            owner=self.user,
+            category=self.food,
+            amount=Decimal("400.00"),
+            date=date(2026, 11, 5),
+            payment_method="card",
+        )
+        Budget.objects.create(
+            user=self.user,
+            name="Food Nov",
+            category=self.food,
+            period="monthly",
+            limit_amount=Decimal("1000.00"),
+            start_date=date(2026, 11, 1),
+            end_date=date(2026, 11, 30),
+        )
+        res = self.client.get(
+            "/api/v1/analytics/reports/export/?start_date=2026-11-01&end_date=2026-11-30&export_format=xlsx"
+        )
+        workbook = load_workbook(BytesIO(res.content), data_only=True)
+        budget_row = workbook["Budget vs Actual"][2]
+        self.assertEqual(budget_row[3].value, Decimal("1000.00"))
+        self.assertEqual(budget_row[4].value, Decimal("400.00"))
+        self.assertEqual(budget_row[3].data_type, "n")
+        self.assertEqual(budget_row[4].data_type, "n")

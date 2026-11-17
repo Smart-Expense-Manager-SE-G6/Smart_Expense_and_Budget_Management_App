@@ -33,8 +33,8 @@ Release execution evidence is maintained in [`docs/testing/test-cases.md`](testi
 | **FR16** | Threshold alerts at 80% and 100% (de-duplicated) | Shashwath | Sec 3.4, 4.1 (D5) | `alerts/models.py`, `alerts/services.py`, `alerts/views.py`, `frontend/src/pages/AlertsPage.jsx` | `TC-Alert-01` | Sprint 3 |
 | **FR17** | Anomaly notification (spike detection) | Shashwath | Sec 3.4, 4.3, OI-6 | `alerts/services.py` | `TC-Alert-02` | Sprint 2 |
 | **FR18** | In-app and email alert delivery (adapter) | Shashwath | Sec 3.4, 4.3, R4 | `alerts/adapters.py`, `alerts/views.py` | `TC-Alert-03` | Sprint 2 |
-| **FR19** | Custom date range reports (1-year cap) | Shashank | Sec 3.4, 4.3, OI-3 | `reports/views.py`, `reports/validators.py` | `TC-Report-01` | Sprint 2 |
-| **FR20** | PDF & Excel report export with summary/breakdowns | Shashank | Sec 3.4, 4.3, R4 | `reports/services.py`, `reports/adapters.py` | `TC-Report-02` | Sprint 2 |
+| **FR19** | Custom date range reports (1-year cap) | Shashank | Sec 3.4, 4.3, OI-3 | `analytics/views.py`, `analytics/validators.py`, `analytics/tests.py`, `frontend/src/pages/ReportsPage.jsx` | `TC-Report-01` | Verified (#70) |
+| **FR20** | PDF & Excel report export with summary/breakdowns | Shashank | Sec 3.4, 4.3, R4 | `analytics/views.py`, `analytics/exporters.py`, `analytics/tests.py`, `frontend/src/pages/ReportsPage.jsx` | `TC-Report-02` | Verified (#70) |
 | **FR21** | Audit trail of edits (written in same transaction) | Shriram | Sec 3.4, 3.5, 4.1 | `audit/models.py`, `audit/services.py`, `audit/views.py`, `audit/test_api.py`, `frontend/src/features/audit/HistoryDialog.jsx` | `TC-Audit-01` | Done (#14, #83) |
 | **FR22** | Data backup and restore rehearsal | Shriram / Shashwath | Sec 3.4, 3.6, R6 | `scripts/backup.sh`, `scripts/restore.sh`, `scripts/rehearse_restore.sh`, `scripts/common.sh` | `TC-Backup-01` (`scripts/rehearse_restore.sh`) | Done (#45) |
 
