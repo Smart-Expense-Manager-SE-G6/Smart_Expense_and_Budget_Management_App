@@ -7,6 +7,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 
 from audit.services import audited
 
@@ -27,6 +28,7 @@ class CsrfView(APIView):
 
     permission_classes = [AllowAny]
 
+    @extend_schema(responses={204: OpenApiResponse(description="CSRF cookie set.")})
     def get(self, request):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -39,6 +41,7 @@ class RegisterView(APIView):
     throttle_scope = "register"
     throttle_classes = [ClientIpScopedThrottle]
 
+    @extend_schema(request=RegisterSerializer, responses={201: UserSerializer})
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -53,6 +56,7 @@ class LoginView(APIView):
     throttle_scope = "login"
     throttle_classes = [ClientIpScopedThrottle]
 
+    @extend_schema(request=LoginSerializer, responses={200: UserSerializer})
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -73,15 +77,18 @@ class LoginView(APIView):
 
 
 class LogoutView(APIView):
+    @extend_schema(responses={204: OpenApiResponse(description="Session ended.")})
     def post(self, request):
         logout(request)  # deletes the server-side session (ADR 0001)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class MeView(APIView):
+    @extend_schema(responses={200: UserSerializer})
     def get(self, request):
         return Response(UserSerializer(request.user).data)
 
+    @extend_schema(request=UserSerializer, responses={200: UserSerializer})
     def patch(self, request):
         serializer = UserSerializer(request.user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -89,6 +96,7 @@ class MeView(APIView):
             serializer.save()
         return Response(serializer.data)
 
+    @extend_schema(request=AccountDeleteSerializer, responses={204: OpenApiResponse(description="Account deleted.")})
     def delete(self, request):
         """Delete the account and all its data (S3-09). Needs the password in the body."""
         serializer = AccountDeleteSerializer(data=request.data, context={"request": request})
@@ -104,6 +112,7 @@ class PasswordChangeView(APIView):
     throttle_scope = "login"
     throttle_classes = [ClientIpScopedThrottle]
 
+    @extend_schema(request=PasswordChangeSerializer, responses={204: OpenApiResponse(description="Password changed.")})
     def post(self, request):
         serializer = PasswordChangeSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
@@ -119,6 +128,7 @@ class PasswordChangeView(APIView):
 class AccountExportView(APIView):
     """GET /api/v1/me/export/ — a ZIP of everything stored about the user (NFR14)."""
 
+    @extend_schema(responses={(200, "application/zip"): OpenApiResponse(description="ZIP archive of account data.")})
     def get(self, request):
         filename, data = export_zip(request.user)
         response = HttpResponse(data, content_type="application/zip")
