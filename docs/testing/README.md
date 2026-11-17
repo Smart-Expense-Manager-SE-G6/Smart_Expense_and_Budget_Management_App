@@ -6,4 +6,6 @@
 - [`test-summary.md`](test-summary.md) — STP section 14 metrics
 - [`uat-record.md`](uat-record.md) — product-owner acceptance record
 
+The release exit criteria are not considered met until `test-summary.md` and `uat-record.md` contain actual run links, counts, dates and the product-owner decision.
+
 Use the commit SHA and GitHub Actions run URL as the immutable link between a test result and the code that was tested.
