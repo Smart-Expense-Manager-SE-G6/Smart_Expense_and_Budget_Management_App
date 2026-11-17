@@ -3,6 +3,9 @@
 #   cp .env.prod.example .env.prod      # then fill it in
 #   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 #
+# Or run a release the CI/CD pipeline already built and smoke-tested, without building:
+#   deploy/local-demo.sh release            (latest main)   deploy/local-demo.sh release v1.0
+#
 # Only the web service is reachable from outside (ports 80 and 443). The database,
 # API, scheduler and backups talk to each other on Docker's private network.
 name: smart-expense-prod
@@ -11,7 +14,7 @@ x-backend: &backend
   build:
     context: ./backend
     dockerfile: ../deploy/backend.Dockerfile
-  image: smart-expense-backend:prod
+  image: ${BACKEND_IMAGE:-smart-expense-backend:prod}
   env_file: .env.prod
   environment:
     POSTGRES_HOST: db
@@ -54,7 +57,7 @@ services:
     build:
       context: ./deploy
       dockerfile: backup.Dockerfile
-    image: smart-expense-backup:prod
+    image: ${BACKUP_IMAGE:-smart-expense-backup:prod}
     env_file: .env.prod
     environment:
       PGHOST: db
@@ -83,7 +86,7 @@ services:
     build:
       context: ./frontend
       dockerfile: ../deploy/web.Dockerfile
-    image: smart-expense-web:prod
+    image: ${WEB_IMAGE:-smart-expense-web:prod}
     env_file: .env.prod
     ports:
       - "80:80"

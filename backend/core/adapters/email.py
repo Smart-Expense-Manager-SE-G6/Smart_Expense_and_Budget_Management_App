@@ -49,6 +49,9 @@ class DjangoEmailAdapter:
         message: str,
     ) -> EmailResult:
         if not recipient.strip():
+            from monitoring.services import record_email_failure
+
+            record_email_failure(recipient, subject, "Recipient email is required.")
             return EmailResult(False, "Recipient email is required.")
 
         try:
@@ -60,9 +63,15 @@ class DjangoEmailAdapter:
                 fail_silently=False,
             )
         except Exception:
+            from monitoring.services import record_email_failure
+
+            record_email_failure(recipient, subject, "Email backend raised an exception.")
             return EmailResult(False, "Email delivery failed.")
 
         if sent == 1:
             return EmailResult(True, "Email sent successfully.")
 
+        from monitoring.services import record_email_failure
+
+        record_email_failure(recipient, subject, "Email backend did not send the message.")
         return EmailResult(False, "Email was not sent.")

@@ -110,6 +110,56 @@ class ExpenseApiTests(TestCase):
         self.assertNotIn(before.pk, ids)
         self.assertNotIn(after.pk, ids)
 
+    def test_TC_Exp_01_searches_merchant_and_notes_and_filters_payment_method(self):
+        matching = self.create_expense(
+            description="Lunch",
+            merchant="Corner Cafe",
+            notes="Client meeting",
+            payment_method="upi",
+        )
+        self.create_expense(
+            description="Lunch",
+            merchant="Home",
+            notes="Personal",
+            payment_method="cash",
+        )
+
+        response = self.client.get(
+            "/expenses/?search=client&payment_method=UPI"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([item["id"] for item in response.json()["results"]], [matching.pk])
+
+    def test_TC_Exp_01_text_filters_refuse_nul_character(self):
+        # PostgreSQL cannot compare NUL; without the check this was a 500 (found by core.test_security fuzzing).
+        for parameter in ("search", "payment_method"):
+            with self.subTest(parameter=parameter):
+                response = self.client.get("/expenses/", {parameter: "cli\x00ent"})
+                self.assertEqual(response.status_code, 400)
+                self.assertEqual(response.json()["error"]["field"], parameter)
+
+    def test_TC_Exp_02_saves_and_updates_merchant_and_notes(self):
+        response = self.client.post(
+            "/expenses/",
+            self.payload(merchant="Corner Cafe", notes="Team lunch"),
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        expense = Expense.objects.get(pk=response.json()["id"])
+        self.assertEqual((expense.merchant, expense.notes), ("Corner Cafe", "Team lunch"))
+
+        patch = self.client.patch(
+            f"/expenses/{expense.pk}/",
+            {"merchant": "Updated Cafe", "notes": "Updated note"},
+            content_type="application/json",
+        )
+
+        self.assertEqual(patch.status_code, 200)
+        expense.refresh_from_db()
+        self.assertEqual((expense.merchant, expense.notes), ("Updated Cafe", "Updated note"))
+
     def test_list_sorts_by_date_and_amount(self):
         oldest = self.create_expense(date=date(2026, 1, 1), amount=Decimal("30.00"))
         newest = self.create_expense(date=date(2026, 12, 1), amount=Decimal("10.00"))
@@ -513,8 +563,13 @@ class CategorySuggestionTests(TestCase):
         }
         self.client.force_login(self.user)
 
-    def names(self, description):
-        return [category.name for category in suggest_categories(description)]
+    def names(self, description, merchant=""):
+        return [
+            category.name
+            for category in suggest_categories(
+                description, user=self.user, merchant=merchant
+            )
+        ]
 
     def test_known_keyword_returns_global_category(self):
         self.assertEqual(self.names("Lunch at a cafe"), ["Food"])
@@ -559,6 +614,18 @@ class CategorySuggestionTests(TestCase):
         self.assertEqual([category.name for category in suggestions], ["Food"])
         self.assertIsNone(suggestions[0].owner_id)
         self.assertNotEqual(suggestions[0].pk, custom.pk)
+
+    def test_TC_Cat_02_history_suggestion_precedes_rules_and_common_merchants_match(self):
+        Expense.objects.create(
+            owner=self.user,
+            category=self.global_categories["Food"],
+            amount=Decimal("10.00"),
+            description="Cafe Mocha",
+            date=date(2026, 10, 26),
+        )
+
+        self.assertEqual(self.names("Cafe Mocha"), ["Food"])
+        self.assertEqual(self.names("", merchant="Uber"), ["Travel"])
 
     def test_api_returns_suggestions_for_authenticated_user(self):
         response = self.client.get("/categories/suggestions/?description=Lunch")

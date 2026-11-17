@@ -1,0 +1,3 @@
+date,amount,category,payment_mode,merchant,notes
+2026-01-15,125.50,Food,upi,Cafe,Team lunch
+2026-01-16,40.00,Travel,other,Metro,Commute

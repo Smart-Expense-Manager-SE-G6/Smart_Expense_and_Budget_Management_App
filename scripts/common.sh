@@ -15,6 +15,21 @@ export PGHOST PGPORT PGUSER PGPASSWORD PGDATABASE
 BACKUP_DIR="${BACKUP_DIR:-/backups}"   # one sub-directory per backup
 MEDIA_DIR="${MEDIA_DIR:-/media}"       # backend/private_media (receipts)
 BACKUP_KEEP="${BACKUP_KEEP:-7}"        # scheduled backups to keep
+MONITORING_STATE_DIR="${MONITORING_STATE_DIR:-/monitoring}"
+
+record_backup_status() {
+    status="$1"
+    message="$2"
+    updated_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    temp_file="$MONITORING_STATE_DIR/backup.json.tmp.$$"
+    if ! mkdir -p "$MONITORING_STATE_DIR" \
+        || ! printf '{"status":"%s","message":"%s","updated_at":"%s"}\n' \
+            "$status" "$message" "$updated_at" > "$temp_file" \
+        || ! mv "$temp_file" "$MONITORING_STATE_DIR/backup.json"; then
+        log "WARNING: could not record backup monitoring status"
+        rm -f "$temp_file" 2>/dev/null || true
+    fi
+}
 
 log() {
     printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"

@@ -1,3 +1,4 @@
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -15,8 +16,17 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "email", "first_name", "last_name", "timezone", "email_alerts", "date_joined"]
-        read_only_fields = ["id", "email", "date_joined"]
+        fields = [
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "timezone",
+            "email_alerts",
+            "date_joined",
+            "is_staff",
+        ]
+        read_only_fields = ["id", "email", "date_joined", "is_staff"]
 
 
 class PasswordChangeSerializer(serializers.Serializer):
