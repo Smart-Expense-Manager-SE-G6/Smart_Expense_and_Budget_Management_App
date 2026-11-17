@@ -10,6 +10,12 @@
 
 The report template and evidence index are complete. Final sign-off is **pending execution evidence** for the dependency suites and a product-owner UAT session. Cancelled GitHub Actions runs are excluded from the metrics.
 
+### Recorded CI evidence update
+
+Evidence is tied to merge commit `102c8959e00d07b37a20ff1ae9cf33a824b04973` for PR #109. The green [CI run #44036741974](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44036741974) recorded 362 backend tests with 362 passing, 2,434/2,588 lines (94.1%), 508/576 branches (88.2%), and 92% combined coverage; Newman recorded 9/9 requests and 17/17 assertions; frontend lint/build and the 16-check staging smoke test passed. The [backup run #44036741922](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44036741922) recorded TC-Backup-01 passing with all 19 table row counts matching. These figures supersede the placeholder suite values below.
+
+Selenium and JMeter are **Not yet executed**. UAT remains **Pending session**. Case-level executed/pass percentages, defect density, and requirement coverage remain pending until their denominators can be supported by linked evidence; no estimates are claimed.
+
 ## STP section 14 metrics
 
 | Metric | Definition | Result | Evidence / calculation |

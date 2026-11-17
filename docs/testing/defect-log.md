@@ -13,3 +13,7 @@ GitHub Issues with the `bug` label are the system of record, replacing Jira in a
 - Severity is critical, high, medium or low; severity is assigned by impact, not by implementation effort.
 - Aging is calendar days from the issue's opened date to the report date; closed defects retain their historical aging.
 - A release cannot claim zero critical defects until the GitHub issue search and open-issue review have been recorded in the Test Summary Report.
+
+## Evidence reconciliation note
+
+The referenced fixes are currently represented by GitHub pull requests in the repository history, not by separately retrievable `bug`-labelled issue records. In particular, PR #106 is still open as of this report date. Defect IDs, opened/closed aging, and density therefore remain pending GitHub issue/label reconciliation; no synthetic issue numbers or closure dates are claimed.

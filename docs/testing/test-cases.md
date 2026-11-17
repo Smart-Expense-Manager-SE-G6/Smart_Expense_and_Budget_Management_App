@@ -7,8 +7,10 @@ This catalog is the STP section 8 execution list for issue #84. The RTM remains 
 | TC-Auth-01 | FR1 registration | Automated | Submit valid unique email/password | Account is created and dashboard opens | Backend auth tests; E2E dependency |
 | TC-Auth-02 | FR1 login/logout | Automated | Sign in, access protected route, sign out | Session authenticates; logout protects route | Backend auth tests; E2E dependency |
 | TC-Auth-03 | FR2 profile | Automated | Update profile and reload | New profile data persists | Account settings tests |
+| TC-Account-01 | FR2 account settings | Automated | Export and delete the account | Export is user-scoped; deletion removes owned data | `backend/accounts/test_account_settings.py` (`test_export_contains_every_kind_of_data`, `test_deletes_everything_the_user_owns`) |
 | TC-Shared-01 | FR3 shared budgets | Automated | Owner adds member; member opens budget | Role permissions are enforced | `backend/budgets/test_shared.py` |
 | TC-Exp-01 | FR4 expense CRUD | Automated | Create, edit and soft-delete expense | Data changes persist; deleted item is excluded | `backend/expenses/tests.py` |
+| TC-Exp-02 | FR4 expense CRUD | Automated | Search and filter expenses | Matching results are returned without other users' data | `backend/expenses/tests.py` |
 | TC-Exp-03 | FR5 receipt | Automated | Upload valid receipt and request it as owner | Receipt is accepted and protected | Expense API tests |
 | TC-Exp-04 | FR6 recurring rules | Automated | Create, pause, resume and materialize rule | Due expense is generated once | `backend/expenses/test_recurring.py` |
 | TC-Import-01 | FR7 CSV import | Automated | Preview CSV with one invalid row, then import | Valid rows import; bad row is reported | `backend/expenses/test_import.py` |

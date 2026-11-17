@@ -16,3 +16,8 @@ This index records where each test execution artifact belongs. CI-generated repo
 ## Run recording rule
 
 For every executed source, record the workflow run URL, commit SHA, date/time (IST), runner/environment, test count, pass/fail count, and artifact URL in `test-summary.md`. A cancelled workflow is not a test result and must not be counted as executed or passed.
+
+## Recorded run links
+
+- [CI run #44036741974](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44036741974): backend, frontend, Newman API, and staging smoke.
+- [Backup run #44036741922](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44036741922): backup and restore rehearsal.
