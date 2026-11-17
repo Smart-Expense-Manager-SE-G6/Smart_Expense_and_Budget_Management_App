@@ -10,22 +10,28 @@ class AlertSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "budget",
+            "expense",
             "threshold_percentage",
             "period_start",
             "alert_type",
             "title",
             "message",
             "is_read",
+            "email_sent",
+            "email_error",
             "created_at",
         ]
         read_only_fields = [
             "id",
             "budget",
+            "expense",
             "threshold_percentage",
             "period_start",
             "alert_type",
             "title",
             "message",
+            "email_sent",
+            "email_error",
             "created_at",
         ]
         # Alerts are created only by the system (get_or_create under the database

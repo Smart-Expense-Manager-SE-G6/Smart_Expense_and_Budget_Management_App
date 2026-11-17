@@ -14,10 +14,10 @@ import HistoryDialog from '../features/audit/HistoryDialog'
 import ExpenseForm from '../features/expenses/ExpenseForm'
 import useAsync from '../hooks/useAsync'
 import useCategories from '../hooks/useCategories'
-import { categoryColor, formatCurrency, formatDate, paymentLabel } from '../lib/format'
+import { categoryColor, formatCurrency, formatDate, paymentLabel, PAYMENT_METHODS } from '../lib/format'
 
 const PAGE_SIZE = 15
-const EMPTY_FILTERS = { category: '', start_date: '', end_date: '', ordering: '-date' }
+const EMPTY_FILTERS = { search: '', category: '', payment_method: '', start_date: '', end_date: '', ordering: '-date' }
 const ORDERINGS = [
   { value: '-date', label: 'Newest first' },
   { value: 'date', label: 'Oldest first' },
@@ -36,11 +36,31 @@ export default function ExpensesPage() {
   const [flash, setFlash] = useState(null)
   const [historyOf, setHistoryOf] = useState(null)
 
-  // "+ Add expense" elsewhere in the app deep-links here with ?new=1.
+  // Expense and creation links elsewhere in the app deep-link here.
   useEffect(() => {
     if (searchParams.get('new') === '1') {
       setEditor((prev) => ({ open: true, expense: null, key: prev.key + 1 }))
       setSearchParams({}, { replace: true })
+      return
+    }
+
+    const expenseId = searchParams.get('expense_id')
+    if (!expenseId) return
+
+    let active = true
+    api(`/expenses/${expenseId}/`)
+      .then((expense) => {
+        if (active) setEditor((prev) => ({ open: true, expense, key: prev.key + 1 }))
+      })
+      .catch((err) => {
+        if (active) setFlash({ tone: 'danger', text: err.message })
+      })
+      .finally(() => {
+        if (active) setSearchParams({}, { replace: true })
+      })
+
+    return () => {
+      active = false
     }
   }, [searchParams, setSearchParams])
 
@@ -121,6 +141,15 @@ export default function ExpensesPage() {
               </option>
             ))}
           </FormField>
+          <FormField label="Search" name="search" type="search" placeholder="Description, merchant or notes" value={filters.search} onChange={setFilter} />
+          <FormField as="select" label="Payment method" name="payment_method" value={filters.payment_method} onChange={setFilter}>
+            <option value="">All payment methods</option>
+            {PAYMENT_METHODS.map((method) => (
+              <option key={method.value} value={method.value}>
+                {method.label}
+              </option>
+            ))}
+          </FormField>
           <FormField label="From" name="start_date" type="date" value={filters.start_date} max={filters.end_date || undefined} onChange={setFilter} />
           <FormField label="To" name="end_date" type="date" value={filters.end_date} min={filters.start_date || undefined} onChange={setFilter} />
           <FormField as="select" label="Sort by" name="ordering" value={filters.ordering} onChange={setFilter}>
@@ -194,6 +223,8 @@ export default function ExpensesPage() {
                         <td className="nowrap">{formatDate(expense.date)}</td>
                         <td>
                           <span className="cell-title">{expense.description || '—'}</span>
+                          {expense.merchant && <span className="cell-meta">{expense.merchant}</span>}
+                          {expense.notes && <span className="cell-meta">{expense.notes}</span>}
                           {expense.has_receipt && (
                             <a className="receipt-link" href={`/api/v1/expenses/${expense.id}/receipt/`} target="_blank" rel="noreferrer" title="View receipt">
                               <Icon name="paperclip" size={14} />
@@ -273,4 +304,3 @@ export default function ExpensesPage() {
     </>
   )
 }
-

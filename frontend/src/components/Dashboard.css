@@ -399,6 +399,18 @@
   border-left-color: var(--text-dim);
 }
 
+.alert-links {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.alert-links a {
+  color: var(--accent);
+  font-size: 0.8rem;
+  text-decoration: underline;
+}
+
 .alert-text {
   font-size: 0.85rem;
 }

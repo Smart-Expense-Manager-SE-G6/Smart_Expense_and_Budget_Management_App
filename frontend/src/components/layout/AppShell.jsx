@@ -13,6 +13,7 @@ import ThemeToggle from './ThemeToggle'
 const NAV = [
   { to: '/', label: 'Dashboard', icon: 'grid', end: true },
   { to: '/expenses', label: 'Expenses', icon: 'wallet' },
+  { to: '/expenses/import', label: 'Import CSV', icon: 'file' },
   { to: '/budgets', label: 'Budgets', icon: 'target' },
   { to: '/categories', label: 'Categories', icon: 'tag' },
   { to: '/reports', label: 'Reports', icon: 'file' },
@@ -23,6 +24,7 @@ const NAV = [
 const TITLES = {
   '/': 'Dashboard',
   '/expenses': 'Expenses',
+  '/expenses/import': 'Import expenses',
   '/budgets': 'Budgets',
   '/categories': 'Categories',
   '/reports': 'Reports',

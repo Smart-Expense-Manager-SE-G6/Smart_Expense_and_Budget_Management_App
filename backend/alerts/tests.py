@@ -8,6 +8,7 @@ from django.db import transaction
 from django.test import SimpleTestCase, TestCase
 
 from budgets.models import Budget
+from core.adapters.email import EmailResult
 from expenses.models import Expense
 from .adapters import send_alert_email
 from .models import Alert
@@ -137,6 +138,23 @@ class SpendingAnomalyAlertTests(TestCase):
         self.assertIsNotNone(alert)
         self.assertEqual(alert.alert_type, "anomaly")
         self.assertEqual(alert.user, self.user)
+        self.assertEqual(alert.expense, expense)
+
+    def test_anomaly_email_status_is_recorded_after_commit(self):
+        self.add_previous_expenses()
+        expense = self.add_expense(1000)
+
+        with patch("alerts.adapters.get_email_adapter") as adapter:
+            adapter.return_value.send_email.return_value = EmailResult(
+                True, "Email sent."
+            )
+            with self.captureOnCommitCallbacks(execute=True):
+                alert = detect_spending_anomaly(expense)
+
+        alert.refresh_from_db()
+        self.assertEqual(alert.expense, expense)
+        self.assertTrue(alert.email_sent)
+        self.assertEqual(alert.email_error, "")
 
     def test_no_alert_when_expense_is_within_limit(self):
         self.add_previous_expenses()
@@ -210,7 +228,7 @@ class AlertEmailAdapterTests(SimpleTestCase):
         alert.title = "Budget reached 80%"
         alert.message = "You have used 80% of your budget."
 
-        expected_result = object()
+        expected_result = EmailResult(True, "Email sent.")
 
         email_adapter = Mock()
         email_adapter.send_email.return_value = expected_result
@@ -227,6 +245,28 @@ class AlertEmailAdapterTests(SimpleTestCase):
         )
 
         self.assertIs(result, expected_result)
+        self.assertTrue(alert.email_sent)
+        self.assertEqual(alert.email_error, "")
+
+    @patch("alerts.adapters.get_email_adapter")
+    def test_adapter_failure_is_recorded(self, mock_get_adapter):
+        alert = Mock()
+        alert.pk = 42
+        alert.user.email = "user@example.com"
+        alert.title = "Budget reached 80%"
+        alert.message = "You have used 80% of your budget."
+        mock_get_adapter.return_value.send_email.side_effect = RuntimeError(
+            "SMTP unavailable"
+        )
+
+        result = send_alert_email(alert)
+
+        self.assertFalse(result.success)
+        self.assertFalse(alert.email_sent)
+        self.assertEqual(alert.email_error, "SMTP unavailable")
+        alert.save.assert_called_once_with(
+            update_fields=["email_sent", "email_error"]
+        )
 
 
 class AlertApiTests(TestCase):
@@ -254,10 +294,20 @@ class AlertApiTests(TestCase):
             start_date=date(2026, 10, 1), end_date=date(2026, 10, 31),
         )
         Expense.objects.create(owner=owner, amount=Decimal("850.00"), date=date(2026, 10, 5))
-        return Alert.objects.get(budget=budget)
+        return Alert.objects.get(budget=budget, threshold_percentage=80)
+
+    def create_alert(self, owner, **overrides):
+        values = {
+            "user": owner,
+            "alert_type": "threshold",
+            "title": "Budget reached 80%",
+        }
+        values.update(overrides)
+        return Alert.objects.create(**values)
 
     def thresholds(self):
-        return sorted(a["threshold_percentage"] for a in self.client.get("/api/v1/alerts/").json())
+        response = self.client.get("/api/v1/alerts/")
+        return sorted(a["threshold_percentage"] for a in response.json()["results"])
 
     def test_list_shows_only_own_alerts(self):
         mine = self.make_alert(self.user)
@@ -266,7 +316,7 @@ class AlertApiTests(TestCase):
         response = self.client.get("/api/v1/alerts/")
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual([a["id"] for a in response.json()], [mine.pk])
+        self.assertEqual([a["id"] for a in response.json()["results"]], [mine.pk])
 
     def test_partial_update_marks_read_and_ignores_read_only_fields(self):
         alert = self.make_alert(self.user)
@@ -288,6 +338,75 @@ class AlertApiTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json()["is_read"])
+
+    def test_mark_all_read_action(self):
+        self.create_alert(self.user)
+        self.create_alert(self.user, title="Another budget alert")
+        self.create_alert(self.other)
+
+        response = self.client.patch("/api/v1/alerts/mark-all-read/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["updated_count"], 2)
+        self.assertFalse(Alert.objects.filter(user=self.user, is_read=False).exists())
+        self.assertTrue(Alert.objects.filter(user=self.other, is_read=False).exists())
+
+    def test_alert_filters_and_pagination(self):
+        first = self.create_alert(self.user)
+        self.create_alert(self.user, title="Second budget alert")
+        self.create_alert(self.user, title="Third budget alert")
+        first.is_read = True
+        first.save(update_fields=["is_read"])
+
+        response = self.client.get(
+            "/api/v1/alerts/?type=threshold&unread=true&page_size=1"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["count"], 2)
+        self.assertEqual(len(response.json()["results"]), 1)
+        self.assertEqual(response.json()["results"][0]["alert_type"], "threshold")
+        next_page = self.client.get(
+            "/api/v1/alerts/?type=threshold&unread=true&page=2&page_size=1"
+        )
+        self.assertEqual(next_page.status_code, 200)
+        self.assertEqual(next_page.json()["count"], 2)
+        self.assertNotEqual(
+            response.json()["results"][0]["id"],
+            next_page.json()["results"][0]["id"],
+        )
+
+    def test_tc_alert_01_threshold_alert_is_paginated_and_email_status_is_recorded(self):
+        budget = Budget.objects.create(
+            user=self.user,
+            name="TC Alert 01",
+            limit_amount=Decimal("1000.00"),
+            period="monthly",
+            start_date=date(2026, 10, 1),
+            end_date=date(2026, 10, 31),
+        )
+        email_result = EmailResult(True, "Email sent.")
+        with patch("alerts.adapters.get_email_adapter") as adapter:
+            adapter.return_value.send_email.return_value = email_result
+            with self.captureOnCommitCallbacks(execute=True):
+                Expense.objects.create(
+                    owner=self.user,
+                    amount=Decimal("850.00"),
+                    date=date(2026, 10, 9),
+                )
+
+        alert = Alert.objects.get(budget=budget, threshold_percentage=80)
+        response = self.client.get(
+            "/api/v1/alerts/?type=threshold&page=1&page_size=1"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["count"], 1)
+        self.assertEqual(response.json()["results"][0]["id"], alert.pk)
+        self.assertTrue(response.json()["results"][0]["email_sent"])
+        self.assertEqual(response.json()["results"][0]["email_error"], "")
+        self.assertTrue(alert.email_sent)
+        self.assertEqual(alert.expense, None)
 
     def test_other_users_alert_cannot_be_read_or_changed(self):
         theirs = self.make_alert(self.other)
@@ -325,6 +444,9 @@ class AlertApiTests(TestCase):
             start_date=date(2026, 10, 1), end_date=date(2026, 10, 31),
         )
         with patch("alerts.adapters.get_email_adapter") as adapter:
+            adapter.return_value.send_email.return_value = EmailResult(
+                True, "Email sent."
+            )
             with self.captureOnCommitCallbacks(execute=False) as callbacks:
                 Expense.objects.create(owner=self.user, amount=Decimal("850.00"), date=date(2026, 10, 5))
             adapter.return_value.send_email.assert_not_called()

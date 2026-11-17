@@ -21,6 +21,13 @@ class Alert(models.Model):
         blank=True,
         related_name="alerts",
     )
+    expense = models.ForeignKey(
+        "expenses.Expense",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="alerts",
+    )
     threshold_percentage = models.PositiveSmallIntegerField(
         null=True,
         blank=True,
@@ -34,6 +41,8 @@ class Alert(models.Model):
     title = models.CharField(max_length=255)
     message = models.TextField(blank=True)
     is_read = models.BooleanField(default=False)
+    email_sent = models.BooleanField(default=False)
+    email_error = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
