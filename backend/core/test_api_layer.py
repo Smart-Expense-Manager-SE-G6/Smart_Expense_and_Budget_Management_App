@@ -109,11 +109,15 @@ class RequestIdTests(TestCase):
         response = self.client.get("/missing/", HTTP_X_REQUEST_ID="bad id\nwith newline")
         self.assertRegex(response["X-Request-ID"], r"^[0-9a-f]{32}$")
 
+    def test_request_id_with_trailing_newline_is_replaced(self):
+        response = self.client.get("/missing/", HTTP_X_REQUEST_ID="safe-id\n")
+        self.assertRegex(response["X-Request-ID"], r"^[0-9a-f]{32}$")
+
     def test_each_request_is_logged_with_its_id(self):
         with self.assertLogs("api.request", level="INFO") as logs:
             response = self.client.get("/missing/", HTTP_X_REQUEST_ID="trace-me")
         self.assertEqual(response.status_code, 404)
-        self.assertIn("GET /missing/ 404", logs.output[0])
+        self.assertIn("http.request", logs.output[0])
 
     def test_log_filter_stamps_current_request_id(self):
         record = logging.LogRecord("x", logging.INFO, __file__, 1, "msg", None, None)

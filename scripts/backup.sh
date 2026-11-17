@@ -1,3 +1,4 @@
+
 #!/bin/sh
 # Back up the database and receipt files (FR22).
 #
@@ -34,8 +35,18 @@ while :; do
     [ "$attempt" -lt 5 ] || die "$target already exists"
     sleep 1
 done
+
+record_backup_status "running" "Backup is running."
+finish_backup() {
+    exit_code=$?
+    if [ "$exit_code" -ne 0 ]; then
+        [ -z "${partial:-}" ] || rm -rf "$partial"
+        record_backup_status "failed" "The most recent backup attempt failed."
+    fi
+}
+trap finish_backup EXIT
+
 mkdir -p "$partial"
-trap 'rm -rf "$partial"' EXIT
 
 log "Backing up database $PGDATABASE on $PGHOST to $target"
 pg_dump --format=custom --no-owner --file="$partial/db.dump" "$PGDATABASE"
@@ -56,11 +67,12 @@ media_files="$(find "$MEDIA_DIR" -type f | wc -l | tr -d ' ')"
 (cd "$partial" && sha256sum db.dump media.tar.gz counts.tsv info.txt > SHA256SUMS)
 
 mv "$partial" "$target"
-trap - EXIT
+
 # LATEST names the newest regular backup. Labelled ones (e.g. the pre-restore safety
 # backup, which may be of an empty database) must not become what the weekly rehearsal
 # and the off-site copy use.
 [ -n "${BACKUP_LABEL:-}" ] || printf '%s\n' "$name" > "$BACKUP_DIR/LATEST"
+
 log "Backup complete: $name ($(du -sh "$target" | cut -f1), $media_files receipt files)"
 
 if [ -z "${BACKUP_LABEL:-}" ]; then
@@ -71,3 +83,6 @@ if [ -z "${BACKUP_LABEL:-}" ]; then
             rm -rf "${BACKUP_DIR:?}/$old"
         done
 fi
+
+record_backup_status "healthy" "The latest backup completed."
+trap - EXIT

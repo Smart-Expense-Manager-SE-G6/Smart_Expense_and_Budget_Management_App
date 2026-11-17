@@ -18,6 +18,7 @@ const NAV = [
   { to: '/categories', label: 'Categories', icon: 'tag' },
   { to: '/reports', label: 'Reports', icon: 'file' },
   { to: '/alerts', label: 'Alerts', icon: 'bell', badge: true },
+  { to: '/monitoring', label: 'Monitoring', icon: 'grid', admin: true },
 ]
 
 const TITLES = {
@@ -28,6 +29,7 @@ const TITLES = {
   '/categories': 'Categories',
   '/reports': 'Reports',
   '/alerts': 'Alerts',
+  '/monitoring': 'Monitoring',
   '/profile': 'Profile',
 }
 
@@ -65,7 +67,7 @@ function Shell() {
 
         <p className="nav-label">Menu</p>
         <nav className="nav" aria-label="Main">
-          {NAV.map((item) => (
+          {NAV.filter((item) => !item.admin || user?.is_staff).map((item) => (
             <NavLink key={item.to} to={item.to} end={item.end} className="nav-link">
               <Icon name={item.icon} size={19} />
               {item.label}

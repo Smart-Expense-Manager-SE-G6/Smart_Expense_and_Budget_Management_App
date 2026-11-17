@@ -211,6 +211,62 @@ docker compose start backend
   database and all receipts. Restore with the same code version (migrations)
   the backup was taken with.
 
+## Monitoring and uptime (S3-17, NFR9, NFR12)
+
+The public liveness probe is `GET /api/v1/health/`. It returns HTTP 200 only
+when the backend can query PostgreSQL. Against the public production HTTPS URL:
+
+1. In UptimeRobot, add an **HTTP(s)** monitor for
+   `https://<production-host>/api/v1/health/`; in Better Stack, create an
+   **HTTP uptime check** for the same URL.
+2. Set the expected response to HTTP 200, choose an interval of one minute
+   where available (never more than five minutes), and enable email
+   notifications to the operations contact. Confirm the plan supports the
+   interval and alert policy needed for the five-minute target.
+3. Use the provider's test/incident function and verify the email reaches the
+   contact. Also temporarily stop the backend in a non-production environment
+   to verify the check detects an outage.
+
+The public host and monitor account must be supplied by the production
+deployment; S3-10 has not yet delivered that deployment.
+
+Set `MONITORING_ALERT_EMAIL` to the operations mailbox for in-app 5xx rate
+alerts. These alerts use the existing Django SMTP configuration
+(`EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`,
+`EMAIL_USE_TLS`, and `DEFAULT_FROM_EMAIL`). Set `ENABLE_REAL_EMAIL=true` when
+using the real email adapter; the stub adapter intentionally reports success.
+The 5xx alert defaults are a 5-minute rolling window, at least 10 requests,
+5% failing requests, and a 15-minute duplicate-alert cooldown. Tune with
+`ERROR_RATE_WINDOW_SECONDS`, `ERROR_RATE_MIN_REQUESTS`,
+`ERROR_RATE_THRESHOLD_PERCENT`, and `ERROR_ALERT_COOLDOWN_SECONDS`.
+`SLOW_REQUEST_THRESHOLD_MS` defaults to 2,000 ms.
+
+Application logs are newline-delimited JSON in `logs/application.log`;
+HTTP 5xx responses and unhandled errors are also written to
+`logs/error.log`. Both rotate at 10 MiB and retain five files by default.
+Configure `APP_LOG_MAX_BYTES` and `APP_LOG_BACKUP_COUNT` to tune retention.
+Every record includes a request ID. Search from the repository root with, for
+example, `Select-String -Path .\logs\*.log* -Pattern '"request_id":"abc-123"'`
+(PowerShell) or `grep -h '"request_id":"abc-123"' logs/*.log*` (Linux/macOS).
+In Compose, the `logs/` directory is mounted for persistence.
+
+The staff-only **Monitoring** page (`/monitoring`) shows backend and database
+checks, scheduler and backup job status, rolling 5xx/slow-request counts, and
+the latest recorded email delivery failures (recipient local parts are masked).
+Job status is shared with the containers through the `monitoring-state` Docker
+volume; a missing status is shown as unknown and an overdue status as stale.
+Scheduler data becomes fresh after its first run; backup data after its first
+backup. Docker's existing backup healthcheck remains in place.
+The rolling request counters and duplicate-alert cooldown are process-local;
+for a future multi-worker deployment, configure a shared metrics/cache backend
+before treating the displayed error rate as an instance-wide aggregate.
+
+The S3-10 production HTTPS deployment and public monitoring account are not
+configured by this change. Create the external monitor and notification
+contact in the chosen provider, set the alert mailbox and SMTP credentials in
+the deployment environment, then test both the monitor notification and an
+in-app 5xx alert.
+
 ### Recurring expenses (FR6)
 
 A recurring rule creates an ordinary expense on each due date (rent every month,
@@ -332,6 +388,7 @@ docker compose exec backend python manage.py check
 docker compose exec backend python manage.py makemigrations --check --dry-run
 docker compose exec backend python manage.py test
 npx newman run tests/postman_collection.json      # API smoke test, base_url http://localhost:8001
+npm --prefix frontend test                         # monitoring status presentation tests
 ```
 
 Outside Docker, run `python manage.py test` from `backend/` with the `POSTGRES_*` values in `.env`

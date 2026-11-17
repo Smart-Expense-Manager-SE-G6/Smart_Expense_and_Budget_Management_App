@@ -8,6 +8,7 @@ import DashboardPage from './pages/DashboardPage'
 import ExpensesPage from './pages/ExpensesPage'
 import ExpenseImportPage from './pages/ExpenseImportPage'
 import LoginPage from './pages/LoginPage'
+import MonitoringPage from './pages/MonitoringPage'
 import ProfilePage from './pages/ProfilePage'
 import RegisterPage from './pages/RegisterPage'
 import ReportsPage from './pages/ReportsPage'
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/alerts" element={<AlertsPage />} />
+          <Route path="/monitoring" element={<MonitoringPage />} />
           <Route path="/profile" element={<ProfilePage />} />
         </Route>
       </Route>

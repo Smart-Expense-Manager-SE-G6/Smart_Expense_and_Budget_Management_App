@@ -28,26 +28,63 @@ class RequestIdMiddleware:
 
     def __call__(self, request):
         incoming = request.headers.get(HEADER, "")
-        request_id = incoming if _SAFE_ID.match(incoming) else uuid.uuid4().hex
+        request_id = incoming if _SAFE_ID.fullmatch(incoming) else uuid.uuid4().hex
         request.request_id = request_id
         token = _current.set(request_id)
         started = time.monotonic()
         try:
-            response = self.get_response(request)
+            try:
+                response = self.get_response(request)
+            except Exception:
+                duration_ms = round((time.monotonic() - started) * 1000, 2)
+                logger.exception(
+                    "Unhandled request exception",
+                    extra={
+                        "http_method": request.method,
+                        "path": request.path,
+                        "status_code": 500,
+                        "duration_ms": duration_ms,
+                    },
+                )
+                self._record_request(500, duration_ms)
+                raise
+
             response[HEADER] = request_id
-            logger.info(
-                "%s %s %s %dms",
-                request.method,
-                request.get_full_path(),
-                response.status_code,
-                (time.monotonic() - started) * 1000,
+            duration_ms = round((time.monotonic() - started) * 1000, 2)
+            status_code = response.status_code
+            level = logging.ERROR if status_code >= 500 else (
+                logging.WARNING if duration_ms >= self._slow_threshold() else logging.INFO
             )
-            # Already logged above with the request id; stops Django logging it
-            # again after this middleware has returned and the id is gone.
+            logger.log(
+                level,
+                "http.request",
+                extra={
+                    "http_method": request.method,
+                    "path": request.path,
+                    "status_code": status_code,
+                    "duration_ms": duration_ms,
+                },
+            )
+            self._record_request(status_code, duration_ms)
             response._has_been_logged = True
             return response
         finally:
             _current.reset(token)
+
+    @staticmethod
+    def _slow_threshold():
+        from django.conf import settings
+
+        return settings.SLOW_REQUEST_THRESHOLD_MS
+
+    @staticmethod
+    def _record_request(status_code, duration_ms):
+        from monitoring.metrics import record_request
+
+        try:
+            record_request(status_code, duration_ms)
+        except Exception:
+            logger.exception("Request monitoring failed")
 
 
 class RequestIdLogFilter(logging.Filter):
