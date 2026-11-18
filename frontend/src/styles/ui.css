@@ -767,6 +767,137 @@ select.input {
 .import-card {
   display: grid;
   gap: 1.25rem;
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.recurring-form-card,
+.recurring-list {
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.recurring-form-card h2,
+.recurring-list h2 {
+  font-size: 1rem;
+  font-weight: 650;
+  margin-bottom: 1rem;
+}
+
+.recurring-form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+/* ───────── Donut chart ───────── */
+.donut {
+  position: relative;
+  width: 190px;
+  height: 190px;
+  margin: 0 auto 1.25rem;
+  flex-shrink: 0;
+}
+
+.donut-seg {
+  cursor: pointer;
+  transition: opacity var(--dur-fast) var(--ease), stroke-width var(--dur-fast) var(--ease);
+}
+
+.donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  pointer-events: none;
+  padding: 0 1.25rem;
+}
+
+.donut-center-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-weight: 600;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.donut-center-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.donut-center-sub {
+  font-size: 0.7rem;
+  color: var(--primary);
+  font-weight: 600;
+  margin-top: 0.1rem;
+}
+
+/* ───────── Recent transactions list ───────── */
+.tx-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.tx {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.65rem 0.75rem;
+  margin: 0 -0.75rem;
+  border-radius: var(--radius-md);
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.tx:hover {
+  background: var(--surface-hover);
+}
+
+.tx-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--dot, var(--primary));
+  background: color-mix(in srgb, var(--dot, var(--primary)) 14%, transparent);
+}
+
+.tx-main {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.tx-main strong {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tx-amount {
+  font-size: 0.875rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--text);
 }
 
 .import-dropzone {
