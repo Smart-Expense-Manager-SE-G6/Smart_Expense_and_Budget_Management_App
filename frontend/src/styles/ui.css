@@ -756,7 +756,8 @@ select.input {
 }
 
 .toolbar .field {
-  min-width: 150px;
+  flex: 1 1 120px;
+  min-width: 115px;
 }
 
 .toolbar .field input,
@@ -838,6 +839,71 @@ select.input {
   color: var(--primary);
   font-weight: 600;
   margin-top: 0.1rem;
+}
+
+.trend-axis {
+  fill: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.donut-layout {
+  display: grid;
+  gap: 1.25rem;
+  align-items: center;
+}
+
+.legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.legend-item {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.45rem 0.6rem;
+  margin: 0 -0.6rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.84rem;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.legend-item:hover {
+  background: var(--surface-hover);
+}
+
+.legend-item .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--dot, var(--primary));
+}
+
+.legend-name {
+  font-weight: 550;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.legend-pct {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.legend-amt {
+  font-weight: 650;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  min-width: 4.5rem;
 }
 
 /* ───────── Recent transactions list ───────── */
