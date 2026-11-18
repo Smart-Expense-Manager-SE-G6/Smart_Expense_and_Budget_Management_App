@@ -1,28 +1,20 @@
-# Course deliverables
+# Deliverables
 
-The documents the team submitted and had approved. They are **final and are never edited**: where the
-built system differs from them, the difference and its reason are recorded in
-[`docs/requirements/deviations.md`](../docs/requirements/deviations.md).
+Every project deliverable as a PDF. Start with [`Evaluation-Checklist.pdf`](Evaluation-Checklist.pdf): it lists each
+evaluation item, its status and where the evidence is.
 
-| Document | File | Used for |
+| Deliverable | Approved v1.0 | Updated v1.1 (matches the delivered system) |
 |:--|:--|:--|
-| Project proposal | [`Project-Proposal.docx`](Project-Proposal.docx) | Scope and goals |
-| Requirements document | [`Requirements.docx`](Requirements.docx) | Functional and non-functional requirements |
-| Software Requirements Specification (SRS) | [`SRS.pdf`](SRS.pdf) | FR1–FR22, NFR1–NFR14; source of the RTM |
-| Software Architecture and System Design (SASD), Deliverable 3 | [`SASD.pdf`](SASD.pdf) ([`.docx`](SASD.docx)) | Architecture, API, data model, error handling |
-| Software Test Plan (STP) | [`Software-Test-Plan.docx`](Software-Test-Plan.docx) | Test levels, types, tools and metrics |
-| UML use-case diagram | [`Use-Case-Diagram.jpeg`](Use-Case-Diagram.jpeg) | Actors and use cases |
+| Project proposal | [`Project-Proposal.pdf`](Project-Proposal.pdf) | — |
+| Requirements (FR and NFR list) | [`Requirements.pdf`](Requirements.pdf) | — |
+| Software Requirements Specification (SRS) | [`SRS.pdf`](SRS.pdf) | [`SRS-v1.1.pdf`](SRS-v1.1.pdf) |
+| Software Architecture and Design (SAD) | [`SASD.pdf`](SASD.pdf) | [`SASD-v1.1.pdf`](SASD-v1.1.pdf) |
+| Software Test Plan | [`Software-Test-Plan.pdf`](Software-Test-Plan.pdf) | [`Software-Test-Plan-v1.1.pdf`](Software-Test-Plan-v1.1.pdf) |
+| UML use case diagram | [`Use-Case-Diagram.pdf`](Use-Case-Diagram.pdf) | included in SRS v1.1, section 4 |
+| Sprint outcome videos | [`videos/`](videos/README.md) | |
 
-## Updated versions (v1.1, 18 Nov 2026)
-
-The approved v1.0 files above are kept unchanged. Version 1.1 brings the three main documents in line with the system as
-delivered at the end of Sprint 3. Each has a revision-history entry and a "Changes in version 1.1" section listing
-every change and its reason in the deviation log.
-
-| Document | v1.1 file |
-|:--|:--|
-| SRS | [`SRS-v1.1.pdf`](SRS-v1.1.pdf) |
-| SASD | [`SASD-v1.1.pdf`](SASD-v1.1.pdf) ([`.docx`](SASD-v1.1.docx)) |
-| Software Test Plan | [`Software-Test-Plan-v1.1.pdf`](Software-Test-Plan-v1.1.pdf) ([`.docx`](Software-Test-Plan-v1.1.docx)) |
-
-The files were renamed when they were moved here, to remove spaces and copy suffixes; their contents are unchanged.
+- The v1.0 files are the approved originals and are never edited. The v1.1 files each have a revision-history entry
+  and a "Changes in version 1.1" section; the reason for every change is in
+  [`docs/requirements/deviations.md`](../docs/requirements/deviations.md).
+- Editable Word sources are in [`source/`](source/).
+- Test results and reports are in [`docs/testing/`](../docs/testing/README.md).
