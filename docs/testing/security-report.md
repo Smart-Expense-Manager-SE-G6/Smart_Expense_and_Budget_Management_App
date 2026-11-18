@@ -10,7 +10,7 @@
 
 | STP 5.1 check | How it was tested | Result |
 |:--|:--|:--|
-| 1. Password hashing and JWT/session token expiry | TC-Sec-01 (6 tests); sessions are used instead of JWT ([ADR-0001](adr/0001-authentication-sessions.md)) | **Pass** |
+| 1. Password hashing and JWT/session token expiry | TC-Sec-01 (6 tests); sessions are used instead of JWT ([ADR-0001](../design/adr/0001-authentication-sessions.md)) | **Pass** |
 | 2. HTTPS/TLS verification | Django `check --deploy` with production settings; HSTS and secure-cookie tests; live check on the deployed site under S3-10 | **Pass** for configuration; live check on the deployed site is pending (S3-10, #72) |
 | 3. Data-privacy compliance checks | TC-Sec-02 (4 tests): every resource and list refuses another user's data; plus the account export and deletion tests (TC-Account-01) | **Pass** |
 | 4. Fuzzing of input fields (amount, notes, CSV import) | TC-Sec-03 (9 tests): about 30 attack strings and 20 malformed amounts per field, every query parameter, CSV cells, disguised uploads, and 300 seeded random inputs | **Pass** after fixing 1 defect (D-SEC-1) |

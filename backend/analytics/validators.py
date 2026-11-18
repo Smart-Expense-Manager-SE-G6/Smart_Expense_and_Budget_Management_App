@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from django.utils import timezone
 from rest_framework import serializers
 
-# docs/adr/0002-report-date-range-cap.md
+# docs/design/adr/0002-report-date-range-cap.md
 MAX_RANGE_DAYS = 366
 
 

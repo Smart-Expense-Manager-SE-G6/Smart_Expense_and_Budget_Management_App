@@ -37,14 +37,22 @@ docker compose up --build -V                                 # after pulling new
 ## Layout
 
 ```
-backend/    Django project (config/) and apps; one app per module
-frontend/   React + Vite app
-docker-compose.yml, .env.example
+backend/         Django project (config/) and apps; one app per module
+frontend/        React + Vite app
+tests/           Selenium end-to-end journeys, Postman collection, accessibility audit
+scripts/         backup, restore and off-site copy scripts
+deploy/          production Dockerfiles, Caddy config, demo and smoke-test scripts
+deliverables/    the approved course documents (proposal, requirements, SRS, SASD, test plan, use-case diagram)
+docs/            everything we wrote about the system: start at docs/README.md
+docker-compose.yml, docker-compose.prod.yml, .env.example, .env.prod.example
 ```
+
+- **Course deliverables** (final, never edited): [`deliverables/`](deliverables/README.md)
+- **Project documentation** (traceability, design decisions, testing, operations, user guide): [`docs/`](docs/README.md)
 
 ## API conventions (read before adding an endpoint)
 
-- **Auth is on by default.** Every endpoint requires a logged-in session. Public endpoints must say `permission_classes = [AllowAny]`. See `docs/adr/0001-authentication-sessions.md`.
+- **Auth is on by default.** Every endpoint requires a logged-in session. Public endpoints must say `permission_classes = [AllowAny]`. See `docs/design/adr/0001-authentication-sessions.md`.
 - **Errors:** just raise DRF exceptions (`serializer.is_valid(raise_exception=True)`, `NotFound(...)`, `PermissionDenied(...)`). They are converted to the SASD 4.4 envelope automatically:
   ```json
   {"error": {"code": "required", "message": "This field is required.", "field": "amount", "request_id": "3f2a..."}}
@@ -322,20 +330,20 @@ GET    /api/v1/budgets/<id>/expenses/             expenses counted by the budget
 
 The security checks the test plan asks for, how each was done and the results
 (including the OWASP ZAP scan and dependency audits) are in
-[`docs/security-report.md`](docs/security-report.md). The automated part runs in CI:
+[`docs/testing/security-report.md`](docs/testing/security-report.md). The automated part runs in CI:
 `python manage.py test core.test_security`.
 
 ## Deviations from the project documents
 
-The SRS, SASD, STP and other project documents are final. Every place the code knowingly differs from them, and why, is in [`docs/deviations.md`](docs/deviations.md).
+The SRS, SASD, STP and other project documents are final. Every place the code knowingly differs from them, and why, is in [`docs/requirements/deviations.md`](docs/requirements/deviations.md).
 
 ## Deploying to production (NFR13)
 
 `docker-compose.prod.yml` runs the app on any Linux VM: gunicorn for the API, the
 built React app behind Caddy (automatic HTTPS, security headers), PostgreSQL,
 the scheduler and daily backups. Step-by-step guide, encryption at rest and
-verification: [`docs/deployment.md`](docs/deployment.md). Encrypted off-site backups and
-how to recover from losing the server: [`docs/recovery-runbook.md`](docs/recovery-runbook.md). Check a deployment with
+verification: [`docs/operations/deployment.md`](docs/operations/deployment.md). Encrypted off-site backups and
+how to recover from losing the server: [`docs/operations/recovery-runbook.md`](docs/operations/recovery-runbook.md). Check a deployment with
 `deploy/smoke_test.sh https://<domain>`. For the demo, `deploy/local-demo.sh` runs the same
 production stack on https://localhost.
 

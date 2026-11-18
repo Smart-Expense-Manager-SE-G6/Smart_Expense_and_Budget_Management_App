@@ -159,7 +159,7 @@ ERROR_RATE_THRESHOLD_PERCENT = float(env("ERROR_RATE_THRESHOLD_PERCENT", "5"))
 ERROR_ALERT_COOLDOWN_SECONDS = int(env("ERROR_ALERT_COOLDOWN_SECONDS", "900"))
 SLOW_REQUEST_THRESHOLD_MS = int(env("SLOW_REQUEST_THRESHOLD_MS", "2000"))
 
-# Authentication: server-side sessions (docs/adr/0001-authentication-sessions.md).
+# Authentication: server-side sessions (docs/design/adr/0001-authentication-sessions.md).
 # Idle timeout: the session expires after this many seconds without a request.
 SESSION_COOKIE_AGE = int(env("SESSION_IDLE_TIMEOUT_SECONDS", "1800"))
 SESSION_SAVE_EVERY_REQUEST = True

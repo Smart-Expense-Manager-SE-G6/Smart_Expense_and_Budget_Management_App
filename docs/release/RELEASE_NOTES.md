@@ -13,8 +13,8 @@
 
 ### Verification evidence
 
-- Requirements traceability: [`docs/rtm.md`](rtm.md)
-- Model reference: [`docs/data-dictionary.md`](data-dictionary.md)
+- Requirements traceability: [`docs/requirements/rtm.md`](../requirements/rtm.md)
+- Model reference: [`docs/design/data-dictionary.md`](../design/data-dictionary.md)
 - API schema test: `backend/core/test_openapi.py`
-- Test plan deviations and decisions: [`docs/deviations.md`](deviations.md) and [`docs/adr/`](adr/)
-- User workflow: [`docs/user-guide.md`](user-guide.md)
+- Test plan deviations and decisions: [`docs/requirements/deviations.md`](../requirements/deviations.md) and [`docs/design/adr/`](../design/adr)
+- User workflow: [`docs/user/user-guide.md`](../user/user-guide.md)

@@ -2,7 +2,7 @@
 
 Real browser journeys through the whole app (React frontend → Django API → PostgreSQL), written with
 Selenium 4 and pytest as the Software Test Plan (section 6) specifies. Each test is named after its test
-case ID in [`docs/rtm.md`](../../docs/rtm.md).
+case ID in [`docs/requirements/rtm.md`](../../docs/requirements/rtm.md).
 
 | Test | Requirement | What it does |
 |:--|:--|:--|

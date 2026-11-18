@@ -13,7 +13,7 @@
 | CI (backend, frontend, Postman, Selenium, staging deploy) | [#44128122506](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44128122506) | `4298b89` on `main` | 2026-11-17 |
 | Backup and restore workflow | [#44128122213](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44128122213) | `4298b89` on `main` | 2026-11-17 |
 | Accessibility and responsive audit | [`accessibility-audit.md`](accessibility-audit.md) | PR #105 | 2026-11-18 |
-| Security checks | [`../security-report.md`](../security-report.md) | PR #92 | 2026-11-16 |
+| Security checks | [`../security-report.md`](security-report.md) | PR #92 | 2026-11-16 |
 
 Cancelled workflow runs are not counted. Every number below comes from these runs.
 
@@ -50,7 +50,7 @@ Without those, it is 18 ÷ 36 × 100 = 50.0 per 100 cases.
 | Staging deployment smoke test (HTTPS) | 16 checks | 16 | 0 | CI deploy job |
 | Restore rehearsal (TC-Backup-01) | 19 tables | 19 match | 0 | CI deploy job and backup run #44128122213 |
 | Accessibility (axe-core, 3 widths) and keyboard | all pages; 5 keyboard checks | 0 violations; 5 | 0 | [`accessibility-audit.md`](accessibility-audit.md) |
-| Security (STP 5.1) | 5 checks | 5 | 0 | [`../security-report.md`](../security-report.md): OWASP ZAP 0 FAIL, pip-audit and npm audit 0 vulnerabilities |
+| Security (STP 5.1) | 5 checks | 5 | 0 | [`../security-report.md`](security-report.md): OWASP ZAP 0 FAIL, pip-audit and npm audit 0 vulnerabilities |
 | JMeter load test | not run | — | — | The STP names JMeter; NFR1/NFR2 timings were verified by the timed tests above instead, and no JMeter plan exists. TC-Perf-03 (two replicas, NFR3) is not executed. |
 
 ## Exit criteria

@@ -1,4 +1,4 @@
-# Production deployment (S3-10, NFR13). See docs/deployment.md.
+# Production deployment (S3-10, NFR13). See docs/operations/deployment.md.
 #
 #   cp .env.prod.example .env.prod      # then fill it in
 #   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
@@ -52,7 +52,7 @@ services:
       - receipts:/app/private_media
 
   # Daily backups (NFR10), encrypted off-site copies and a weekly restore
-  # rehearsal (S3-18), and the restore tools (FR22). See docs/recovery-runbook.md.
+  # rehearsal (S3-18), and the restore tools (FR22). See docs/operations/recovery-runbook.md.
   backup:
     build:
       context: ./deploy

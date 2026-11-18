@@ -7,7 +7,7 @@
 # Writes <backup>.tar.gz.enc into OFFSITE_DIR: the whole backup folder (database
 # dump, receipts, checksums), encrypted with AES-256 (PBKDF2, 600,000 rounds) using
 # BACKUP_PASSPHRASE. OFFSITE_DIR should be storage outside the server, e.g. an
-# Azure Files share or S3 bucket mounted on the VM (docs/recovery-runbook.md).
+# Azure Files share or S3 bucket mounted on the VM (docs/operations/recovery-runbook.md).
 # Keeps the newest OFFSITE_KEEP copies (default 7). Needs openssl (deploy/backup.Dockerfile).
 set -eu
 

@@ -9,7 +9,7 @@ This index records where each test execution artifact belongs. CI-generated repo
 | Postman/Newman | `newman run tests/postman_collection.json` | CI API job URL and Newman summary | [#44128122506](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44128122506): 17/17 assertions passed |
 | Selenium | `pytest tests/e2e --html=...` | HTML report and failure screenshots | [#44128122506](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44128122506): 14/14 passed |
 | Performance | `python manage.py test analytics.test_performance` (timed tests, 10,000 expenses) | CI backend job | NFR1 and NFR2 passed in #44128122506. No JMeter plan exists; TC-Perf-03 (NFR3) not executed |
-| Security | backend security tests and `docs/security-report.md` | CI job/report | Recorded in `docs/security-report.md` (PR #92) |
+| Security | backend security tests and `docs/testing/security-report.md` | CI job/report | Recorded in `docs/testing/security-report.md` (PR #92) |
 | Backup/restore | `scripts/rehearse_restore.sh` | CI backup job URL and logs | [#44128122213](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44128122213): rehearsal passed, 19/19 tables match |
 | UAT | [`uat-record.md`](uat-record.md) | Signed/dated acceptance record | Pending product-owner session |
 
