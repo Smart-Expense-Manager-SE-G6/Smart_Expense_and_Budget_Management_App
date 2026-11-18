@@ -12,7 +12,7 @@ import ThemeToggle from './ThemeToggle'
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: 'grid', end: true },
-  { to: '/expenses', label: 'Expenses', icon: 'wallet' },
+  { to: '/expenses', label: 'Expenses', icon: 'wallet', end: true },
   { to: '/expenses/import', label: 'Import CSV', icon: 'file' },
   { to: '/recurring', label: 'Recurring', icon: 'clock' },
   { to: '/budgets', label: 'Budgets', icon: 'target' },

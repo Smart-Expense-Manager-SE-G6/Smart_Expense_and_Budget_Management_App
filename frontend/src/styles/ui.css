@@ -735,8 +735,29 @@ select.input {
   padding: 1.1rem 1.5rem;
 }
 
+.toolbar-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.toolbar.toolbar-inline {
+  padding: 0;
+  align-items: flex-end;
+}
+
+.report-controls {
+  margin-bottom: 1.25rem;
+}
+
+.pad {
+  padding: 1rem 1.5rem 1.5rem;
+}
+
 .toolbar .field {
-  min-width: 150px;
+  flex: 1 1 120px;
+  min-width: 115px;
 }
 
 .toolbar .field input,
@@ -747,6 +768,298 @@ select.input {
 .import-card {
   display: grid;
   gap: 1.25rem;
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.recurring-form-card,
+.recurring-list {
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.recurring-form-card h2,
+.recurring-list h2 {
+  font-size: 1rem;
+  font-weight: 650;
+  margin-bottom: 1rem;
+}
+
+.recurring-form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+/* ───────── Donut chart ───────── */
+.donut {
+  position: relative;
+  width: 190px;
+  height: 190px;
+  margin: 0 auto 1.25rem;
+  flex-shrink: 0;
+}
+
+.donut-seg {
+  cursor: pointer;
+  transition: opacity var(--dur-fast) var(--ease), stroke-width var(--dur-fast) var(--ease);
+}
+
+.donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  pointer-events: none;
+  padding: 0 1.25rem;
+}
+
+.donut-center-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-weight: 600;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.donut-center-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.donut-center-sub {
+  font-size: 0.7rem;
+  color: var(--primary);
+  font-weight: 600;
+  margin-top: 0.1rem;
+}
+
+.trend-axis {
+  fill: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.donut-layout {
+  display: grid;
+  gap: 1.25rem;
+  align-items: center;
+}
+
+.legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.legend-item {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.45rem 0.6rem;
+  margin: 0 -0.6rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.84rem;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.legend-item:hover {
+  background: var(--surface-hover);
+}
+
+.legend-item .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--dot, var(--primary));
+}
+
+.legend-name {
+  font-weight: 550;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.legend-pct {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.legend-amt {
+  font-weight: 650;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  min-width: 4.5rem;
+}
+
+/* ───────── Recent transactions list ───────── */
+.tx-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.tx {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.65rem 0.75rem;
+  margin: 0 -0.75rem;
+  border-radius: var(--radius-md);
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.tx:hover {
+  background: var(--surface-hover);
+}
+
+.tx-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--dot, var(--primary));
+  background: color-mix(in srgb, var(--dot, var(--primary)) 14%, transparent);
+}
+
+.tx-main {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.tx-main strong {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tx-amount {
+  font-size: 0.875rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+/* ───────── Month-end forecast ───────── */
+.forecast {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.forecast-hero {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.15rem;
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.forecast-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.forecast-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin: 0;
+}
+
+.forecast-value {
+  font-size: 1.75rem;
+  font-weight: 750;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  margin: 0.15rem 0 0;
+  color: var(--text);
+}
+
+.forecast-budget {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.forecast-budget-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.forecast-budget-row strong[data-over='true'] {
+  color: var(--danger);
+}
+
+.forecast-budget-row strong[data-over='false'] {
+  color: var(--success);
+}
+
+.forecast-note {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  background: var(--surface-hover);
+  font-size: 0.8125rem;
+}
+
+.mini-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.mini-stats dt {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.mini-stats dd {
+  margin: 0.25rem 0 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
 }
 
 .import-dropzone {

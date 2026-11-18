@@ -49,11 +49,11 @@ export default function DashboardPage() {
 
       <div className="grid grid-2">
         <CategoryBreakdown start={range.start_date} end={range.end_date} />
-        <BudgetOverview />
+        <AlertsPanel />
       </div>
 
       <div className="grid grid-main-rev">
-        <AlertsPanel />
+        <BudgetOverview />
         <RecentExpenses categoriesById={byId} />
       </div>
     </>
