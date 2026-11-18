@@ -10,8 +10,8 @@
 
 | Source | Run | Commit | Date |
 |:--|:--|:--|:--|
-| CI (backend, frontend, Postman, Selenium, staging deploy) | [#44128122506](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44128122506) | `4298b89` on `main` | 2026-11-17 |
-| Backup and restore workflow | [#44128122213](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44128122213) | `4298b89` on `main` | 2026-11-17 |
+| CI (backend, frontend, Postman, Selenium, staging deploy) | [#44216307344](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44216307344) | `af9345f` on `main` | 2026-11-18 |
+| Backup and restore workflow | [#44216307590](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44216307590) | `af9345f` on `main` | 2026-11-18 |
 | Accessibility and responsive audit | [`accessibility-audit.md`](accessibility-audit.md) | PR #105 | 2026-11-18 |
 | Security checks | [`../security-report.md`](security-report.md) | PR #92 | 2026-11-16 |
 
@@ -41,17 +41,24 @@ Without those, it is 18 ÷ 36 × 100 = 50.0 per 100 cases.
 
 | Suite | Executed | Passed | Failed | Evidence |
 |:--|--:|--:|--:|:--|
-| Backend unit, integration and API tests (Django) | 366 tests | 366 | 0 | CI #44128122506, backend job |
-| Backend coverage | 2,454 / 2,605 lines (**94.2%**); 491 / 578 branches (**84.9%**); combined **92.5%** | | | CI coverage artifact; gate fails under 80% |
+| Backend unit, integration and API tests (Django) | 366 tests | 366 | 0 | CI #44216307344, backend job |
+| Backend coverage | 2,464 / 2,605 lines (**94.6%**); 496 / 578 branches (**85.8%**); combined **93.0%** | | | CI coverage artifact; gate fails under 80% |
 | Frontend lint and production build | 2 checks | 2 | 0 | CI frontend job |
 | Postman / Newman API | 9 requests, 17 assertions | 17 | 0 | CI API job |
 | Selenium end-to-end journeys | 14 tests | 14 | 0 | CI end-to-end job |
 | Performance (NFR1, NFR2) | 2 timed tests on 10,000 expenses | 2 | 0 | `analytics/test_performance.py`, in the backend job |
 | Staging deployment smoke test (HTTPS) | 16 checks | 16 | 0 | CI deploy job |
-| Restore rehearsal (TC-Backup-01) | 19 tables | 19 match | 0 | CI deploy job and backup run #44128122213 |
+| Restore rehearsal (TC-Backup-01) | 19 tables | 19 match | 0 | CI deploy job and backup run #44216307590 |
 | Accessibility (axe-core, 3 widths) and keyboard | all pages; 5 keyboard checks | 0 violations; 5 | 0 | [`accessibility-audit.md`](accessibility-audit.md) |
 | Security (STP 5.1) | 5 checks | 5 | 0 | [`../security-report.md`](security-report.md): OWASP ZAP 0 FAIL, pip-audit and npm audit 0 vulnerabilities |
 | JMeter load test | not run | — | — | The STP names JMeter; NFR1/NFR2 timings were verified by the timed tests above instead, and no JMeter plan exists. TC-Perf-03 (two replicas, NFR3) is not executed. |
+
+## Detailed reports
+
+- [Unit Test Report](unit-test-report.md)
+- [System Validation Report](system-validation-report.md)
+- [Code Coverage Report](code-coverage-report.md)
+- [Branch Coverage Report](branch-coverage-report.md)
 
 ## Exit criteria
 
@@ -59,7 +66,7 @@ Without those, it is 18 ÷ 36 × 100 = 50.0 per 100 cases.
 - [x] 0 critical defects open: none found; all 21 defects fixed.
 - [ ] Product owner UAT completed and recorded in [`uat-record.md`](uat-record.md).
 - [ ] All requirements have at least one executed test: 33/36; NFR3, NFR10, NFR11 outstanding.
-- [x] Evidence tied to a commit SHA and workflow run URL: `4298b89`, runs listed above.
+- [x] Evidence tied to a commit SHA and workflow run URL: `af9345f`, runs listed above.
 
 ## Sign-off
 

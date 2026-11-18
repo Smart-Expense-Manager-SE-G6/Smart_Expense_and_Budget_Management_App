@@ -17,6 +17,10 @@ are in [`../deliverables/`](../deliverables/README.md).
   - [0004 Anomaly detection](design/adr/0004-anomaly-detection.md)
 
 ## Testing (STP deliverables)
+- [`testing/unit-test-report.md`](testing/unit-test-report.md): Unit Test Report, 366 backend tests by module and file
+- [`testing/system-validation-report.md`](testing/system-validation-report.md): System Validation Report, end-to-end, deployment and requirement validation
+- [`testing/code-coverage-report.md`](testing/code-coverage-report.md): Code (line) Coverage Report, by module and file
+- [`testing/branch-coverage-report.md`](testing/branch-coverage-report.md): Branch Coverage Report, with every branch not taken
 - [`testing/test-summary.md`](testing/test-summary.md): Test Summary Report with the STP section 14 metrics
 - [`testing/test-cases.md`](testing/test-cases.md): test-case catalogue with results
 - [`testing/defect-log.md`](testing/defect-log.md): defects found, severity and aging
