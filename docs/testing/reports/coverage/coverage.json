@@ -1,0 +1,7 @@
+{
+  "status": "NOT RUN",
+  "reason": "Python and coverage.py are unavailable in the execution environment.",
+  "statement_coverage": null,
+  "branch_coverage": null,
+  "frontend_coverage": "UNMEASURED: no frontend coverage tool configured"
+}
