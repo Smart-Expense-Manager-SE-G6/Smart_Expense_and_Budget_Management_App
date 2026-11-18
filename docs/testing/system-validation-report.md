@@ -1,7 +1,7 @@
 # System Validation Report
 
 **Release:** Smart Expense and Budget Management Application 1.0
-**Evidence:** CI run [#44216307344](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44216307344) on `main` at `af9345f`, 18 Nov 2026; backup workflow run [#44216307590](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44216307590); accessibility audit of 18 Nov 2026
+**Evidence:** CI run [#44234445329](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44234445329) on `main` at `69426f5`, 18 Nov 2026; backup workflow run [#44234445241](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44234445241); accessibility audit of 18 Nov 2026
 **Purpose:** confirm that the **whole system** does what the SRS requires: the frontend, API, database, scheduler,
 backups and the production deployment working together. This is the STP's system and validation level, above the
 unit tests in the [Unit Test Report](unit-test-report.md).
@@ -80,16 +80,16 @@ HTTPS:
 | FR21 Audit trail | Selenium Audit 01 | Pass |
 | FR22 Backup and restore | Restore rehearsal on the deployed stack (19 tables) and the backup workflow | Pass |
 | NFR1, NFR2 Performance | Timed tests on 10,000 expenses (`analytics/test_performance.py`) | Pass |
-| NFR3 Scalability | Stateless API with a shared session and rate-limit store; the two-replica run was not executed | Not executed |
+| NFR3 Scalability | Scale test: two backend replicas behind Caddy, one session served by both, survives one replica stopping ([log](reports/test-logs/scale-test.log)) | Pass |
 | NFR4-NFR6, NFR14 Security and privacy | Smoke test HTTPS, HSTS, CSP, secure cookies; OWASP ZAP; dependency audits | Pass |
 | NFR7, NFR8 Responsive and accessible | [Accessibility audit](accessibility-audit.md) | Pass |
 | NFR9, NFR12 Uptime and logging | Smoke test health endpoint; `X-Request-ID` header checked by Postman | Pass |
-| NFR10 Backups | Daily backup service in the deployed stack; restore rehearsal | Pass (retention rotation not exercised) |
+| NFR10 Backups | Daily backup service; restore rehearsal; retention test keeps the newest backups and never the labelled ones ([log](reports/test-logs/retention-test.log)) | Pass |
 | NFR11 Modular architecture | No recorded architecture review | Not executed |
 | NFR13 Containerised deployment | Production stack built and deployed in CI | Pass |
 
-**Validated:** 34 of the 36 requirements have passing system-level evidence (NFR10 only partly). **Not executed:**
-NFR3 and NFR11. **Final acceptance** waits for the product owner's UAT session.
+**Validated:** 35 of the 36 requirements have passing system-level evidence. **Not executed:** NFR11 (an
+architecture review, not a test). **Final acceptance** waits for the product owner's UAT session.
 
 ## How to reproduce
 

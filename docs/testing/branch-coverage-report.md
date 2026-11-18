@@ -1,6 +1,6 @@
 # Branch Coverage Report
 
-**Evidence:** CI run [#44216307344](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44216307344) on `main` at `af9345f`, 18 Nov 2026 (artifact `backend-coverage`)
+**Evidence:** CI run [#44234445329](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44234445329) on `main` at `69426f5`, 18 Nov 2026 (browsable report: [`reports/coverage/index.html`](reports/coverage/index.html); raw data: [`reports/coverage/coverage.json`](reports/coverage/coverage.json))
 **Tool:** coverage.py 7.6.10 with `branch = True`
 
 Line coverage shows that a line ran. **Branch coverage** shows that *both* outcomes of every decision ran: the `if`

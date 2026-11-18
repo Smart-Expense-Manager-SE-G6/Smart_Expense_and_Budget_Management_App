@@ -1,0 +1,16 @@
+# Source: local run on the production stack (WSL, Docker), 18 Nov 2026, commit 69426f5 + deploy/scale_test.sh
+
+===== SCALE TEST
+PASS  at least two backend replicas are running (found 2)
+PASS  register
+PASS  login once
+PASS  40 reads with one session all succeed (40/40)
+PASS  10 writes with the CSRF token all succeed (10/10)
+Requests served per replica since 2026-11-18T04:16:24Z:
+  smart-expense-prod-backend-1: 25
+  smart-expense-prod-backend-2: 25
+PASS  requests were spread across 2 replicas
+PASS  with one replica stopped, the same session still works (10/10)
+PASS  delete the test account
+
+Scale test PASSED for https://localhost

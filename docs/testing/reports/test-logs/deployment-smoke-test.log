@@ -1,0 +1,34 @@
+# Source: GitHub Actions run 44234445329 (commit 69426f5), job "Deploy to staging and smoke test", step "Smoke test the deployment over HTTPS"
+# https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44234445329
+
+bash deploy/smoke_test.sh https://localhost --insecure
+shell: /usr/bin/bash -e {0}
+env:
+  DJANGO_SECRET_KEY: ci-only-not-a-secret
+  DJANGO_DEBUG: true
+  DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+  POSTGRES_DB: smart_expense
+  POSTGRES_USER: smart_expense
+  POSTGRES_PASSWORD: ci-password
+  POSTGRES_HOST: localhost
+  POSTGRES_PORT: 5432
+  LOG_LEVEL: WARNING
+  REGISTRY: ghcr.io/smart-expense-manager-se-g6
+PASS  HTTP redirects to HTTPS (308 https://localhost/)
+PASS  HSTS header (max-age=31536000; includeSubDomains)
+PASS  CSP on the app
+PASS  no Server header from the API (got '')
+PASS  API responses are not cacheable
+PASS  app loads
+PASS  deep link serves the app
+PASS  health endpoint
+PASS  admin static files
+PASS  register
+PASS  logout
+PASS  login
+PASS  session cookie is HttpOnly and Secure
+PASS  add an expense
+PASS  report
+PASS  delete the test account
+
+Smoke test PASSED for https://localhost

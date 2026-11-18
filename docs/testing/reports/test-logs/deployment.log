@@ -1,0 +1,500 @@
+# Source: GitHub Actions run 44234445329 (commit 69426f5), job "Deploy to staging and smoke test", step "Deploy the production stack (same script as the demo)"
+# https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44234445329
+
+bash deploy/local-demo.sh
+shell: /usr/bin/bash -e {0}
+env:
+  DJANGO_SECRET_KEY: ci-only-not-a-secret
+  DJANGO_DEBUG: true
+  DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+  POSTGRES_DB: smart_expense
+  POSTGRES_USER: smart_expense
+  POSTGRES_PASSWORD: ci-password
+  POSTGRES_HOST: localhost
+  POSTGRES_PORT: 5432
+  LOG_LEVEL: WARNING
+  REGISTRY: ghcr.io/smart-expense-manager-se-g6
+Created .env.prod for localhost (random secrets; git-ignored).
+ Image postgres:16-alpine Pulling 
+ b7106f8586ee Pulling fs layer 0B
+ f85a33377d83 Pulling fs layer 0B
+ a2d17f5b24d5 Pulling fs layer 0B
+ 86cc7190d1c0 Pulling fs layer 0B
+ 5959c7ea857a Pulling fs layer 0B
+ 881fc932939e Pulling fs layer 0B
+ 6bceb0db2fd1 Pulling fs layer 0B
+ ea98517a315c Pulling fs layer 0B
+ 41713cbe7496 Pulling fs layer 0B
+ 5788ee6f91dc Pulling fs layer 0B
+ f997efa53d88 Pulling fs layer 0B
+ df1cd84c95ef Download complete 0B
+ 89872578f4c5 Download complete 0B
+ b7106f8586ee Download complete 0B
+ 5959c7ea857a Download complete 0B
+ 5788ee6f91dc Download complete 0B
+ f997efa53d88 Download complete 0B
+ f85a33377d83 Download complete 0B
+ 86cc7190d1c0 Download complete 0B
+ 6bceb0db2fd1 Download complete 0B
+ ea98517a315c Download complete 0B
+ 41713cbe7496 Download complete 0B
+ a2d17f5b24d5 Downloading 7.34MB
+ a2d17f5b24d5 Downloading 47.19MB
+ 881fc932939e Download complete 0B
+ ea98517a315c Pull complete 0B
+ 41713cbe7496 Extracting 1B
+ 881fc932939e Pull complete 0B
+ a2d17f5b24d5 Downloading 84.93MB
+ 5788ee6f91dc Pull complete 0B
+ f997efa53d88 Pull complete 0B
+ 41713cbe7496 Pull complete 0B
+ a2d17f5b24d5 Downloading 111.5MB
+ a2d17f5b24d5 Downloading 111.5MB
+ a2d17f5b24d5 Downloading 111.5MB
+ a2d17f5b24d5 Downloading 111.5MB
+ a2d17f5b24d5 Downloading 111.5MB
+ a2d17f5b24d5 Downloading 111.5MB
+ a2d17f5b24d5 Download complete 0B
+ a2d17f5b24d5 Extracting 1B
+ a2d17f5b24d5 Extracting 1B
+ a2d17f5b24d5 Extracting 1B
+ a2d17f5b24d5 Extracting 1B
+ a2d17f5b24d5 Extracting 1B
+ a2d17f5b24d5 Extracting 1B
+ a2d17f5b24d5 Extracting 1B
+ a2d17f5b24d5 Extracting 1B
+ a2d17f5b24d5 Extracting 1B
+ a2d17f5b24d5 Extracting 1B
+ a2d17f5b24d5 Extracting 1B
+ b7106f8586ee Pull complete 0B
+ 5959c7ea857a Pull complete 0B
+ f85a33377d83 Pull complete 0B
+ 86cc7190d1c0 Pull complete 0B
+ 6bceb0db2fd1 Pull complete 0B
+ a2d17f5b24d5 Pull complete 0B
+ Image postgres:16-alpine Pulled 
+ Image smart-expense-backend:prod Building 
+ Image smart-expense-backend:prod Building 
+ Image smart-expense-backup:prod Building 
+ Image smart-expense-web:prod Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 2.50kB done
+#1 DONE 0.0s
+
+#2 [backend internal] load build definition from backend.Dockerfile
+#2 transferring dockerfile: 1.25kB done
+#2 DONE 0.0s
+
+#3 [web internal] load build definition from web.Dockerfile
+#3 transferring dockerfile: 410B done
+#3 DONE 0.0s
+
+#4 [backup internal] load build definition from backup.Dockerfile
+#4 transferring dockerfile: 262B done
+#4 DONE 0.0s
+
+#5 [backup internal] load metadata for docker.io/library/postgres:16-alpine
+#5 DONE 0.0s
+
+#6 [backup internal] load .dockerignore
+#6 transferring context: 2B done
+#6 DONE 0.0s
+
+#7 [backup 1/2] FROM docker.io/library/postgres:16-alpine@sha256:81e77a4833487b8132fe4b00bedd39dc3f74b8641e387f19312a48f7de218c2e
+#7 resolve docker.io/library/postgres:16-alpine@sha256:81e77a4833487b8132fe4b00bedd39dc3f74b8641e387f19312a48f7de218c2e done
+#7 DONE 0.1s
+
+#8 [auth] library/caddy:pull token for registry-1.docker.io
+#8 DONE 0.0s
+
+#9 [auth] library/node:pull token for registry-1.docker.io
+#9 DONE 0.0s
+
+#10 [auth] library/python:pull token for registry-1.docker.io
+#10 DONE 0.0s
+
+#11 [scheduler internal] load metadata for docker.io/library/python:3.12-slim
+#11 ...
+
+#12 [web internal] load metadata for docker.io/library/caddy:2-alpine
+#12 DONE 0.6s
+
+#13 [web internal] load metadata for docker.io/library/node:22-alpine
+#13 DONE 0.6s
+
+#14 [web internal] load .dockerignore
+#14 transferring context: 58B done
+#14 DONE 0.1s
+
+#15 [web internal] load build context
+#15 DONE 0.0s
+
+#11 [backend internal] load metadata for docker.io/library/python:3.12-slim
+#11 DONE 0.7s
+
+#16 [scheduler internal] load .dockerignore
+#16 transferring context: 76B done
+#16 DONE 1.1s
+
+#17 [backend internal] load build context
+#17 DONE 0.0s
+
+#18 [backend 1/6] FROM docker.io/library/python:3.12-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b
+#18 resolve docker.io/library/python:3.12-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b
+#18 ...
+
+#15 [web internal] load build context
+#15 transferring context: 360.14kB 0.0s done
+#15 DONE 0.2s
+
+#18 [backend 1/6] FROM docker.io/library/python:3.12-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b
+#18 resolve docker.io/library/python:3.12-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b 0.1s done
+#18 ...
+
+#17 [scheduler internal] load build context
+#17 transferring context: 452.33kB done
+#17 DONE 0.2s
+
+#19 [web stage-1 1/2] FROM docker.io/library/caddy:2-alpine@sha256:003a97808e781aa9f7e75cc2f43d34d461099031faf5e20faefb9f61126836f0
+#19 resolve docker.io/library/caddy:2-alpine@sha256:003a97808e781aa9f7e75cc2f43d34d461099031faf5e20faefb9f61126836f0 1.1s done
+#19 DONE 1.7s
+
+#20 [web build 1/6] FROM docker.io/library/node:22-alpine@sha256:1314fb30ec37592d5845e5a160d522c0e680972aa534549940b8d73bde88481a
+#20 resolve docker.io/library/node:22-alpine@sha256:1314fb30ec37592d5845e5a160d522c0e680972aa534549940b8d73bde88481a 1.1s done
+#20 ...
+
+#21 [backup 2/2] RUN apk add --no-cache openssl
+#21 0.452 (1/1) Installing openssl (3.5.9-r0)
+#21 0.469 Executing busybox-1.37.0-r31.trigger
+#21 0.476 OK: 226.0 MiB in 46 packages
+#21 DONE 2.3s
+
+#20 [web build 1/6] FROM docker.io/library/node:22-alpine@sha256:1314fb30ec37592d5845e5a160d522c0e680972aa534549940b8d73bde88481a
+#20 sha256:177fffbd7f516ce769745a38154a76ab1cc31d9f87f1c4ea5e448f6548fea4c4 443B / 443B 0.0s done
+#20 ...
+
+#22 [backup] exporting to image
+#22 exporting layers 0.1s done
+#22 exporting manifest sha256:2de80d776e3ebc48cf179e5cff1a5b2dac94594cdb8b00c753f5fd2ce83be246 done
+#22 exporting config sha256:9387357255da30b2742ac019603d341941b77d77715532092b17b829cfce1fe3 done
+#22 exporting attestation manifest sha256:98ade77478f33bf48dcc6788bc6451b2a15ff0091849fe1864141e0d54dac0fe done
+#22 exporting manifest list sha256:79f6a7d8e1af2b6de6ecd224052920e920e76b6a70e906762d829e17a7c4b789 done
+#22 naming to docker.io/library/smart-expense-backup:prod done
+#22 unpacking to docker.io/library/smart-expense-backup:prod 0.0s done
+#22 DONE 0.1s
+
+#20 [web build 1/6] FROM docker.io/library/node:22-alpine@sha256:1314fb30ec37592d5845e5a160d522c0e680972aa534549940b8d73bde88481a
+#20 sha256:e868d1035e5072f0e369d44b840e8532b9500f7cc74aa8c908ccd2e1b9898eb3 1.26MB / 1.26MB 0.2s
+#20 ...
+
+#23 [backup] resolving provenance for metadata file
+#23 DONE 0.0s
+
+#20 [web build 1/6] FROM docker.io/library/node:22-alpine@sha256:1314fb30ec37592d5845e5a160d522c0e680972aa534549940b8d73bde88481a
+#20 sha256:e868d1035e5072f0e369d44b840e8532b9500f7cc74aa8c908ccd2e1b9898eb3 1.26MB / 1.26MB 0.2s done
+#20 sha256:87aaee1f6667374a3b8e33a252954e01b1fac9749bb0c570022533b9120d13a1 56.25MB / 56.25MB 0.3s
+#20 ...
+
+#19 [web stage-1 1/2] FROM docker.io/library/caddy:2-alpine@sha256:003a97808e781aa9f7e75cc2f43d34d461099031faf5e20faefb9f61126836f0
+#19 sha256:e3a802d3a0a957e15ac518be2f3f3e786b9965895265888c3390753c81d1c085 7.50kB / 7.50kB 0.1s done
+#19 sha256:5000c332a1cc372a1a248c2923696c0bc7817d213f2db0f4161fc18a3fc17cd7 18.13MB / 18.13MB 0.3s done
+#19 sha256:c4d6974dbf71e422d13654405f502ff60ea306943b999003c012ecc6dd93d317 2.80MB / 2.80MB 0.3s done
+#19 extracting sha256:c4d6974dbf71e422d13654405f502ff60ea306943b999003c012ecc6dd93d317 0.4s done
+#19 DONE 2.4s
+
+#19 [web stage-1 1/2] FROM docker.io/library/caddy:2-alpine@sha256:003a97808e781aa9f7e75cc2f43d34d461099031faf5e20faefb9f61126836f0
+#19 extracting sha256:e3a802d3a0a957e15ac518be2f3f3e786b9965895265888c3390753c81d1c085 0.0s done
+#19 extracting sha256:5000c332a1cc372a1a248c2923696c0bc7817d213f2db0f4161fc18a3fc17cd7
+#19 extracting sha256:5000c332a1cc372a1a248c2923696c0bc7817d213f2db0f4161fc18a3fc17cd7 0.3s done
+#19 extracting sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 done
+#19 DONE 2.7s
+
+#18 [scheduler 1/6] FROM docker.io/library/python:3.12-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b
+#18 sha256:05e0eee5572e9c9f50408a2132590133b830a668a1cf2ff2b150f19c57707e2b 248B / 248B 0.4s done
+#18 sha256:2dc99d2d0a39fce31e37615eb4c932e16dcc4c2b0ce9993714280081b5dbe085 12.12MB / 12.12MB 0.4s done
+#18 sha256:68bced9e0afa4479df17c3646e27c7c7e9ce9ba70c0e6c73b6826487b89037d9 1.29MB / 1.29MB 0.4s done
+#18 sha256:37fb86c2a767b88d500c6872195f88078f64765fe0d2f9cc375cc2efbd4c0a41 29.86MB / 29.86MB 0.3s done
+#18 extracting sha256:37fb86c2a767b88d500c6872195f88078f64765fe0d2f9cc375cc2efbd4c0a41
+#18 extracting sha256:37fb86c2a767b88d500c6872195f88078f64765fe0d2f9cc375cc2efbd4c0a41 0.5s done
+#18 ...
+
+#20 [web build 1/6] FROM docker.io/library/node:22-alpine@sha256:1314fb30ec37592d5845e5a160d522c0e680972aa534549940b8d73bde88481a
+#20 sha256:87aaee1f6667374a3b8e33a252954e01b1fac9749bb0c570022533b9120d13a1 56.25MB / 56.25MB 0.6s done
+#20 extracting sha256:87aaee1f6667374a3b8e33a252954e01b1fac9749bb0c570022533b9120d13a1 0.9s done
+#20 extracting sha256:e868d1035e5072f0e369d44b840e8532b9500f7cc74aa8c908ccd2e1b9898eb3 0.0s done
+#20 extracting sha256:177fffbd7f516ce769745a38154a76ab1cc31d9f87f1c4ea5e448f6548fea4c4 done
+#20 DONE 3.3s
+
+#18 [backend 1/6] FROM docker.io/library/python:3.12-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b
+#18 extracting sha256:37fb86c2a767b88d500c6872195f88078f64765fe0d2f9cc375cc2efbd4c0a41 0.5s done
+#18 extracting sha256:68bced9e0afa4479df17c3646e27c7c7e9ce9ba70c0e6c73b6826487b89037d9 0.1s done
+#18 extracting sha256:68bced9e0afa4479df17c3646e27c7c7e9ce9ba70c0e6c73b6826487b89037d9 0.1s done
+#18 extracting sha256:2dc99d2d0a39fce31e37615eb4c932e16dcc4c2b0ce9993714280081b5dbe085
+#18 extracting sha256:2dc99d2d0a39fce31e37615eb4c932e16dcc4c2b0ce9993714280081b5dbe085 1.0s done
+#18 extracting sha256:2dc99d2d0a39fce31e37615eb4c932e16dcc4c2b0ce9993714280081b5dbe085 1.0s done
+#18 extracting sha256:05e0eee5572e9c9f50408a2132590133b830a668a1cf2ff2b150f19c57707e2b 0.1s done
+#18 DONE 3.4s
+
+#24 [scheduler 2/6] WORKDIR /app
+#24 ...
+
+#25 [web build 2/6] WORKDIR /app
+#25 DONE 2.0s
+
+#24 [scheduler 2/6] WORKDIR /app
+#24 DONE 0.9s
+
+#26 [backend 3/6] COPY requirements.txt .
+#26 DONE 0.0s
+
+#27 [web build 3/6] COPY package*.json ./
+#27 DONE 0.0s
+
+#28 [backend 4/6] RUN pip install --no-cache-dir -r requirements.txt
+#28 1.057 Collecting asgiref==3.13.0 (from -r requirements.txt (line 2))
+#28 1.116   Downloading asgiref-3.13.0-py3-none-any.whl.metadata (12 kB)
+#28 1.155 Collecting bcrypt==4.3.0 (from -r requirements.txt (line 3))
+#28 1.171   Downloading bcrypt-4.3.0-cp39-abi3-manylinux_2_34_x86_64.whl.metadata (10 kB)
+#28 1.216 Collecting Django==5.2.18 (from -r requirements.txt (line 4))
+#28 1.235   Downloading django-5.2.18-py3-none-any.whl.metadata (4.1 kB)
+#28 1.257 Collecting djangorestframework==3.18.3 (from -r requirements.txt (line 5))
+#28 1.279   Downloading djangorestframework-3.18.3-py3-none-any.whl.metadata (7.8 kB)
+#28 1.298 Collecting drf-spectacular==0.28.0 (from -r requirements.txt (line 6))
+#28 1.314   Downloading drf_spectacular-0.28.0-py3-none-any.whl.metadata (14 kB)
+#28 1.335 Collecting openpyxl==3.1.5 (from -r requirements.txt (line 7))
+#28 1.350   Downloading openpyxl-3.1.5-py2.py3-none-any.whl.metadata (2.5 kB)
+#28 1.370 Collecting psycopg==3.2.13 (from -r requirements.txt (line 8))
+#28 1.386   Downloading psycopg-3.2.13-py3-none-any.whl.metadata (4.5 kB)
+#28 1.532 Collecting psycopg-binary==3.2.13 (from -r requirements.txt (line 9))
+#28 1.548   Downloading psycopg_binary-3.2.13-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (2.9 kB)
+#28 1.564 Collecting python-dotenv==1.2.4 (from -r requirements.txt (line 10))
+#28 1.580   Downloading python_dotenv-1.2.4-py3-none-any.whl.metadata (29 kB)
+#28 1.660 Collecting reportlab==5.1.0 (from -r requirements.txt (line 11))
+#28 1.676   Downloading reportlab-5.1.0-py3-none-any.whl.metadata (1.6 kB)
+#28 1.695 Collecting sqlparse==0.6.0 (from -r requirements.txt (line 12))
+#28 1.711   Downloading sqlparse-0.6.0-py3-none-any.whl.metadata (6.0 kB)
+#28 1.728 Collecting tzdata==2026.6 (from -r requirements.txt (line 15))
+#28 1.744   Downloading tzdata-2026.6-py2.py3-none-any.whl.metadata (1.4 kB)
+#28 1.764 Collecting gunicorn==27.0.1 (from -r requirements.txt (line 16))
+#28 1.779   Downloading gunicorn-27.0.1-py3-none-any.whl.metadata (5.6 kB)
+#28 1.839 Collecting uritemplate>=2.0.0 (from drf-spectacular==0.28.0->-r requirements.txt (line 6))
+#28 1.855   Downloading uritemplate-4.2.0-py3-none-any.whl.metadata (2.6 kB)
+#28 1.885 Collecting PyYAML>=5.1 (from drf-spectacular==0.28.0->-r requirements.txt (line 6))
+#28 1.904   Downloading pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+#28 1.927 Collecting jsonschema>=2.6.0 (from drf-spectacular==0.28.0->-r requirements.txt (line 6))
+#28 1.943   Downloading jsonschema-4.26.0-py3-none-any.whl.metadata (7.6 kB)
+#28 1.958 Collecting inflection>=0.3.1 (from drf-spectacular==0.28.0->-r requirements.txt (line 6))
+#28 1.974   Downloading inflection-0.5.1-py2.py3-none-any.whl.metadata (1.7 kB)
+#28 1.987 Collecting et-xmlfile (from openpyxl==3.1.5->-r requirements.txt (line 7))
+#28 2.005   Downloading et_xmlfile-2.0.0-py3-none-any.whl.metadata (2.7 kB)
+#28 2.025 Collecting typing-extensions>=4.6 (from psycopg==3.2.13->-r requirements.txt (line 8))
+#28 2.041   Downloading typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+#28 2.132 Collecting pillow>=9.0.0 (from reportlab==5.1.0->-r requirements.txt (line 11))
+#28 2.148   Downloading pillow-13.0.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (9.1 kB)
+#28 2.218 Collecting charset-normalizer (from reportlab==5.1.0->-r requirements.txt (line 11))
+#28 2.249   Downloading charset_normalizer-3.5.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (46 kB)
+#28 2.272 Collecting attrs>=22.2.0 (from jsonschema>=2.6.0->drf-spectacular==0.28.0->-r requirements.txt (line 6))
+#28 2.288   Downloading attrs-26.1.0-py3-none-any.whl.metadata (8.8 kB)
+#28 2.301 Collecting jsonschema-specifications>=2023.03.6 (from jsonschema>=2.6.0->drf-spectacular==0.28.0->-r requirements.txt (line 6))
+#28 2.317   Downloading jsonschema_specifications-2025.9.1-py3-none-any.whl.metadata (2.9 kB)
+#28 2.336 Collecting referencing>=0.28.4 (from jsonschema>=2.6.0->drf-spectacular==0.28.0->-r requirements.txt (line 6))
+#28 2.352   Downloading referencing-0.37.0-py3-none-any.whl.metadata (2.8 kB)
+#28 ...
+
+#29 [web build 4/6] RUN npm ci
+#29 1.759 npm warn deprecated eslint@9.39.5: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+#29 1.898 
+#29 1.898 added 159 packages, and audited 160 packages in 2s
+#29 1.898 
+#29 1.898 34 packages are looking for funding
+#29 1.898   run `npm fund` for details
+#29 1.906 
+#29 1.906 4 high severity vulnerabilities
+#29 1.906 
+#29 1.906 To address issues that do not require attention, run:
+#29 1.906   npm audit fix
+#29 1.906 
+#29 1.906 To address all issues (including breaking changes), run:
+#29 1.906   npm audit fix --force
+#29 1.906 
+#29 1.906 Run `npm audit` for details.
+#29 1.907 npm notice
+#29 1.907 npm notice New major version of npm available! 10.9.9 -> 12.2.3
+#29 1.907 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.3
+#29 1.907 npm notice To update run: npm install -g npm@12.2.3
+#29 1.907 npm notice
+#29 DONE 2.5s
+
+#30 [web build 5/6] COPY . .
+#30 DONE 0.0s
+
+#28 [backend 4/6] RUN pip install --no-cache-dir -r requirements.txt
+#28 2.531 Collecting rpds-py>=0.25.0 (from jsonschema>=2.6.0->drf-spectacular==0.28.0->-r requirements.txt (line 6))
+#28 2.550   Downloading rpds_py-2026.9.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.1 kB)
+#28 2.585 Downloading asgiref-3.13.0-py3-none-any.whl (27 kB)
+#28 2.603 Downloading bcrypt-4.3.0-cp39-abi3-manylinux_2_34_x86_64.whl (284 kB)
+#28 2.645 Downloading django-5.2.18-py3-none-any.whl (8.3 MB)
+#28 2.706    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 8.3/8.3 MB 155.0 MB/s eta 0:00:00
+#28 2.723 Downloading djangorestframework-3.18.3-py3-none-any.whl (903 kB)
+#28 2.726    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 904.0/904.0 kB 933.6 MB/s eta 0:00:00
+#28 2.742 Downloading drf_spectacular-0.28.0-py3-none-any.whl (103 kB)
+#28 2.759 Downloading openpyxl-3.1.5-py2.py3-none-any.whl (250 kB)
+#28 2.776 Downloading psycopg-3.2.13-py3-none-any.whl (206 kB)
+#28 2.796 Downloading psycopg_binary-3.2.13-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (4.4 MB)
+#28 2.830    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.4/4.4 MB 128.5 MB/s eta 0:00:00
+#28 2.846 Downloading python_dotenv-1.2.4-py3-none-any.whl (23 kB)
+#28 2.862 Downloading reportlab-5.1.0-py3-none-any.whl (2.0 MB)
+#28 2.866    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.0/2.0 MB 924.5 MB/s eta 0:00:00
+#28 2.883 Downloading sqlparse-0.6.0-py3-none-any.whl (50 kB)
+#28 2.900 Downloading tzdata-2026.6-py2.py3-none-any.whl (348 kB)
+#28 2.919 Downloading gunicorn-27.0.1-py3-none-any.whl (263 kB)
+#28 2.937 Downloading inflection-0.5.1-py2.py3-none-any.whl (9.5 kB)
+#28 2.954 Downloading jsonschema-4.26.0-py3-none-any.whl (90 kB)
+#28 2.972 Downloading pillow-13.0.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (7.1 MB)
+#28 2.995    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 7.1/7.1 MB 341.1 MB/s eta 0:00:00
+#28 3.011 Downloading pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (807 kB)
+#28 3.014    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 807.9/807.9 kB 613.2 MB/s eta 0:00:00
+#28 3.031 Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+#28 3.047 Downloading uritemplate-4.2.0-py3-none-any.whl (11 kB)
+#28 3.063 Downloading charset_normalizer-3.5.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (257 kB)
+#28 3.081 Downloading et_xmlfile-2.0.0-py3-none-any.whl (18 kB)
+#28 3.097 Downloading attrs-26.1.0-py3-none-any.whl (67 kB)
+#28 3.115 Downloading jsonschema_specifications-2025.9.1-py3-none-any.whl (18 kB)
+#28 3.132 Downloading referencing-0.37.0-py3-none-any.whl (26 kB)
+#28 3.149 Downloading rpds_py-2026.9.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (371 kB)
+#28 3.246 Installing collected packages: uritemplate, tzdata, typing-extensions, sqlparse, rpds-py, PyYAML, python-dotenv, psycopg-binary, pillow, inflection, gunicorn, et-xmlfile, charset-normalizer, bcrypt, attrs, asgiref, reportlab, referencing, psycopg, openpyxl, Django, jsonschema-specifications, djangorestframework, jsonschema, drf-spectacular
+#28 ...
+
+#31 [web build 6/6] RUN npm run build
+#31 0.211 
+#31 0.211 > frontend@0.0.0 build
+#31 0.211 > vite build
+#31 0.211 
+#31 0.412 vite v6.4.5 building for production...
+#31 0.459 transforming...
+#31 1.626 ✓ 107 modules transformed.
+#31 1.843 rendering chunks...
+#31 1.850 computing gzip size...
+#31 1.860 dist/index.html                   0.40 kB │ gzip:   0.27 kB
+#31 1.861 dist/assets/index-Dmvvegu4.css   31.07 kB │ gzip:   7.25 kB
+#31 1.861 dist/assets/index-k9AbQpx-.js   366.54 kB │ gzip: 112.36 kB
+#31 1.861 ✓ built in 1.43s
+#31 DONE 1.9s
+
+#32 [web stage-1 2/2] COPY --from=build /app/dist /srv/app
+#32 DONE 0.6s
+
+#28 [backend 4/6] RUN pip install --no-cache-dir -r requirements.txt
+#28 ...
+
+#33 [web] exporting to image
+#33 exporting layers 0.0s done
+#33 exporting manifest sha256:1532b0c1c84def737a3a2bab0d925124502720cc6d0b0bc9bca40b96abc341b9 done
+#33 exporting config sha256:2ad31a84a22f3f83e2f65aff69d03525397d06801262f717c84b2fa7b0df5a95 done
+#33 exporting attestation manifest sha256:e5fa46b6e90f8534ef4f8c2dcfda963e9392ad517e039da4e39f4dfb5e6231d3 done
+#33 exporting manifest list sha256:67d0237650f24213453b8e732868689f6f0ac574598a76b92fbdef07f4292b65 done
+#33 naming to docker.io/library/smart-expense-web:prod done
+#33 unpacking to docker.io/library/smart-expense-web:prod 0.0s done
+#33 DONE 0.1s
+
+#34 [web] resolving provenance for metadata file
+#34 DONE 0.0s
+
+#28 [backend 4/6] RUN pip install --no-cache-dir -r requirements.txt
+#28 6.342 Successfully installed Django-5.2.18 PyYAML-6.0.3 asgiref-3.13.0 attrs-26.1.0 bcrypt-4.3.0 charset-normalizer-3.5.2 djangorestframework-3.18.3 drf-spectacular-0.28.0 et-xmlfile-2.0.0 gunicorn-27.0.1 inflection-0.5.1 jsonschema-4.26.0 jsonschema-specifications-2025.9.1 openpyxl-3.1.5 pillow-13.0.0 psycopg-3.2.13 psycopg-binary-3.2.13 python-dotenv-1.2.4 referencing-0.37.0 reportlab-5.1.0 rpds-py-2026.9.1 sqlparse-0.6.0 typing-extensions-4.16.0 tzdata-2026.6 uritemplate-4.2.0
+#28 6.342 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+#28 6.423 
+#28 6.423 [notice] A new release of pip is available: 25.0.1 -> 26.3
+#28 6.423 [notice] To update, run: pip install --upgrade pip
+#28 DONE 6.8s
+
+#35 [scheduler 5/6] COPY . .
+#35 DONE 0.1s
+
+#36 [backend 6/6] RUN useradd --create-home --uid 10001 app     && mkdir -p /app/private_media /app/staticfiles     && chown -R app:app /app/private_media /app/staticfiles     && chmod +x /app/scripts/docker-entrypoint.sh
+#36 DONE 0.1s
+
+#37 [backend] exporting to image
+#37 exporting layers 2.3s done
+#37 exporting manifest sha256:5d02e88ad5bcfc672fe7d486ca4ba3f95af72b609163765d1e2f85b5cf004abf done
+#37 exporting config sha256:756c82cd3460ae814c30464e5b0bd8069c5aa70d2b96f66639434bc144494f27 done
+#37 exporting attestation manifest sha256:7bc494324c91f7db82aee30a9f70c389f4e24d33a67747733798e5d087b7bd51 done
+#37 exporting manifest list sha256:26ff3acb471ca90379402294fe6d8515d7d32cc8060df4b2213c24eb1523ac64 done
+#37 naming to docker.io/library/smart-expense-backend:prod done
+#37 unpacking to docker.io/library/smart-expense-backend:prod
+#37 unpacking to docker.io/library/smart-expense-backend:prod 1.4s done
+#37 DONE 3.8s
+
+#38 [scheduler] exporting to image
+#38 exporting layers 2.3s done
+#38 exporting manifest sha256:d93d1426f85acef58dcb1eb448f5d529129737b7bf507cfab19841efcb295c9d done
+#38 exporting config sha256:43370142289b4de35ce9d6c9919deabce77ae9fb674ac497923752ae2b85038e done
+#38 exporting attestation manifest sha256:dded0d32ec4ab8077508e036fda808661e83a1c5577250d35df0cc5918d89bc8 done
+#38 exporting manifest list sha256:14101eb2661a204a3d9344e89028a7da074912ab12147e63830bb0de566de8de done
+#38 naming to docker.io/library/smart-expense-backend:prod done
+#38 unpacking to docker.io/library/smart-expense-backend:prod 1.4s done
+#38 DONE 3.8s
+
+#39 [scheduler] resolving provenance for metadata file
+#39 DONE 0.0s
+
+#40 [backend] resolving provenance for metadata file
+#40 DONE 0.0s
+ Image smart-expense-backend:prod Built 
+ Image smart-expense-web:prod Built 
+ Image smart-expense-backup:prod Built 
+ Image smart-expense-backend:prod Built 
+ Network smart-expense-prod_default Creating 
+ Network smart-expense-prod_default Created 
+ Volume smart-expense-prod_receipts Creating 
+ Volume smart-expense-prod_receipts Created 
+ Volume smart-expense-prod_static Creating 
+ Volume smart-expense-prod_static Created 
+ Volume smart-expense-prod_caddy_data Creating 
+ Volume smart-expense-prod_caddy_data Created 
+ Volume smart-expense-prod_caddy_config Creating 
+ Volume smart-expense-prod_caddy_config Created 
+ Volume smart-expense-prod_pgdata Creating 
+ Volume smart-expense-prod_pgdata Created 
+ Container smart-expense-prod-db-1 Creating 
+ Container smart-expense-prod-db-1 Created 
+ Container smart-expense-prod-scheduler-1 Creating 
+ Container smart-expense-prod-backup-1 Creating 
+ Container smart-expense-prod-backend-1 Creating 
+ Container smart-expense-prod-backend-1 Created 
+ Container smart-expense-prod-web-1 Creating 
+ Container smart-expense-prod-scheduler-1 Created 
+ Container smart-expense-prod-backup-1 Created 
+ Container smart-expense-prod-web-1 Created 
+ Container smart-expense-prod-db-1 Starting 
+ Container smart-expense-prod-db-1 Started 
+ Container smart-expense-prod-db-1 Waiting 
+ Container smart-expense-prod-db-1 Waiting 
+ Container smart-expense-prod-db-1 Waiting 
+ Container smart-expense-prod-db-1 Healthy 
+ Container smart-expense-prod-backend-1 Starting 
+ Container smart-expense-prod-db-1 Healthy 
+ Container smart-expense-prod-scheduler-1 Starting 
+ Container smart-expense-prod-db-1 Healthy 
+ Container smart-expense-prod-backup-1 Starting 
+ Container smart-expense-prod-backup-1 Started 
+ Container smart-expense-prod-scheduler-1 Started 
+ Container smart-expense-prod-backend-1 Started 
+ Container smart-expense-prod-web-1 Starting 
+ Container smart-expense-prod-web-1 Started 
+Waiting for https://localhost .
+backend: Up 3 seconds
+backup: Up 3 seconds (health: starting)
+db: Up 8 seconds (healthy)
+scheduler: Up 3 seconds
+web: Up 2 seconds
+
+The app is running at https://localhost
+
+No certificate warning (once per machine), in Windows PowerShell from the repository folder:
+  certutil -user -addstore Root caddy-local-root.crt
+then restart the browser. (Remove it later with: certutil -user -delstore Root "Caddy Local Authority")
+
+Check it:     deploy/smoke_test.sh https://localhost --insecure
+Admin user:   docker compose -f docker-compose.prod.yml --env-file .env.prod exec backend python manage.py createsuperuser
+Stop:         deploy/local-demo.sh stop      Delete all demo data: deploy/local-demo.sh reset

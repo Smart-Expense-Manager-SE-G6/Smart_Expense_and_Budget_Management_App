@@ -1,6 +1,6 @@
 # Code Coverage Report (statement / line coverage)
 
-**Evidence:** CI run [#44216307344](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44216307344) on `main` at `af9345f`, 18 Nov 2026 (artifact `backend-coverage`: `coverage.json` and an HTML report)
+**Evidence:** CI run [#44234445329](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44234445329) on `main` at `69426f5`, 18 Nov 2026 (browsable report: [`reports/coverage/index.html`](reports/coverage/index.html); raw data: [`reports/coverage/coverage.json`](reports/coverage/coverage.json))
 **Tool:** coverage.py 7.6.10, with branch measurement on (`backend/.coveragerc`)
 **Scope:** all backend application code; migrations, tests and `manage.py` are excluded.
 

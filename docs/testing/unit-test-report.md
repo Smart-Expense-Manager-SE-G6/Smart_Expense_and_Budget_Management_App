@@ -1,8 +1,8 @@
 # Unit Test Report
 
 **Release:** Smart Expense and Budget Management Application 1.0
-**Evidence:** CI run [#44216307344](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44216307344) on `main` at `af9345f`, 18 Nov 2026
-**Result:** **366 tests run, 366 passed, 0 failed, 0 errors** (CI log: "Ran 366 tests ... OK")
+**Evidence:** CI run [#44234445329](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44234445329) on `main` at `69426f5`, 18 Nov 2026
+**Result:** **366 backend tests and 2 frontend tests run, all passed, 0 failed, 0 errors** (CI log: "Ran 366 tests ... OK")
 
 ## What is tested and how
 
@@ -67,8 +67,19 @@ in [`code-coverage-report.md`](code-coverage-report.md) and [`branch-coverage-re
 
 ## Frontend
 
-The React frontend has no unit-test suite. ESLint and a production build check it on every pull request, and the
-14 Selenium journeys in the [System Validation Report](system-validation-report.md) test its behaviour in a real browser.
+| Test file | Tests | Passed | What it checks |
+|:--|--:|--:|:--|
+| [`frontend/tests/monitoring.test.js`](../../frontend/tests/monitoring.test.js) | 2 | 2 | Monitoring statuses map to the right label and colour; a missing or unknown status stays "unknown" |
+
+These run with Node's built-in test runner (`npm test`), as the "Frontend unit tests" step of the CI frontend job.
+ESLint and a production build also check the frontend on every pull request, and the 14 Selenium journeys in the
+[System Validation Report](system-validation-report.md) test its behaviour in a real browser.
+
+## Logs and artifacts
+
+- [`reports/test-logs/backend-django-test.log`](reports/test-logs/backend-django-test.log): the backend test run ("Ran 366 tests ... OK")
+- [`reports/test-logs/frontend-test.log`](reports/test-logs/frontend-test.log): the frontend unit tests (2 pass, 0 fail)
+- [`reports/coverage/index.html`](reports/coverage/index.html): the coverage report from the same run
 
 ## How to reproduce
 

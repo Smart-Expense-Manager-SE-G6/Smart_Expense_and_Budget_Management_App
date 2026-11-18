@@ -1,0 +1,13 @@
+# Source: local run on the production stack (WSL, Docker), 18 Nov 2026 + scripts/retention_test.sh
+
+Backups after four scheduled runs with BACKUP_KEEP=2:
+  20261118T041633Z-manual
+  20261118T041636Z
+  20261118T041637Z
+  LATEST
+PASS  only the newest 2 scheduled backups are kept
+PASS  the labelled backup is never pruned
+PASS  LATEST names the newest scheduled backup
+PASS  the newest backup passes its checksum
+
+Retention test PASSED

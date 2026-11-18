@@ -223,6 +223,18 @@ jobs:
       - name: Restore rehearsal on the deployed stack
         run: docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm -T backup /scripts/rehearse_restore.sh
 
+      - name: Scale test with two backend replicas (NFR3, TC-Perf-03)
+        run: |
+          docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --no-build --scale backend=2
+          for i in $(seq 1 60); do
+            [ "$(docker compose -f docker-compose.prod.yml --env-file .env.prod ps backend --format '{{.Health}}' | grep -c healthy)" -ge 2 ] && break
+            sleep 3
+          done
+          bash deploy/scale_test.sh https://localhost --insecure
+
+      - name: Backup retention test (NFR10, TC-Backup-02)
+        run: docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm -T backup /scripts/retention_test.sh
+
       - name: Show logs if the deployment failed
         if: failure()
         run: docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail 200
