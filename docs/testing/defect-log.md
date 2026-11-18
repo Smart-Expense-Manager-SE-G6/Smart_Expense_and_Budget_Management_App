@@ -1,7 +1,7 @@
 # Defect Log
 
 The team tracked defects in the pull request that fixed them, with a regression test where one applies, instead of a
-separate `bug`-labelled issue for each (see `docs/deviations.md` T-01: GitHub replaces Jira). Every row below is
+separate `bug`-labelled issue for each (see `docs/requirements/deviations.md` T-01: GitHub replaces Jira). Every row below is
 written up in the linked pull request; nothing is reconstructed from memory.
 
 **Aging** is calendar days from the day the defect was found (the day its fixing pull request was opened, or the

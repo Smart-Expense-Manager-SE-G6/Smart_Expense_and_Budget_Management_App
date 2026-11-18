@@ -1,6 +1,6 @@
 """
 Selenium end-to-end journeys (S3-12, issue #74). Each test is named after its test case ID in
-docs/rtm.md and drives the real app in Chrome, from sign-in to the result a user would see.
+docs/requirements/rtm.md and drives the real app in Chrome, from sign-in to the result a user would see.
 """
 
 import time

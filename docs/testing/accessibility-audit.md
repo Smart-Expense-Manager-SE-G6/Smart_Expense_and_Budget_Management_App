@@ -5,7 +5,7 @@ keyboard). Run on 18 Nov 2026 against the dev stack (`docker compose up`) built 
 
 ## Method
 
-[`tests/a11y_audit.py`](../../tests/a11y_audit.py) (Playwright + axe-core 4.14.1, WCAG 2.0/2.1 A and AA rules
+[`tests/accessibility/a11y_audit.py`](../../tests/accessibility/a11y_audit.py) (Playwright + axe-core 4.14.1, WCAG 2.0/2.1 A and AA rules
 plus best practices):
 
 - every page (sign-in, register, dashboard, expenses, CSV import, recurring, budgets, categories, reports,
@@ -50,7 +50,7 @@ docker compose up -d --build
 docker compose exec -e DJANGO_SUPERUSER_PASSWORD='Tr1cky-Passw0rd!' backend \
   python manage.py createsuperuser --noinput --email a11y.admin@example.com
 pip install playwright && npm pack axe-core@4.14.1   # extract package/axe.min.js
-python tests/a11y_audit.py <output folder> <path to axe.min.js>
+python tests/accessibility/a11y_audit.py <output folder> <path to axe.min.js>
 ```
 
 The script uses Microsoft Edge (`channel="msedge"`); change it to plain Chromium on Linux. Automated

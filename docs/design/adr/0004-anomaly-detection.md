@@ -28,4 +28,4 @@ The alert stores the related expense, category, historical average in its messag
 
 ## Verification
 
-The behavior is covered by `backend/alerts/tests.py` and is traced from `FR17` in `docs/rtm.md`.
+The behavior is covered by `backend/alerts/tests.py` and is traced from `FR17` in `docs/requirements/rtm.md`.

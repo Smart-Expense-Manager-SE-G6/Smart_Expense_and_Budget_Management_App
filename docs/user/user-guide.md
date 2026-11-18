@@ -2,7 +2,7 @@
 
 ## Getting started
 
-1. Start the stack with `docker compose up --build` or follow [`docs/deployment.md`](deployment.md) for the production-like demo.
+1. Start the stack with `docker compose up --build` or follow [`docs/operations/deployment.md`](../operations/deployment.md) for the production-like demo.
 2. Open the web application and choose **Create account**.
 3. Enter first name, last name, email and password. Registration signs the user in and opens the dashboard.
 
@@ -35,7 +35,7 @@ Screenshots must be captured from the running release stack so they reflect the 
 ```powershell
 docker compose up -d --build
 # capture the dashboard, expense form/import preview, budgets/sharing, alerts and reports screens
-# save them as docs/screenshots/dashboard.png, expenses.png, budgets.png, alerts.png, reports.png
+# save them as docs/user/screenshots/dashboard.png, expenses.png, budgets.png, alerts.png, reports.png
 docker compose down
 ```
 

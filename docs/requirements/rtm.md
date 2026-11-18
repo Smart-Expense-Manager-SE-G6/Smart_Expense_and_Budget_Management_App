@@ -11,7 +11,7 @@
 
 Differences between this matrix, the code and the approved project documents are explained in [deviations.md](deviations.md).
 
-Release execution evidence is maintained in [`docs/testing/test-cases.md`](testing/test-cases.md), with suite artifacts indexed by [`docs/testing/execution-evidence.md`](testing/execution-evidence.md) and final metrics in [`docs/testing/test-summary.md`](testing/test-summary.md).
+Release execution evidence is maintained in [`docs/testing/test-cases.md`](../testing/test-cases.md), with suite artifacts indexed by [`docs/testing/execution-evidence.md`](../testing/execution-evidence.md) and final metrics in [`docs/testing/test-summary.md`](../testing/test-summary.md).
 
 | Req ID | Requirement Description | Module Owner | Design Reference (SASD) | Target Code / Files | Test Case ID (STP) | Sprint 1 Status |
 |:---|:---|:---|:---|:---|:---|:---|
@@ -47,16 +47,16 @@ Release execution evidence is maintained in [`docs/testing/test-cases.md`](testi
 | **NFR1** | Dashboard & analytics load speed | <= 2–3s for 10,000 transactions | Composite DB indexes on `(user, date)`, `(user, category)`; seed script verification (`TC-Perf-01`) | Shashank | Done (#20, #21) |
 | **NFR2** | Report generation completion speed | <= 5s for 1-year date range | Date-range cap (OI-3); SQL aggregations | Shashank | Sprint 2 |
 | **NFR3** | Horizontal scalability | Stateless app tier | Shared PostgreSQL session store; stateless REST API | Team 6 | Design verified |
-| **NFR4** | Sensitive data encryption | Passwords hashed; TLS | `bcrypt` hashing; TLS/HTTPS; secure file root; `TC-Sec-01`; [security report](security-report.md) | Shriram | Verified (ADR 0001, #77) |
+| **NFR4** | Sensitive data encryption | Passwords hashed; TLS | `bcrypt` hashing; TLS/HTTPS; secure file root; `TC-Sec-01`; [security report](../testing/security-report.md) | Shriram | Verified (ADR 0001, #77) |
 | **NFR5** | Authentication & token expiry | Session expiry on logout & 30m idle | Django sessions in HttpOnly cookies; 401 on expired session; `TC-Sec-01`, `TC-Sec-04` | Shriram | Verified (ADR 0001, #12, #77) |
-| **NFR6** | Protection against SQLi, XSS, CSRF | Zero high/critical vulnerabilities | Django ORM parameterized queries; React auto-escaping; CSRF header; security headers; fuzzing and penetration tests `TC-Sec-03`, `TC-Sec-04`; OWASP ZAP and dependency audits in the [security report](security-report.md) | Shriram | Verified (#77) |
-| **NFR7** | Responsive UI | Mobile, tablet, desktop | Responsive CSS layouts; audited at 360, 768 and 1280 px with no overflow ([audit](testing/accessibility-audit.md)) | Team 6 | Verified (#76) |
-| **NFR8** | Accessibility | WCAG basics (labels, contrast) | Form labels, AA contrast tokens, skip link, keyboard focus, screen-reader chart values; axe-core 0 violations ([audit](testing/accessibility-audit.md)) | Team 6 | Verified (#76) |
+| **NFR6** | Protection against SQLi, XSS, CSRF | Zero high/critical vulnerabilities | Django ORM parameterized queries; React auto-escaping; CSRF header; security headers; fuzzing and penetration tests `TC-Sec-03`, `TC-Sec-04`; OWASP ZAP and dependency audits in the [security report](../testing/security-report.md) | Shriram | Verified (#77) |
+| **NFR7** | Responsive UI | Mobile, tablet, desktop | Responsive CSS layouts; audited at 360, 768 and 1280 px with no overflow ([audit](../testing/accessibility-audit.md)) | Team 6 | Verified (#76) |
+| **NFR8** | Accessibility | WCAG basics (labels, contrast) | Form labels, AA contrast tokens, skip link, keyboard focus, screen-reader chart values; axe-core 0 violations ([audit](../testing/accessibility-audit.md)) | Team 6 | Verified (#76) |
 | **NFR9** | Uptime | 99% uptime target | Health endpoint `/api/v1/health/`; services restart automatically (`restart: unless-stopped`); smoke test `deploy/smoke_test.sh` | Shriram | Done (#10, #72); uptime monitor in #79 |
 | **NFR10**| Automated backups | Daily scheduled backup | `backup` compose service runs `scripts/schedule_backups.sh` (cron, `BACKUP_SCHEDULE`) calling `scripts/backup.sh`; verified by `TC-Backup-01` | Shriram / Shashwath | Done (#46) |
 | **NFR11**| Modular architecture | MVC pattern; loose coupling | Modular monolith with independent Django apps | Team 6 | Enforced |
 | **NFR12**| Logging with Request ID | Request ID on every log & response | `RequestIdMiddleware` + standard logger | Shriram | Done (#12) |
-| **NFR13**| Containerization | One-command start | `docker compose up --build` (development); production stack `docker-compose.prod.yml` (gunicorn, Caddy HTTPS, backups), demo with `deploy/local-demo.sh`, smoke test `deploy/smoke_test.sh`; [deployment guide](deployment.md); localhost demo per deviation R-13 | Shriram | Done (#10, #72) |
+| **NFR13**| Containerization | One-command start | `docker compose up --build` (development); production stack `docker-compose.prod.yml` (gunicorn, Caddy HTTPS, backups), demo with `deploy/local-demo.sh`, smoke test `deploy/smoke_test.sh`; [deployment guide](../operations/deployment.md); localhost demo per deviation R-13 | Shriram | Done (#10, #72) |
 | **NFR14**| Data privacy compliance | Financial data isolated | Ownership checks on every endpoint; no 3rd-party data leaks; data export, account deletion and email-alert consent (`/me/export/`, `DELETE /me/`, `email_alerts`; `TC-Account-01`) | Team 6 | Enforced (#71) |
 
 

@@ -5,7 +5,7 @@
 
 ## Demo on this machine (localhost)
 
-The team runs the demo on a laptop, with the same production stack a server would run (R-13 in the [deviation log](deviations.md)). In WSL or Linux with Docker, from the repository root:
+The team runs the demo on a laptop, with the same production stack a server would run (R-13 in the [deviation log](../requirements/deviations.md)). In WSL or Linux with Docker, from the repository root:
 
 ```bash
 deploy/local-demo.sh            # first run creates .env.prod with random secrets, then starts everything
