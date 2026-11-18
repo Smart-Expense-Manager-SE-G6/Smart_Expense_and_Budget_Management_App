@@ -1,26 +1,48 @@
 # Code and Branch Coverage Report
 
-## Objective and scope
-Measure backend statement and branch coverage with coverage.py and identify frontend coverage availability.
+**Release:** Smart Expense and Budget Management Application 1.0
+**Evidence:** CI run [#44234445329](https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44234445329) at `69426f5`, 18 Nov 2026. Logs from that run are in [`reports/test-logs/`](reports/test-logs/).
+**Objective:** measure backend statement and branch coverage with coverage.py.
 
-## Execution status
+## Result
 
-Coverage measurement was NOT RUN. Python is unavailable (`py -3 -m coverage --version` returned “No installed Python found”), so no numeric coverage percentage, module result, covered line list, or missed branch list is claimed. Frontend coverage is unmeasured because `frontend/package.json` has no coverage script/tool.
+| Measure | Covered | Total | % |
+|---|--:|--:|--:|
+| Statements (lines) | 2,464 | 2,605 | **94.6%** |
+| Branches | 496 | 578 | **85.8%** |
+| Combined | | | **93.0%** |
 
-## Expected reproduction commands
+CI fails any build under 80% combined coverage (`backend/.coveragerc`, `fail_under = 80`).
 
-```powershell
-Set-Location backend
-py -3 -m coverage run --branch manage.py test
-py -3 -m coverage report
-py -3 -m coverage json -o ..\docs\testing\reports\coverage\coverage.json
-py -3 -m coverage html -d ..\docs\testing\reports\coverage\html
-```
+## Detailed reports
+
+- [Code Coverage Report](code-coverage-report.md): by module and by file, with the missed lines
+- [Branch Coverage Report](branch-coverage-report.md): by module, every branch not taken, and why
 
 ## Artifacts
 
-`docs/testing/reports/coverage/coverage.json` and `docs/testing/reports/coverage/index.html` state that measurement was not run; they are status artifacts, not fabricated coverage output. No HTML coverage tree could be produced without coverage.py.
+[`reports/coverage/coverage.json`](reports/coverage/coverage.json) (raw data) and
+[`reports/coverage/index.html`](reports/coverage/index.html) (browsable HTML report) are the real output of this run.
 
-## Limitations
+## Frontend coverage
 
-No branch, statement, function, condition, or module percentages are available from this environment. Frontend coverage remains unmeasured.
+The frontend has 2 unit tests (`frontend/tests/monitoring.test.js`, Node's built-in test runner), which do not measure
+coverage. The frontend's behaviour is covered by the 14 Selenium journeys instead
+([System Test Report](system-test-report.md)).
+
+## Commands
+
+```bash
+cd backend
+coverage run manage.py test
+coverage report
+coverage json -o ../docs/testing/reports/coverage/coverage.json
+coverage html -d ../docs/testing/reports/coverage
+```
+
+## Note on the first version of this report
+
+The first version (commit 39b92d1 and the commits after it) recorded these suites as NOT RUN. They could not be run on that
+machine: Python was not installed and the Docker daemon was not running. They were then run in GitHub Actions, on the
+same environment the project's CI uses every day (Ubuntu, Python 3.12, PostgreSQL 16, Docker, headless Chrome). This
+report records those results.

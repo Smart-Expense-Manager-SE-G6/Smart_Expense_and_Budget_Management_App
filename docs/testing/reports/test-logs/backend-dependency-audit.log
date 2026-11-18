@@ -1,0 +1,22 @@
+# Source: GitHub Actions run 44234445329 (commit 69426f5), job "Backend tests and coverage", step "Audit Python dependencies"
+# https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44234445329
+
+pip install -q pip-audit && pip-audit -r requirements.txt
+shell: /usr/bin/bash -e {0}
+env:
+  DJANGO_SECRET_KEY: ci-only-not-a-secret
+  DJANGO_DEBUG: true
+  DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+  POSTGRES_DB: smart_expense
+  POSTGRES_USER: smart_expense
+  POSTGRES_PASSWORD: ci-password
+  POSTGRES_HOST: localhost
+  POSTGRES_PORT: 5432
+  LOG_LEVEL: WARNING
+  pythonLocation: /opt/hostedtoolcache/Python/3.12.16/x64
+  PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.16/x64/lib/pkgconfig
+  Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.16/x64
+  Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.16/x64
+  Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.16/x64
+  LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.16/x64/lib
+No known vulnerabilities found

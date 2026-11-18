@@ -1,0 +1,30 @@
+# Source: GitHub Actions run 44234445329 (commit 69426f5), job "Deploy to staging and smoke test", step "Restore rehearsal on the deployed stack"
+# https://github.com/Smart-Expense-Manager-SE-G6/Smart_Expense_and_Budget_Management_App/actions/runs/44234445329
+
+docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm -T backup /scripts/rehearse_restore.sh
+shell: /usr/bin/bash -e {0}
+env:
+  DJANGO_SECRET_KEY: ci-only-not-a-secret
+  DJANGO_DEBUG: true
+  DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+  POSTGRES_DB: smart_expense
+  POSTGRES_USER: smart_expense
+  POSTGRES_PASSWORD: ci-password
+  POSTGRES_HOST: localhost
+  POSTGRES_PORT: 5432
+  LOG_LEVEL: WARNING
+  REGISTRY: ghcr.io/smart-expense-manager-se-g6
+ Container smart-expense-prod-db-1 Running 
+ Container smart-expense-prod-db-1 Waiting 
+ Container smart-expense-prod-db-1 Healthy 
+ Container smart-expense-prod-backup-run-7b0970fb0ad7 Creating 
+ Container smart-expense-prod-backup-run-7b0970fb0ad7 Created 
+2026-11-18T04:06:16Z Backing up database smart_expense on db to /backups/20261118T040616Z
+2026-11-18T04:06:16Z Backing up receipts from /media
+2026-11-18T04:06:16Z Backup complete: 20261118T040616Z (88.0K, 0 receipt files)
+2026-11-18T04:06:16Z TC-Backup-01: rehearsing a full restore of 20261118T040616Z
+2026-11-18T04:06:16Z PASS backup is complete and checksums match
+2026-11-18T04:06:16Z PASS database restored into scratch database smart_expense_restore_rehearsal
+2026-11-18T04:06:16Z PASS row counts match for all 19 tables
+2026-11-18T04:06:16Z PASS all 0 receipt files restored
+2026-11-18T04:06:16Z TC-Backup-01 PASSED for 20261118T040616Z
