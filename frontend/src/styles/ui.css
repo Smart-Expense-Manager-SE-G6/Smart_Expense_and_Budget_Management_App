@@ -735,6 +735,26 @@ select.input {
   padding: 1.1rem 1.5rem;
 }
 
+.toolbar-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.toolbar.toolbar-inline {
+  padding: 0;
+  align-items: flex-end;
+}
+
+.report-controls {
+  margin-bottom: 1.25rem;
+}
+
+.pad {
+  padding: 1rem 1.5rem 1.5rem;
+}
+
 .toolbar .field {
   min-width: 150px;
 }
