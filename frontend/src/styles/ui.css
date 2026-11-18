@@ -966,6 +966,102 @@ select.input {
   color: var(--text);
 }
 
+/* ───────── Month-end forecast ───────── */
+.forecast {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.forecast-hero {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.15rem;
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.forecast-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.forecast-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin: 0;
+}
+
+.forecast-value {
+  font-size: 1.75rem;
+  font-weight: 750;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  margin: 0.15rem 0 0;
+  color: var(--text);
+}
+
+.forecast-budget {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.forecast-budget-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.forecast-budget-row strong[data-over='true'] {
+  color: var(--danger);
+}
+
+.forecast-budget-row strong[data-over='false'] {
+  color: var(--success);
+}
+
+.forecast-note {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  background: var(--surface-hover);
+  font-size: 0.8125rem;
+}
+
+.mini-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.mini-stats dt {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.mini-stats dd {
+  margin: 0.25rem 0 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
 .import-dropzone {
   display: grid;
   justify-items: center;
